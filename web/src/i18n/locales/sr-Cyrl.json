@@ -114,7 +114,9 @@
     "emptyTitle": "Овде још нема ничега.",
     "emptyBody": "Промени филтер, или буди први који објављује.",
     "allTypes": "Сви типови",
-    "anyPlace": "Било где"
+    "anyPlace": "Било где",
+    "scrollLeft": "Помери улево",
+    "scrollRight": "Помери удесно"
   },
   "search": {
     "placeholder": "Претрага",

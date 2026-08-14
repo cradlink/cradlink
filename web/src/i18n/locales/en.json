@@ -114,7 +114,9 @@
     "emptyTitle": "Nothing here yet.",
     "emptyBody": "Try another filter, or be the one who posts first.",
     "allTypes": "All types",
-    "anyPlace": "Any place"
+    "anyPlace": "Any place",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right"
   },
   "search": {
     "placeholder": "Search",

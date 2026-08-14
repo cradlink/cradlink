@@ -114,7 +114,9 @@
     "emptyTitle": "Ovde još nema ničega.",
     "emptyBody": "Promeni filter, ili budi prvi koji objavljuje.",
     "allTypes": "Svi tipovi",
-    "anyPlace": "Bilo gde"
+    "anyPlace": "Bilo gde",
+    "scrollLeft": "Pomeri ulevo",
+    "scrollRight": "Pomeri udesno"
   },
   "search": {
     "placeholder": "Pretraga",
