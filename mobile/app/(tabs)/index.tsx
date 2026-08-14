@@ -4,18 +4,24 @@ import { useRouter } from "expo-router"
 
 import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
+import { FeedFilters } from "@/components/FeedFilters"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { MOCK_ACTIVITIES } from "@/lib/mock"
+import type { ActivityType, LocationType } from "@/lib/types"
 
 export default function FeedScreen() {
   const router = useRouter()
   const theme = useTheme()
   const [query, setQuery] = useState("")
+  const [type, setType] = useState<ActivityType | "all">("all")
+  const [locationType, setLocationType] = useState<LocationType | "all">("all")
   const activities = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return MOCK_ACTIVITIES
     return MOCK_ACTIVITIES.filter((activity) => {
+      if (type !== "all" && activity.type !== type) return false
+      if (locationType !== "all" && activity.location.type !== locationType) return false
+      if (!q) return true
       const hay = [
         activity.title,
         activity.description,
@@ -27,11 +33,12 @@ export default function FeedScreen() {
         .toLowerCase()
       return hay.includes(q)
     })
-  }, [query])
+  }, [query, type, locationType])
 
   return (
     <View style={styles.screen}>
       <TopBar search searchValue={query} onSearchChange={setQuery} />
+      <FeedFilters type={type} locationType={locationType} onType={setType} onLocation={setLocationType} />
       <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
         {activities.length === 0 ? (
           <EmptyState title="No matches." body="Try another search." />

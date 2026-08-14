@@ -38,3 +38,15 @@ export function formatHeadcount(activity: Pick<Activity, "memberCount" | "headco
 export function formatJoinPolicy(policy: JoinPolicy) {
   return policy === "manual" ? "Organizer accepts" : "Instant join"
 }
+
+export function formatCardMeta(activity: Pick<Activity, "location" | "isFlexible" | "startAt" | "memberCount">) {
+  const place = activity.location.city || LOCATION_LABELS[activity.location.type]
+  let when = "Flexible"
+  if (!activity.isFlexible && activity.startAt) {
+    const start = new Date(activity.startAt)
+    if (!Number.isNaN(start.getTime())) {
+      when = start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    }
+  }
+  return `${place} · ${when} · ${activity.memberCount} going`
+}

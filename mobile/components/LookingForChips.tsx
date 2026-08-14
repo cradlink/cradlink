@@ -27,14 +27,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
+    gap: 8,
     backgroundColor: "transparent",
   },
   chip: {
     borderRadius: 999,
     backgroundColor: "#1d9bf01a",
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   label: {
     fontSize: 12,

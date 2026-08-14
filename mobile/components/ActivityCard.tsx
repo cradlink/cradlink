@@ -6,8 +6,7 @@ import { Avatar } from "@/components/Avatar"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
-import { LOCATION_LABELS } from "@/lib/activity-meta"
-import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
+import { formatCardMeta } from "@/lib/format"
 import type { Activity } from "@/lib/types"
 
 export function ActivityCard({ activity }: { activity: Activity }) {
@@ -22,40 +21,37 @@ export function ActivityCard({ activity }: { activity: Activity }) {
         { borderBottomColor: theme.border, backgroundColor: pressed ? theme.hover : "transparent" },
       ]}
     >
-      <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
+      <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={36} />
       <View style={styles.body}>
         <View style={styles.meta}>
-          <Text style={styles.creator}>{activity.creatorName}</Text>
-          <Text style={styles.dot} lightColor="#536471" darkColor="#71767b">
-            ·
+          <Text style={styles.creator} numberOfLines={1}>
+            {activity.creatorName}
           </Text>
           <TypeBadge type={activity.type} />
-          <Text style={styles.place} lightColor="#536471" darkColor="#71767b">
-            {LOCATION_LABELS[activity.location.type]}
-            {activity.status === "full" ? " · Full" : ""}
-          </Text>
         </View>
 
-        <Text style={styles.title}>{activity.title}</Text>
-        <Text style={styles.copy} numberOfLines={4}>
+        <Text style={styles.title} numberOfLines={2}>
+          {activity.title}
+        </Text>
+        <Text style={styles.copy} numberOfLines={2}>
           {activity.description}
         </Text>
 
-        {activity.tags?.length ? <LookingForChips items={activity.tags} limit={5} /> : null}
-        {activity.lookingFor.length > 0 ? <LookingForChips items={activity.lookingFor} limit={4} /> : null}
-
-        <Text style={styles.detail} lightColor="#536471" darkColor="#71767b">
-          {formatLocation(activity)}
-        </Text>
-        <Text style={styles.detail} lightColor="#536471" darkColor="#71767b">
-          {formatActivityWhen(activity)}
-        </Text>
-        <Text style={styles.detail} lightColor="#536471" darkColor="#71767b">
-          {formatHeadcount(activity)} · {formatJoinPolicy(activity.joinPolicy)}
-        </Text>
+        {activity.lookingFor.length > 0 ? (
+          <View style={styles.chips}>
+            <LookingForChips items={activity.lookingFor} limit={3} />
+          </View>
+        ) : null}
 
         <View style={styles.cover}>
           <ActivityCover activity={activity} />
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.detail} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
+            {formatCardMeta(activity)}
+          </Text>
+          <Text style={[styles.join, { color: theme.primary }]}>Join</Text>
         </View>
       </View>
     </Pressable>
@@ -66,52 +62,66 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   body: {
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
-    gap: 6,
     backgroundColor: "transparent",
     overflow: "hidden",
   },
   meta: {
     flexDirection: "row",
-    flexWrap: "wrap",
     alignItems: "center",
     gap: 6,
     backgroundColor: "transparent",
   },
   creator: {
+    flexShrink: 1,
     fontSize: 15,
     fontWeight: "700",
-  },
-  dot: {
-    fontSize: 15,
-  },
-  place: {
-    fontSize: 13,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "700",
-    lineHeight: 22,
+    marginTop: 6,
+    fontSize: 19,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    lineHeight: 24,
   },
   copy: {
-    fontSize: 15,
-    lineHeight: 20,
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  chips: {
+    marginTop: 10,
+    backgroundColor: "transparent",
+  },
+  cover: {
+    marginTop: 10,
+    alignSelf: "stretch",
+    backgroundColor: "transparent",
+  },
+  footer: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    backgroundColor: "transparent",
   },
   detail: {
+    flex: 1,
     fontSize: 13,
     lineHeight: 16,
   },
-  cover: {
-    marginTop: 6,
-    alignSelf: "stretch",
-    backgroundColor: "transparent",
+  join: {
+    fontSize: 13,
+    fontWeight: "700",
   },
 })
