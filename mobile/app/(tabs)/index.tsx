@@ -1,31 +1,74 @@
-import { StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from "react-native"
+import { useRouter } from "expo-router"
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+import { ActivityCard } from "@/components/ActivityCard"
+import { Text, View, useTheme } from "@/components/Themed"
+import { APP_TAGLINE } from "@/constants/config"
+import { MOCK_ACTIVITIES } from "@/lib/mock"
 
-export default function TabOneScreen() {
+export default function FeedScreen() {
+  const router = useRouter()
+  const theme = useTheme()
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.list}>
+        <View style={[styles.intro, { borderBottomColor: theme.border }]}>
+          <Text style={styles.kicker} lightColor="#536471" darkColor="#71767b">
+            {APP_TAGLINE}
+          </Text>
+          <Text style={styles.lede}>What’s assembling</Text>
+        </View>
+        {MOCK_ACTIVITIES.map((activity) => (
+          <ActivityCard key={activity.id} activity={activity} />
+        ))}
+      </ScrollView>
+      <Pressable
+        onPress={() => router.push("/activities/new")}
+        style={({ pressed }) => [
+          styles.fab,
+          { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
+        ]}
+      >
+        <Text style={[styles.fabLabel, { color: theme.primaryForeground }]}>+</Text>
+      </Pressable>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  title: {
+  list: {
+    paddingBottom: 96,
+  },
+  intro: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  kicker: {
+    fontSize: 13,
+  },
+  lede: {
+    marginTop: 2,
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "700",
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  fab: {
+    position: "absolute",
+    right: 16,
+    bottom: 16,
+    height: 56,
+    width: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
-});
+  fabLabel: {
+    fontSize: 32,
+    fontWeight: "400",
+    marginTop: -2,
+  },
+})

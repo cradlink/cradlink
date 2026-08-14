@@ -1,7 +1,7 @@
 {
-  "name": "mobile",
+  "name": "cradlink-mobile",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "dependencies": {
     "expo": "~57.0.12",
     "expo-constants": "~57.0.10",
