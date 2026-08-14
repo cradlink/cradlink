@@ -1,6 +1,5 @@
 import { useEffect } from "react"
-import { Dimensions, Modal, Pressable, StyleSheet, View } from "react-native"
-import { BlurView } from "expo-blur"
+import { BackHandler, Dimensions, Pressable, StyleSheet, View } from "react-native"
 import Animated, {
   Easing,
   interpolate,
@@ -12,6 +11,7 @@ import Animated, {
 
 import { Text, useTheme } from "@/components/Themed"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useI18n } from "@/hooks/use-i18n"
 
 const OPEN = { duration: 220, easing: Easing.bezier(0.16, 1, 0.3, 1) }
 const CLOSE = { duration: 180, easing: Easing.bezier(0.4, 0, 0.2, 1) }
@@ -19,19 +19,25 @@ const CARD = "#16181c"
 const { width: SCREEN_W } = Dimensions.get("window")
 const CARD_W = Math.min(SCREEN_W - 56, 340)
 
-export function ConfirmModalHost() {
+export function ConfirmModalHost({ active = true }: { active?: boolean }) {
   const { prompt, dismiss } = useConfirm()
   const theme = useTheme()
+  const { messages } = useI18n()
   const progress = useSharedValue(0)
 
   useEffect(() => {
-    if (!prompt) {
+    if (!active || !prompt) {
       progress.value = 0
       return
     }
     progress.value = 0
     progress.value = withTiming(1, OPEN)
-  }, [progress, prompt])
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      dismiss()
+      return true
+    })
+    return () => sub.remove()
+  }, [active, dismiss, progress, prompt])
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, 1]),
@@ -42,7 +48,8 @@ export function ConfirmModalHost() {
     transform: [{ scale: interpolate(progress.value, [0, 1], [0.94, 1]) }],
   }))
 
-  if (!prompt) return null
+  if (!active || !prompt) return null
+  const current = prompt
 
   function finish(next: () => void) {
     progress.value = withTiming(0, CLOSE, (done) => {
@@ -51,7 +58,7 @@ export function ConfirmModalHost() {
   }
 
   function confirm() {
-    const action = prompt.onConfirm
+    const action = current.onConfirm
     finish(() => {
       action()
       dismiss()
@@ -59,18 +66,16 @@ export function ConfirmModalHost() {
   }
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
-      <View style={styles.screen} pointerEvents="box-none">
-        <Animated.View style={[styles.backdrop, backdropStyle]}>
-          <Pressable style={styles.fill} onPress={() => finish(dismiss)}>
-            <BlurView intensity={48} tint="dark" blurMethod="none" style={styles.fill} />
-            <View style={styles.dim} pointerEvents="none" />
-          </Pressable>
-        </Animated.View>
-        <Animated.View
-          style={[styles.card, { borderColor: theme.border }, cardStyle]}
-          pointerEvents="auto"
-        >
+    <View style={styles.screen} pointerEvents="box-none">
+      <Animated.View style={[styles.backdrop, backdropStyle]}>
+        <Pressable style={styles.fill} onPress={() => finish(dismiss)}>
+          <View style={styles.dim} pointerEvents="none" />
+        </Pressable>
+      </Animated.View>
+      <Animated.View
+        style={[styles.card, { borderColor: theme.border }, cardStyle]}
+        pointerEvents="auto"
+      >
           <Text style={styles.title}>{prompt.title}</Text>
           <Text style={styles.body} lightColor="#536471" darkColor="#71767b">
             {prompt.body}
@@ -102,18 +107,17 @@ export function ConfirmModalHost() {
               { backgroundColor: "transparent", borderColor: theme.border, opacity: pressed ? 0.75 : 1 },
             ]}
           >
-            <Text style={styles.actionLabel}>{prompt.cancelLabel ?? "Cancel"}</Text>
+            <Text style={styles.actionLabel}>{prompt.cancelLabel ?? messages.common.cancel}</Text>
           </Pressable>
         </Animated.View>
-      </View>
-    </Modal>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
-    width: SCREEN_W,
+    ...StyleSheet.absoluteFill,
+    zIndex: 80,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
     left: 0,
   },
   dim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.78)",
   },
   card: {

@@ -5,12 +5,14 @@ import { Text, useTheme } from "@/components/Themed"
 export function Button({
   label,
   variant = "primary",
+  size = "default",
   style,
   disabled,
   ...props
 }: {
   label: string
   variant?: "primary" | "ink" | "outline" | "ghost"
+  size?: "default" | "compact"
   style?: StyleProp<ViewStyle>
   disabled?: boolean
   onPress?: () => void
@@ -45,6 +47,7 @@ export function Button({
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
+        size === "compact" ? styles.compact : null,
         {
           backgroundColor: palette.backgroundColor,
           borderColor: palette.borderColor,
@@ -54,7 +57,7 @@ export function Button({
       ]}
       {...props}
     >
-      <Text style={[styles.label, { color: palette.color }]}>{label}</Text>
+      <Text style={[styles.label, size === "compact" && styles.compactLabel, { color: palette.color }]}>{label}</Text>
     </Pressable>
   )
 }
@@ -69,8 +72,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     minHeight: 52,
   },
+  compact: {
+    minHeight: 36,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
   label: {
     fontSize: 17,
     fontWeight: "700",
+  },
+  compactLabel: {
+    fontSize: 15,
   },
 })

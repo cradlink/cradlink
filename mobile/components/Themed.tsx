@@ -32,6 +32,7 @@ export function Text({ style, lightColor, darkColor, ...otherProps }: TextProps)
 }
 
 export function View({ style, lightColor, darkColor, ...otherProps }: ViewProps) {
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, "background")
+  const themed = useThemeColor({ light: lightColor, dark: darkColor }, "background")
+  const backgroundColor = lightColor == null && darkColor == null ? "transparent" : themed
   return <DefaultView style={[{ backgroundColor }, style]} {...otherProps} />
 }

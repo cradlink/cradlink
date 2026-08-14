@@ -3,25 +3,23 @@ import { SymbolView } from "expo-symbols"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Text, useTheme } from "@/components/Themed"
+import { usePreviewLocksUi } from "@/hooks/use-activity-preview"
+import { useI18n } from "@/hooks/use-i18n"
 
 const ICONS = {
   index: {
-    label: "Home",
     idle: { ios: "house", android: "home", web: "home" },
     active: { ios: "house.fill", android: "home", web: "home" },
   },
   upcoming: {
-    label: "Upcoming",
     idle: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
     active: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
   },
   me: {
-    label: "My activities",
     idle: { ios: "square.and.pencil", android: "edit", web: "edit" },
     active: { ios: "square.and.pencil", android: "edit", web: "edit" },
   },
   profile: {
-    label: "Profile",
     idle: { ios: "person", android: "person", web: "person" },
     active: { ios: "person.fill", android: "person", web: "person" },
   },
@@ -30,6 +28,14 @@ const ICONS = {
 export function TabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
+  const { messages } = useI18n()
+  const locked = usePreviewLocksUi()
+  const labels = {
+    index: messages.tabs.home,
+    upcoming: messages.tabs.upcoming,
+    me: messages.tabs.me,
+    profile: messages.tabs.profile,
+  } as const
 
   return (
     <View
@@ -45,11 +51,12 @@ export function TabBar({ state, descriptors, navigation }: any) {
       {state.routes.map((route: { key: string; name: string; params?: object }, index: number) => {
         const options = descriptors[route.key].options
         const focused = state.index === index
-        const meta = ICONS[route.name as keyof typeof ICONS] ?? {
-          label: options.title ?? route.name,
+        const icons = ICONS[route.name as keyof typeof ICONS]
+        const meta = icons ?? {
           idle: { ios: "circle", android: "circle", web: "circle" } as const,
           active: { ios: "circle.fill", android: "circle", web: "circle" } as const,
         }
+        const label = labels[route.name as keyof typeof labels] ?? options.title ?? route.name
         const color = focused ? theme.foreground : theme.mutedForeground
 
         return (
@@ -58,6 +65,7 @@ export function TabBar({ state, descriptors, navigation }: any) {
             accessibilityRole="button"
             accessibilityState={focused ? { selected: true } : {}}
             onPress={() => {
+              if (locked) return
               const event = navigation.emit({
                 type: "tabPress",
                 target: route.key,
@@ -78,7 +86,7 @@ export function TabBar({ state, descriptors, navigation }: any) {
               numberOfLines={2}
               style={[styles.label, { color, fontWeight: focused ? "700" : "500" }]}
             >
-              {meta.label}
+              {label}
             </Text>
           </Pressable>
         )

@@ -1,15 +1,13 @@
+import { type ReactNode } from "react"
 import { Pressable, ScrollView, StyleSheet, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 
 import { Text, useTheme } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import { ACTIVITY_TYPES, type ActivityType, type LocationType } from "@/lib/types"
 
-const PLACES: { value: LocationType | "all"; label: string }[] = [
-  { value: "all", label: "Any place" },
-  { value: "online", label: "Online" },
-  { value: "in-person", label: "In person" },
-  { value: "hybrid", label: "Hybrid" },
-]
+const PLACE_VALUES: (LocationType | "all")[] = ["all", "online", "in-person", "hybrid"]
 
 export function FeedFilters({
   type,
@@ -23,31 +21,56 @@ export function FeedFilters({
   onLocation: (value: LocationType | "all") => void
 }) {
   const theme = useTheme()
+  const { messages } = useI18n()
 
   return (
     <View style={[styles.wrap, { borderBottomColor: theme.border }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Chip label="All" active={type === "all"} onPress={() => onType("all")} />
+      <FadeScroller>
+        <Chip label={messages.common.all} active={type === "all"} onPress={() => onType("all")} />
         {ACTIVITY_TYPES.map((value) => (
           <Chip
             key={value}
-            label={ACTIVITY_META[value].label}
+            label={messages.types[value]}
             color={ACTIVITY_META[value].color}
             active={type === value}
             onPress={() => onType(value)}
           />
         ))}
-      </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {PLACES.map((item) => (
+      </FadeScroller>
+      <FadeScroller>
+        {PLACE_VALUES.map((value) => (
           <Chip
-            key={item.value}
-            label={item.label}
-            active={locationType === item.value}
-            onPress={() => onLocation(item.value)}
+            key={value}
+            label={messages.places[value]}
+            active={locationType === value}
+            onPress={() => onLocation(value)}
           />
         ))}
+      </FadeScroller>
+    </View>
+  )
+}
+
+function FadeScroller({ children }: { children: ReactNode }) {
+  return (
+    <View style={styles.scroller}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        {children}
       </ScrollView>
+      <LinearGradient
+        pointerEvents="none"
+        colors={["#000000", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.fade, styles.fadeLeft]}
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={["transparent", "#000000"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.fade, styles.fadeRight]}
+      />
     </View>
   )
 }
@@ -90,10 +113,25 @@ const styles = StyleSheet.create({
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  scroller: {
+    position: "relative",
+  },
   row: {
     paddingHorizontal: 16,
     gap: 8,
     alignItems: "center",
+  },
+  fade: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 32,
+  },
+  fadeLeft: {
+    left: 0,
+  },
+  fadeRight: {
+    right: 0,
   },
   chip: {
     flexDirection: "row",

@@ -16,6 +16,8 @@ export type ActivityType = (typeof ACTIVITY_TYPES)[number]
 export type LocationType = "online" | "in-person" | "hybrid"
 export type ActivityStatus = "open" | "full" | "cancelled" | "completed"
 export type Visibility = "public" | "unlisted"
+export type ProfileVisibility = "public" | "private"
+export type FollowStatus = "none" | "following" | "pending"
 export type MemberStatus = "joined" | "pending" | "declined"
 export type JoinPolicy = "auto" | "manual"
 export type HeadcountMode = "open" | "limit" | "range" | "estimate"
@@ -35,6 +37,7 @@ export type User = {
   skills: string[]
   avatarUrl: string | null
   location: string
+  visibility: ProfileVisibility
   createdAt: string
   updatedAt: string
 }
@@ -98,12 +101,61 @@ export type CreateActivityInput = {
   images?: string[]
 }
 
+export type UpdateActivityInput = CreateActivityInput
+
+export type JoinRequest = {
+  id: string
+  activityId: string
+  hostId: string
+  userId: string
+  userName: string
+  userAvatar: string | null
+  status: "pending" | "accepted" | "declined"
+  createdAt: string
+}
+
+export type FollowRequest = {
+  id: string
+  fromId: string
+  fromName: string
+  fromAvatar: string | null
+  toId: string
+  status: "pending" | "accepted" | "declined"
+  createdAt: string
+}
+
+export type NotificationType =
+  | "joined"
+  | "request"
+  | "accepted"
+  | "declined"
+  | "updated"
+  | "reminder"
+  | "follow"
+  | "follow_request"
+  | "follow_accepted"
+
+export type AppNotification = {
+  id: string
+  userId: string
+  type: NotificationType
+  activityId: string | null
+  actorId?: string | null
+  actorName: string
+  actorAvatar: string | null
+  title: string
+  body: string
+  createdAt: string
+  read: boolean
+}
+
 export type UpdateProfileInput = {
   displayName?: string
   bio?: string
   skills?: string[]
   location?: string
   avatarUrl?: string | null
+  visibility?: ProfileVisibility
 }
 
 export type ActivityFilters = {

@@ -12,13 +12,16 @@ import { Button } from "@/components/Button"
 import { Logo } from "@/components/Logo"
 import { Text, View, useTheme } from "@/components/Themed"
 import { TextField } from "@/components/TextField"
-import { APP_TAGLINE, DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/constants/config"
+import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/constants/config"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
+import { errorMessage } from "@/lib/i18n"
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const theme = useTheme()
   const router = useRouter()
   const { signIn, signUp, signInAsDemo } = useAuth()
+  const { messages } = useI18n()
   const [displayName, setDisplayName] = useState("")
   const [email, setEmail] = useState(DEMO_ACCOUNT_EMAIL)
   const [password, setPassword] = useState(DEMO_ACCOUNT_PASSWORD)
@@ -36,7 +39,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       }
       router.replace("/")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.")
+      setError(errorMessage(err))
     } finally {
       setPending(false)
     }
@@ -49,7 +52,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       await signInAsDemo()
       router.replace("/")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.")
+      setError(errorMessage(err))
     } finally {
       setPending(false)
     }
@@ -65,33 +68,33 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         contentContainerStyle={styles.content}
       >
         <Logo />
-        <Text style={styles.title}>{mode === "login" ? "Welcome back." : "Join today."}</Text>
+        <Text style={styles.title}>{mode === "login" ? messages.auth.welcomeBack : messages.auth.joinToday}</Text>
         <Text style={styles.tagline} lightColor="#536471" darkColor="#71767b">
-          {APP_TAGLINE}
+          {messages.brand.tagline}
         </Text>
 
         <View style={styles.form} lightColor="transparent" darkColor="transparent">
           {mode === "signup" ? (
             <TextField
-              label="Name"
+              label={messages.auth.name}
               value={displayName}
               onChangeText={setDisplayName}
-              placeholder="Your name"
+              placeholder={messages.auth.namePlaceholder}
               autoCapitalize="words"
               autoComplete="name"
             />
           ) : null}
           <TextField
-            label="Email"
+            label={messages.auth.email}
             value={email}
             onChangeText={setEmail}
-            placeholder="you@example.com"
+            placeholder={messages.auth.emailPlaceholder}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
           />
           <TextField
-            label="Password"
+            label={messages.auth.password}
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
@@ -100,7 +103,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button
-            label={pending ? "Working…" : mode === "login" ? "Sign in" : "Create account"}
+            label={pending ? messages.auth.working : mode === "login" ? messages.auth.signIn : messages.auth.createAccount}
             variant="ink"
             disabled={pending}
             onPress={() => void onSubmit()}
@@ -110,13 +113,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <View style={styles.orRow} lightColor="transparent" darkColor="transparent">
           <View style={[styles.rule, { backgroundColor: theme.border }]} />
           <Text style={styles.or} lightColor="#536471" darkColor="#71767b">
-            or
+            {messages.common.or}
           </Text>
           <View style={[styles.rule, { backgroundColor: theme.border }]} />
         </View>
 
         <Button
-          label="Continue as Marko Njegomir"
+          label={messages.auth.continueAsDemo}
           variant="outline"
           disabled={pending}
           onPress={() => void onDemo()}
@@ -126,22 +129,22 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {mode === "login" ? (
             <View style={styles.switchRow} lightColor="transparent" darkColor="transparent">
               <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-                Don’t have an account?
+                {messages.auth.noAccount}
               </Text>
               <Link href="/signup" asChild>
                 <Pressable>
-                  <Text style={styles.link}>Sign up</Text>
+                  <Text style={styles.link}>{messages.auth.signUp}</Text>
                 </Pressable>
               </Link>
             </View>
           ) : (
             <View style={styles.switchRow} lightColor="transparent" darkColor="transparent">
               <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-                Already have an account?
+                {messages.auth.hasAccount}
               </Text>
               <Link href="/login" asChild>
                 <Pressable>
-                  <Text style={styles.link}>Sign in</Text>
+                  <Text style={styles.link}>{messages.auth.signIn}</Text>
                 </Pressable>
               </Link>
             </View>

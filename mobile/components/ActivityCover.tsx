@@ -36,19 +36,18 @@ const styles = StyleSheet.create({
   frame: {
     alignSelf: "stretch",
     width: "100%",
-    aspectRatio: 16 / 9,
     borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
   },
   compact: {
-    maxHeight: 168,
+    height: 168,
   },
   expanded: {
-    maxHeight: 220,
+    height: 220,
   },
   image: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
   },

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { StyleSheet } from "react-native"
+import { SymbolView } from "expo-symbols"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
@@ -28,6 +29,8 @@ export function ToastHost() {
 
   if (!shown) return null
 
+  const failed = shown.tone === "error"
+
   return (
     <Animated.View
       pointerEvents="none"
@@ -36,6 +39,15 @@ export function ToastHost() {
       <Text style={styles.label} numberOfLines={1}>
         {shown.title}
       </Text>
+      <SymbolView
+        name={
+          failed
+            ? { ios: "xmark", android: "close", web: "close" }
+            : { ios: "checkmark", android: "check", web: "check" }
+        }
+        tintColor="#e7e9ea"
+        size={18}
+      />
     </Animated.View>
   )
 }
@@ -48,13 +60,17 @@ const styles = StyleSheet.create({
     zIndex: 80,
     elevation: 80,
     minHeight: 44,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 6,
     backgroundColor: "#1d1f23",
   },
   label: {
+    flex: 1,
     color: "#e7e9ea",
     fontSize: 15,
     fontWeight: "500",

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 220" width="360" height="220">
+  <rect width="360" height="220" rx="20" fill="#000" stroke="#2f3336"/>
+  <circle cx="52" cy="52" r="22" fill="#111214" stroke="#1d9bf0"/>
+  <path d="M44 52h16M52 44v16" stroke="#1d9bf0" stroke-width="2" stroke-linecap="round"/>
+  <text x="88" y="48" fill="#e7e9ea" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="20" font-weight="800">Join</text>
+  <text x="88" y="70" fill="#71767b" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="13">One tap. You're on the list.</text>
+  <text x="28" y="128" fill="#e7e9ea" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="600">The card lifts. The city stays.</text>
+  <text x="28" y="154" fill="#71767b" font-family="ui-sans-serif, system-ui, Segoe UI, Helvetica, Arial, sans-serif" font-size="13">Preview, confirm, snackbar.</text>
+  <text x="28" y="192" fill="#1d9bf0" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11">JOINED_</text>
+</svg>

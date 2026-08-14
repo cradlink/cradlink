@@ -1,9 +1,18 @@
-import { useEffect, useState } from "react"
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View as RNView } from "react-native"
-import { SymbolView } from "expo-symbols"
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
+import { useEffect, useMemo, useRef } from "react"
+import {
+  BackHandler,
+  Dimensions,
+  Modal,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View as RNView,
+} from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import Animated, {
   Easing,
+  Extrapolation,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -11,13 +20,17 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 
+import { ConfirmModalHost } from "@/components/ConfirmDialog"
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { CreatorPress } from "@/components/CreatorPress"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
+import { RequestList } from "@/components/RequestList"
 import { TypeBadge } from "@/components/TypeBadge"
-import { Text, View, useTheme } from "@/components/Themed"
+import { Text, View } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
+import { useConfirm } from "@/hooks/use-confirm"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 
@@ -32,25 +45,51 @@ const SHEET_BG = "#16181c"
 const FADE_H = 72
 
 export function ActivityPreview() {
-  const theme = useTheme()
-  const { preview, close, registerCloser } = useActivityPreview()
+  const { preview, close, registerCloser, hidden } = useActivityPreview()
+  const { prompt, dismiss: dismissConfirm } = useConfirm()
+  const wasAway = useRef(false)
+  const scrollOffset = useRef(0)
   const { decorate } = useMemberships()
   const progress = useSharedValue(0)
+  const dragY = useSharedValue(0)
   const fromX = useSharedValue(0)
   const fromY = useSharedValue(0)
-  const [fadeW, setFadeW] = useState(TARGET_W)
-  const [footerH, setFooterH] = useState(70)
+  const closing = useRef(false)
+
+  function finishClose() {
+    closing.current = false
+    close()
+  }
 
   function dismiss() {
+    if (closing.current) return
+    closing.current = true
     progress.value = withTiming(0, CLOSE, (finished) => {
-      if (finished) runOnJS(close)()
+      if (finished) runOnJS(finishClose)()
     })
+  }
+
+  function requestClose() {
+    if (prompt) {
+      dismissConfirm()
+      return
+    }
+    dismiss()
   }
 
   useEffect(() => {
     registerCloser(dismiss)
     return () => registerCloser(null)
   })
+
+  useEffect(() => {
+    if (!preview || hidden) return
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      requestClose()
+      return true
+    })
+    return () => sub.remove()
+  }, [hidden, preview, prompt])
 
   useEffect(() => {
     if (!preview) return
@@ -62,22 +101,57 @@ export function ActivityPreview() {
       fromX.value = 0
       fromY.value = 40
     }
+    closing.current = false
+    dragY.value = 0
     progress.value = 0
     progress.value = withTiming(1, OPEN)
-  }, [fromX, fromY, preview, progress])
+  }, [dragY, fromX, fromY, preview?.activity.id, preview?.origin.x, preview?.origin.y, progress])
 
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, 1]),
+  useEffect(() => {
+    if (hidden) {
+      wasAway.current = true
+      return
+    }
+    if (wasAway.current && preview) {
+      progress.value = 1
+      wasAway.current = false
+    }
+  }, [hidden, preview, progress])
+
+  const fade = useAnimatedStyle(() => ({
+    opacity: progress.value * interpolate(dragY.value, [0, 240], [1, 0.25], Extrapolation.CLAMP),
   }))
 
   const cardStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
     transform: [
       { translateX: interpolate(progress.value, [0, 1], [fromX.value, 0]) },
-      { translateY: interpolate(progress.value, [0, 1], [fromY.value, 0]) },
-      { scale: interpolate(progress.value, [0, 1], [0.88, 1]) },
+      { translateY: interpolate(progress.value, [0, 1], [fromY.value, 0]) + dragY.value },
+      { scale: interpolate(progress.value, [0, 1], [0.92, 1]) },
     ],
-    opacity: interpolate(progress.value, [0, 0.45, 1], [0, 1, 1]),
   }))
+
+  const sheetPan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          scrollOffset.current <= 2 && gesture.dy > 12 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+        onPanResponderMove: (_, gesture) => {
+          dragY.value = Math.max(0, gesture.dy)
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dy > 80 || gesture.vy > 1.1) {
+            dismiss()
+            return
+          }
+          dragY.value = withTiming(0, { duration: 200 })
+        },
+        onPanResponderTerminate: () => {
+          dragY.value = withTiming(0, { duration: 200 })
+        },
+      }),
+    [dragY],
+  )
 
   if (!preview) return null
 
@@ -85,38 +159,50 @@ export function ActivityPreview() {
   const viewed = decorate(activity)
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={dismiss}>
-      <RNView style={styles.layer}>
-        <Animated.View style={[styles.backdrop, backdropStyle]}>
-          <Pressable style={styles.fill} onPress={dismiss}>
+    <Modal
+      visible={!hidden}
+      transparent
+      animationType="none"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={requestClose}
+    >
+      <RNView style={styles.layer} pointerEvents="auto" collapsable={false}>
+        <Animated.View style={[styles.backdrop, fade]} pointerEvents="auto">
+          <Pressable
+            style={styles.fill}
+            onPress={dismiss}
+            onMoveShouldSetResponder={() => true}
+            onResponderRelease={dismiss}
+          >
             <RNView style={styles.dim} pointerEvents="none" />
           </Pressable>
         </Animated.View>
 
         <Animated.View
-          style={[
-            styles.sheet,
-            { backgroundColor: SHEET_BG, borderColor: theme.border },
-            cardStyle,
-          ]}
+          style={[styles.sheet, cardStyle]}
+          pointerEvents="auto"
+          {...sheetPan.panHandlers}
         >
-          <Pressable onPress={dismiss} style={styles.close} hitSlop={12} accessibilityLabel="Close">
-            <SymbolView
-              name={{ ios: "xmark", android: "close", web: "close" }}
-              tintColor={theme.foreground}
-              size={18}
-            />
-          </Pressable>
-          <RNView style={styles.column}>
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            onScroll={(event) => {
+              scrollOffset.current = event.nativeEvent.contentOffset.y
+            }}
+            scrollEventThrottle={16}
           >
             <View style={styles.byline}>
-              <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
+              <CreatorPress userId={activity.creatorId}>
+                <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
+              </CreatorPress>
               <View style={styles.bylineText}>
-                <Text style={styles.creator}>{activity.creatorName}</Text>
+                <CreatorPress userId={activity.creatorId}>
+                  <Text style={styles.creator}>{activity.creatorName}</Text>
+                </CreatorPress>
                 <TypeBadge type={activity.type} />
               </View>
             </View>
@@ -136,32 +222,18 @@ export function ActivityPreview() {
             </Text>
             <ActivityCover activity={activity} compact={false} />
           </ScrollView>
-          </RNView>
-          <RNView
-            style={styles.footer}
-            onLayout={(event) => {
-              const { width, height } = event.nativeEvent.layout
-              const nextW = Math.round(width)
-              const nextH = Math.round(height)
-              if (nextW > 0 && nextW !== fadeW) setFadeW(nextW)
-              if (nextH > 0 && nextH !== footerH) setFooterH(nextH)
-            }}
-          >
+          <RNView style={styles.footer}>
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(22,24,28,0)", "rgba(22,24,28,0.72)", SHEET_BG]}
+              locations={[0, 0.55, 1]}
+              style={styles.fade}
+            />
+            <RequestList activity={activity} compact />
             <JoinButton activity={activity} wide />
           </RNView>
-          <RNView pointerEvents="none" style={[styles.fade, { bottom: footerH - 1 }]}>
-            <Svg width={fadeW} height={FADE_H}>
-              <Defs>
-                <LinearGradient id="sheetFade" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={SHEET_BG} stopOpacity="0" />
-                  <Stop offset="0.55" stopColor={SHEET_BG} stopOpacity="0.75" />
-                  <Stop offset="1" stopColor={SHEET_BG} stopOpacity="1" />
-                </LinearGradient>
-              </Defs>
-              <Rect x="0" y="0" width={fadeW} height={FADE_H} fill="url(#sheetFade)" />
-            </Svg>
-          </RNView>
         </Animated.View>
+        <ConfirmModalHost />
       </RNView>
     </Modal>
   )
@@ -184,11 +256,7 @@ const styles = StyleSheet.create({
     left: 0,
   },
   dim: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.55)",
   },
   sheet: {
@@ -196,22 +264,8 @@ const styles = StyleSheet.create({
     height: TARGET_H,
     borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#2f3336",
     overflow: "hidden",
-  },
-  close: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    zIndex: 2,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(22,24,28,0.85)",
-  },
-  column: {
-    flex: 1,
     backgroundColor: SHEET_BG,
   },
   scroll: {
@@ -224,12 +278,6 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     gap: 10,
   },
-  fade: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: FADE_H,
-  },
   byline: {
     flexDirection: "row",
     alignItems: "center",
@@ -237,8 +285,10 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   bylineText: {
+    flexShrink: 1,
     gap: 6,
     backgroundColor: "transparent",
+    alignItems: "flex-start",
   },
   creator: {
     fontSize: 16,
@@ -260,9 +310,18 @@ const styles = StyleSheet.create({
   },
   footer: {
     zIndex: 2,
+    overflow: "visible",
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 16,
+    gap: 12,
     backgroundColor: SHEET_BG,
+  },
+  fade: {
+    position: "absolute",
+    top: -FADE_H,
+    left: 0,
+    right: 0,
+    height: FADE_H,
   },
 })

@@ -1,58 +1,97 @@
-import { ScrollView, StyleSheet } from "react-native"
+import { StyleSheet } from "react-native"
 import { useLocalSearchParams } from "expo-router"
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { CreatorPress } from "@/components/CreatorPress"
+import { EditPencil } from "@/components/EditPencil"
 import { EmptyState } from "@/components/EmptyState"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
+import { Refreshable, Stagger } from "@/components/Refreshable"
+import { RequestList } from "@/components/RequestList"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { TopBar } from "@/components/TopBar"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
+import { useAuth } from "@/hooks/use-auth"
+import { useConnections } from "@/hooks/use-connections"
+import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 
 export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { get } = useActivities()
-  const { decorate } = useMemberships()
+  const { getUser } = useAuth()
+  const { canSeeActivities } = useConnections()
+  const { decorate, isOrganizer } = useMemberships()
+  const { messages } = useI18n()
   const activity = id ? get(id) : null
   const viewed = activity ? decorate(activity) : null
-
-  if (!activity || !viewed) {
-    return (
-      <View style={styles.screen}>
-        <EmptyState title="Activity not found." body="It may have been removed, or this is a stale link." />
-      </View>
-    )
-  }
+  const locked = Boolean(activity && !canSeeActivities(getUser(activity.creatorId)))
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.byline}>
-        <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
-        <View style={styles.bylineText}>
-          <Text style={styles.creator}>{activity.creatorName}</Text>
-          <TypeBadge type={activity.type} />
-        </View>
-      </View>
-      <Text style={styles.title}>{activity.title}</Text>
-      <Text style={styles.body}>{activity.description}</Text>
-      {activity.lookingFor.length > 0 ? <LookingForChips items={activity.lookingFor} limit={8} /> : null}
-      <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-        {formatLocation(activity)}
-      </Text>
-      <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-        {formatActivityWhen(activity)}
-      </Text>
-      <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-        {formatHeadcount(viewed)} · {formatJoinPolicy(activity.joinPolicy)}
-      </Text>
-      <ActivityCover activity={activity} compact={false} />
-      <View style={styles.action}>
-        <JoinButton activity={activity} />
-      </View>
-    </ScrollView>
+    <ScreenBlurTarget style={styles.screen}>
+      <TopBar title={messages.common.activity} back hideBell />
+      <Refreshable contentContainerStyle={styles.content}>
+      <Stagger>
+        {locked ? (
+          <EmptyState
+            key="private"
+            title={messages.profile.privateTitle}
+            body={messages.profile.privateBody}
+            icon={{ ios: "lock.fill", android: "lock", web: "lock" }}
+          />
+        ) : !activity || !viewed ? (
+          <EmptyState
+            key="missing"
+            title={messages.activity.notFoundTitle}
+            body={messages.activity.notFoundBody}
+          />
+        ) : (
+          [
+            <View key="byline" style={styles.byline}>
+              <CreatorPress userId={activity.creatorId}>
+                <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
+              </CreatorPress>
+              <View style={styles.bylineText}>
+                <CreatorPress userId={activity.creatorId}>
+                  <Text style={styles.creator}>{activity.creatorName}</Text>
+                </CreatorPress>
+                <TypeBadge type={activity.type} />
+              </View>
+              {isOrganizer(activity) ? <EditPencil activityId={activity.id} /> : null}
+            </View>,
+            <Text key="title" style={styles.title}>
+              {activity.title}
+            </Text>,
+            <Text key="body" style={styles.body}>
+              {activity.description}
+            </Text>,
+            activity.lookingFor.length > 0 ? (
+              <LookingForChips key="looking" items={activity.lookingFor} limit={8} />
+            ) : null,
+            <Text key="place" style={styles.meta} lightColor="#536471" darkColor="#71767b">
+              {formatLocation(activity)}
+            </Text>,
+            <Text key="when" style={styles.meta} lightColor="#536471" darkColor="#71767b">
+              {formatActivityWhen(activity)}
+            </Text>,
+            <Text key="people" style={styles.meta} lightColor="#536471" darkColor="#71767b">
+              {formatHeadcount(viewed)} · {formatJoinPolicy(activity.joinPolicy)}
+            </Text>,
+            <ActivityCover key="cover" activity={activity} compact={false} />,
+            <RequestList key="requests" activity={activity} />,
+            <View key="action" style={styles.action}>
+              <JoinButton activity={activity} />
+            </View>,
+          ]
+        )}
+      </Stagger>
+      </Refreshable>
+    </ScreenBlurTarget>
   )
 }
 
@@ -61,9 +100,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingVertical: 20,
-    gap: 10,
   },
   byline: {
     flexDirection: "row",
@@ -72,14 +111,16 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   bylineText: {
+    flex: 1,
     gap: 6,
     backgroundColor: "transparent",
+    alignItems: "flex-start",
   },
   title: {
     fontSize: 26,
     fontWeight: "700",
     lineHeight: 32,
-    marginTop: 4,
+    marginTop: 14,
   },
   creator: {
     fontSize: 15,
@@ -87,15 +128,17 @@ const styles = StyleSheet.create({
   },
   body: {
     marginTop: 8,
+    marginBottom: 10,
     fontSize: 16,
     lineHeight: 22,
   },
   meta: {
+    marginTop: 8,
     fontSize: 14,
     lineHeight: 18,
   },
   action: {
-    marginTop: 8,
+    marginTop: 16,
     alignItems: "flex-end",
     backgroundColor: "transparent",
   },

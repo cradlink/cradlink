@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 export type ToastMessage = {
   title: string
   body?: string
+  tone?: "success" | "error"
 }
 
 type ToastValue = {

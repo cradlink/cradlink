@@ -1,4 +1,4 @@
-import type { User } from "@/lib/types"
+import type { UpdateProfileInput, User } from "@/lib/types"
 
 export type SignUpInput = {
   email: string
@@ -13,9 +13,12 @@ export type SignInInput = {
 
 export type AuthRepo = {
   getCurrentUser(): Promise<User | null>
+  getUser(id: string): Promise<User | null>
+  listUsers(): Promise<User[]>
   signUp(input: SignUpInput): Promise<User>
   signIn(input: SignInInput): Promise<User>
   signInAsDemo(): Promise<User>
+  updateProfile(input: UpdateProfileInput): Promise<User>
   signOut(): Promise<void>
   onAuthChange(cb: (user: User | null) => void): () => void
 }

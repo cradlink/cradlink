@@ -1,21 +1,28 @@
-import { useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Appearance } from "react-native"
-import { DarkTheme, Stack, ThemeProvider, useRouter, useSegments } from "expo-router"
+import { DarkTheme, Stack, ThemeProvider, usePathname, useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { NavigationBar } from "expo-navigation-bar"
 import * as SystemUI from "expo-system-ui"
 import "react-native-reanimated"
 
 import { ActivityPreview } from "@/components/ActivityPreview"
+import { BootScreen } from "@/components/BootScreen"
+import { ParticleField } from "@/components/ParticleField"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
 import { ToastHost } from "@/components/ToastHost"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
+import { onReplayBoot } from "@/lib/boot-preview"
 import { ActivitiesProvider } from "@/hooks/use-activities"
-import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
+import { ActivityPreviewProvider, usePreviewLocksUi } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
+import { ConnectionsProvider } from "@/hooks/use-connections"
+import { useFireflies } from "@/hooks/use-fireflies"
+import { I18nProvider, useI18n } from "@/hooks/use-i18n"
 import { MembershipProvider } from "@/hooks/use-memberships"
+import { NotificationsProvider } from "@/hooks/use-notifications"
 import { ToastProvider } from "@/hooks/use-toast"
 
 Appearance.setColorScheme("dark")
@@ -33,8 +40,8 @@ const cradlinkDark = {
   colors: {
     ...DarkTheme.colors,
     primary: palette.dark.primary,
-    background: palette.dark.background,
-    card: palette.dark.background,
+    background: "transparent",
+    card: "transparent",
     text: palette.dark.foreground,
     border: palette.dark.border,
     notification: palette.dark.primary,
@@ -45,35 +52,54 @@ const cradlinkDark = {
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth()
-  const segments = useSegments()
+  const { ready: localeReady } = useI18n()
+  const pathname = usePathname()
   const router = useRouter()
+  const [bootDone, setBootDone] = useState(false)
+  const finishBoot = useCallback(() => setBootDone(true), [])
+
+  useEffect(() => onReplayBoot(() => setBootDone(false)), [])
 
   useEffect(() => {
     if (!ready) return
-    const inAuth = segments[0] === "(auth)"
+    const inAuth = pathname === "/login" || pathname === "/signup"
     if (!user && !inAuth) {
       router.replace("/login")
     } else if (user && inAuth) {
       router.replace("/")
     }
-  }, [user, ready, segments, router])
+  }, [user, ready, pathname, router])
 
-  if (!ready) {
-    return <View style={{ flex: 1 }} />
-  }
-
-  return children
+  return (
+    <>
+      {ready ? children : <View style={{ flex: 1 }} />}
+      {bootDone ? null : (
+        <BootScreen ready={ready && localeReady} onDone={finishBoot} />
+      )}
+    </>
+  )
 }
 
 function RootNav() {
+  const { messages } = useI18n()
+  const { on: fireflies } = useFireflies()
+  const previewOpen = usePreviewLocksUi()
   return (
     <ThemeProvider value={cradlinkDark}>
+      <View style={{ flex: 1, backgroundColor: palette.dark.background }}>
+      {fireflies ? <ParticleField /> : null}
       <AuthGate>
         <Stack
           screenOptions={{
-            contentStyle: { backgroundColor: palette.dark.background },
-            headerStyle: { backgroundColor: palette.dark.background },
+            contentStyle: { backgroundColor: "transparent" },
+            headerStyle: { backgroundColor: "transparent" },
             headerTintColor: palette.dark.foreground,
+            headerTitleStyle: {
+              fontSize: 20,
+              fontWeight: "800",
+              color: palette.dark.foreground,
+            },
+            headerTitleAlign: "left",
             headerShadowVisible: false,
             animation: "fade",
           }}
@@ -88,33 +114,52 @@ function RootNav() {
               animation: "slide_from_bottom",
             }}
           />
-          <Stack.Screen name="activities/[id]" options={{ title: "Activity" }} />
-          <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
+          <Stack.Screen
+            name="activities/edit/[id]"
+            options={{
+              headerShown: false,
+              presentation: "modal",
+              animation: "slide_from_bottom",
+            }}
+          />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="search" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
+          <Stack.Screen name="activities/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="u/[userId]" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
       <ActivityPreview />
-      <ConfirmModalHost />
+      <ConfirmModalHost active={!previewOpen} />
       <ToastHost />
       <StatusBar style="light" />
       <NavigationBar style="dark" />
+      </View>
     </ThemeProvider>
   )
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <ActivitiesProvider>
-        <MembershipProvider>
-          <ActivityPreviewProvider>
-            <ConfirmProvider>
-              <ToastProvider>
-                <RootNav />
-              </ToastProvider>
-            </ConfirmProvider>
-          </ActivityPreviewProvider>
-        </MembershipProvider>
-      </ActivitiesProvider>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <ActivitiesProvider>
+          <ConnectionsProvider>
+          <MembershipProvider>
+            <NotificationsProvider>
+              <ActivityPreviewProvider>
+                <ConfirmProvider>
+                  <ToastProvider>
+                    <RootNav />
+                  </ToastProvider>
+                </ConfirmProvider>
+              </ActivityPreviewProvider>
+            </NotificationsProvider>
+          </MembershipProvider>
+          </ConnectionsProvider>
+        </ActivitiesProvider>
+      </AuthProvider>
+    </I18nProvider>
   )
 }

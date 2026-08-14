@@ -1,77 +1,46 @@
 import { StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 
-import { Button } from "@/components/Button"
-import { Text, View, useTheme } from "@/components/Themed"
+import { ActivityCard } from "@/components/ActivityCard"
+import { ProfileView } from "@/components/ProfileView"
+import { Refreshable, Stagger } from "@/components/Refreshable"
+import { TopBar } from "@/components/TopBar"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { initials } from "@/lib/initials"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function ProfileScreen() {
   const router = useRouter()
-  const theme = useTheme()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
+  const { activities } = useActivities()
+  const { messages } = useI18n()
 
   if (!user) return null
 
+  const hosted = activities.filter((activity) => activity.creatorId === user.id)
+
   return (
-    <View style={styles.screen}>
-      <View style={[styles.avatar, { backgroundColor: theme.muted, borderColor: theme.border }]}>
-        <Text style={styles.initials}>{initials(user.displayName)}</Text>
-      </View>
-      <Text style={styles.name}>{user.displayName}</Text>
-      <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-        {user.location || user.email}
-      </Text>
-      {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
-      <View style={styles.actions} lightColor="transparent" darkColor="transparent">
-        <Button label="Edit profile" variant="outline" onPress={() => router.push("/profile/edit")} />
-        <Button
-          label="Sign out"
-          variant="ghost"
-          onPress={() => {
-            void signOut()
-          }}
-        />
-      </View>
-    </View>
+    <ScreenBlurTarget style={styles.screen}>
+      <TopBar title={messages.profile.title} onSettings={() => router.push("/settings")} />
+      <Refreshable contentContainerStyle={styles.list}>
+        <Stagger>
+          <ProfileView key="hero" user={user} isSelf hostedCount={hosted.length} />
+          {hosted.map((activity) => (
+            <ActivityCard key={activity.id} activity={activity} />
+          ))}
+        </Stagger>
+      </Refreshable>
+    </ScreenBlurTarget>
   )
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
   },
-  avatar: {
-    height: 72,
-    width: 72,
-    borderRadius: 36,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  initials: {
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  name: {
-    marginTop: 16,
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  meta: {
-    marginTop: 4,
-    fontSize: 15,
-  },
-  bio: {
-    marginTop: 12,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  actions: {
-    marginTop: 24,
-    gap: 8,
-    backgroundColor: "transparent",
+  list: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
 })
