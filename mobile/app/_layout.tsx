@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Appearance } from "react-native"
-import { DarkTheme, Stack, ThemeProvider, useRouter, useSegments } from "expo-router"
+import { DarkTheme, Stack, ThemeProvider, usePathname, useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { NavigationBar } from "expo-navigation-bar"
 import * as SystemUI from "expo-system-ui"
@@ -17,7 +17,6 @@ import { onReplayBoot } from "@/lib/boot-preview"
 import { ActivitiesProvider } from "@/hooks/use-activities"
 import { ActivityPreviewProvider, usePreviewLocksUi } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
-import { BlurTargetProvider } from "@/hooks/use-blur-target"
 import { ConfirmProvider } from "@/hooks/use-confirm"
 import { ConnectionsProvider } from "@/hooks/use-connections"
 import { useFireflies } from "@/hooks/use-fireflies"
@@ -54,7 +53,7 @@ const cradlinkDark = {
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth()
   const { ready: localeReady } = useI18n()
-  const segments = useSegments()
+  const pathname = usePathname()
   const router = useRouter()
   const [bootDone, setBootDone] = useState(false)
   const finishBoot = useCallback(() => setBootDone(true), [])
@@ -63,13 +62,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready) return
-    const inAuth = segments[0] === "(auth)"
+    const inAuth = pathname === "/login" || pathname === "/signup"
     if (!user && !inAuth) {
       router.replace("/login")
     } else if (user && inAuth) {
       router.replace("/")
     }
-  }, [user, ready, segments, router])
+  }, [user, ready, pathname, router])
 
   return (
     <>
@@ -87,7 +86,6 @@ function RootNav() {
   const previewOpen = usePreviewLocksUi()
   return (
     <ThemeProvider value={cradlinkDark}>
-      <BlurTargetProvider>
       <View style={{ flex: 1, backgroundColor: palette.dark.background }}>
       {fireflies ? <ParticleField /> : null}
       <AuthGate>
@@ -138,7 +136,6 @@ function RootNav() {
       <StatusBar style="light" />
       <NavigationBar style="dark" />
       </View>
-      </BlurTargetProvider>
     </ThemeProvider>
   )
 }

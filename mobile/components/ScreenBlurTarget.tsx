@@ -1,8 +1,4 @@
-import { useRef } from "react"
-import { StyleSheet, type StyleProp, type View, type ViewStyle } from "react-native"
-import { BlurTargetView } from "expo-blur"
-
-import { useRegisterBlurTarget } from "@/hooks/use-blur-target"
+import { View, type StyleProp, type ViewStyle } from "react-native"
 
 export function ScreenBlurTarget({
   children,
@@ -11,17 +7,5 @@ export function ScreenBlurTarget({
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
 }) {
-  const ref = useRef<View | null>(null)
-  useRegisterBlurTarget(ref)
-  return (
-    <BlurTargetView ref={ref} collapsable={false} style={[styles.fill, style]}>
-      {children}
-    </BlurTargetView>
-  )
+  return <View style={[{ flex: 1 }, style]}>{children}</View>
 }
-
-const styles = StyleSheet.create({
-  fill: {
-    flex: 1,
-  },
-})

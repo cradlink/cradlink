@@ -4,41 +4,33 @@ import {
   Dimensions,
   Modal,
   PanResponder,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View as RNView,
 } from "react-native"
-import { BlurView } from "expo-blur"
-import { SymbolView } from "expo-symbols"
+import { LinearGradient } from "expo-linear-gradient"
 import Animated, {
   Easing,
   Extrapolation,
   interpolate,
   runOnJS,
-  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated"
 
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
-
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
 import { ActivityCover } from "@/components/ActivityCover"
-import { GLASS_FROST, GlassFade } from "@/components/GlassFade"
 import { Avatar } from "@/components/Avatar"
 import { CreatorPress } from "@/components/CreatorPress"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { RequestList } from "@/components/RequestList"
 import { TypeBadge } from "@/components/TypeBadge"
-import { Text, View, useTheme } from "@/components/Themed"
+import { Text, View } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
-import { useBlurTarget } from "@/hooks/use-blur-target"
 import { useConfirm } from "@/hooks/use-confirm"
-import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 
@@ -49,17 +41,15 @@ const TARGET_X = (SCREEN_W - TARGET_W) / 2
 const TARGET_Y = (SCREEN_H - TARGET_H) / 2
 const OPEN = { duration: 400, easing: Easing.bezier(0.16, 1, 0.3, 1) }
 const CLOSE = { duration: 320, easing: Easing.bezier(0.4, 0, 0.2, 1) }
-
+const SHEET_BG = "#16181c"
+const FADE_H = 72
 
 export function ActivityPreview() {
-  const theme = useTheme()
   const { preview, close, registerCloser, hidden } = useActivityPreview()
   const { prompt, dismiss: dismissConfirm } = useConfirm()
-  const { messages } = useI18n()
   const wasAway = useRef(false)
   const scrollOffset = useRef(0)
   const { decorate } = useMemberships()
-  const blurTarget = useBlurTarget()
   const progress = useSharedValue(0)
   const dragY = useSharedValue(0)
   const fromX = useSharedValue(0)
@@ -129,21 +119,11 @@ export function ActivityPreview() {
   }, [hidden, preview, progress])
 
   const fade = useAnimatedStyle(() => ({
-    opacity: progress.value * interpolate(dragY.value, [0, 240], [1, 0.2], Extrapolation.CLAMP),
-  }))
-
-  const glassAmount = () =>
-    progress.value * interpolate(dragY.value, [0, 240], [1, 0.15], Extrapolation.CLAMP)
-
-  const glassProps = useAnimatedProps(() => ({
-    intensity: interpolate(glassAmount(), [0, 1], [1, 56]),
-  }))
-
-  const veilProps = useAnimatedProps(() => ({
-    intensity: interpolate(glassAmount(), [0, 1], [1, 12]),
+    opacity: progress.value * interpolate(dragY.value, [0, 240], [1, 0.25], Extrapolation.CLAMP),
   }))
 
   const cardStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
     transform: [
       { translateX: interpolate(progress.value, [0, 1], [fromX.value, 0]) },
       { translateY: interpolate(progress.value, [0, 1], [fromY.value, 0]) + dragY.value },
@@ -187,61 +167,34 @@ export function ActivityPreview() {
       statusBarTranslucent
       onRequestClose={requestClose}
     >
-    <RNView style={styles.layer} pointerEvents="auto" collapsable={false}>
-      <Animated.View style={[styles.backdrop, fade]} pointerEvents="auto">
-        <Pressable
-          style={styles.fill}
-          onPress={dismiss}
-          onMoveShouldSetResponder={() => true}
-          onResponderRelease={dismiss}
-        >
-          {Platform.OS === "ios" ? (
-            <AnimatedBlurView
-              animatedProps={veilProps}
-              tint="systemThinMaterialDark"
-              style={styles.fill}
-            />
-          ) : null}
-          <RNView style={styles.dim} pointerEvents="none" />
-        </Pressable>
-      </Animated.View>
+      <RNView style={styles.layer} pointerEvents="auto" collapsable={false}>
+        <Animated.View style={[styles.backdrop, fade]} pointerEvents="auto">
+          <Pressable
+            style={styles.fill}
+            onPress={dismiss}
+            onMoveShouldSetResponder={() => true}
+            onResponderRelease={dismiss}
+          >
+            <RNView style={styles.dim} pointerEvents="none" />
+          </Pressable>
+        </Animated.View>
 
-      <Animated.View
-        style={[styles.sheet, { borderColor: "rgba(231,233,234,0.14)" }, cardStyle]}
-        pointerEvents="auto"
-        {...sheetPan.panHandlers}
-      >
-        <AnimatedBlurView
-          animatedProps={glassProps}
-          tint="systemThinMaterialDark"
-          blurMethod={blurTarget ? "dimezisBlurView" : "none"}
-          blurTarget={blurTarget ?? undefined}
-          blurReductionFactor={2}
-          style={styles.glass}
-        />
-        <Animated.View style={[styles.frost, { backgroundColor: GLASS_FROST }, fade]} pointerEvents="none" />
-        <RNView style={styles.handleWrap} {...sheetPan.panHandlers}>
-          <RNView style={styles.handle} />
-        </RNView>
-        <Pressable onPress={dismiss} style={styles.close} hitSlop={20} accessibilityLabel={messages.common.close}>
-          <SymbolView
-            name={{ ios: "xmark", android: "close", web: "close" }}
-            tintColor={theme.foreground}
-            size={18}
-          />
-        </Pressable>
-        <Animated.View style={[styles.column, fade]}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          keyboardShouldPersistTaps="handled"
-          onScroll={(event) => {
-            scrollOffset.current = event.nativeEvent.contentOffset.y
-          }}
-          scrollEventThrottle={16}
+        <Animated.View
+          style={[styles.sheet, cardStyle]}
+          pointerEvents="auto"
+          {...sheetPan.panHandlers}
         >
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            onScroll={(event) => {
+              scrollOffset.current = event.nativeEvent.contentOffset.y
+            }}
+            scrollEventThrottle={16}
+          >
             <View style={styles.byline}>
               <CreatorPress userId={activity.creatorId}>
                 <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
@@ -269,15 +222,19 @@ export function ActivityPreview() {
             </Text>
             <ActivityCover activity={activity} compact={false} />
           </ScrollView>
-          </Animated.View>
-          <Animated.View style={[styles.footer, fade]}>
-            <GlassFade />
+          <RNView style={styles.footer}>
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(22,24,28,0)", "rgba(22,24,28,0.72)", SHEET_BG]}
+              locations={[0, 0.55, 1]}
+              style={styles.fade}
+            />
             <RequestList activity={activity} compact />
             <JoinButton activity={activity} wide />
-          </Animated.View>
-      </Animated.View>
-      <ConfirmModalHost />
-    </RNView>
+          </RNView>
+        </Animated.View>
+        <ConfirmModalHost />
+      </RNView>
     </Modal>
   )
 }
@@ -299,66 +256,25 @@ const styles = StyleSheet.create({
     left: 0,
   },
   dim: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0,0,0,0.16)",
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
   sheet: {
     width: TARGET_W,
     height: TARGET_H,
     borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#2f3336",
     overflow: "hidden",
-    backgroundColor: "transparent",
-  },
-  glass: {
-    ...StyleSheet.absoluteFill,
-  },
-  frost: {
-    ...StyleSheet.absoluteFill,
-  },
-  handleWrap: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 48,
-    height: 40,
-    zIndex: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(231,233,234,0.28)",
-  },
-  close: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 3,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.32)",
-  },
-  column: {
-    flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: SHEET_BG,
   },
   scroll: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: SHEET_BG,
   },
   content: {
     padding: 20,
-    paddingTop: 32,
+    paddingTop: 24,
     paddingBottom: 28,
     gap: 10,
   },
@@ -399,6 +315,13 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 16,
     gap: 12,
-    backgroundColor: "transparent",
+    backgroundColor: SHEET_BG,
+  },
+  fade: {
+    position: "absolute",
+    top: -FADE_H,
+    left: 0,
+    right: 0,
+    height: FADE_H,
   },
 })
