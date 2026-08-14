@@ -96,6 +96,12 @@ function notificationCopy(item: AppNotification, m: Messages, activity: Activity
       return { title: tx(m.notifications.declinedTitle, { title }), body: m.notifications.declinedBody }
     case "updated":
       return { title: tx(m.notifications.updatedTitle, { title }), body: m.notifications.updatedBody }
+    case "follow":
+      return { title: tx(m.notifications.followTitle, { name }), body: m.notifications.followBody }
+    case "follow_request":
+      return { title: tx(m.notifications.followRequestTitle, { name }), body: m.notifications.followRequestBody }
+    case "follow_accepted":
+      return { title: tx(m.notifications.followAcceptedTitle, { name }), body: m.notifications.followAcceptedBody }
     case "reminder":
       return {
         title,

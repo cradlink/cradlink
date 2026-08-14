@@ -1,6 +1,5 @@
 import { useEffect } from "react"
-import { Dimensions, Modal, Pressable, StyleSheet, View } from "react-native"
-import { BlurView } from "expo-blur"
+import { BackHandler, Dimensions, Pressable, StyleSheet, View } from "react-native"
 import Animated, {
   Easing,
   interpolate,
@@ -33,7 +32,12 @@ export function ConfirmModalHost() {
     }
     progress.value = 0
     progress.value = withTiming(1, OPEN)
-  }, [progress, prompt])
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      dismiss()
+      return true
+    })
+    return () => sub.remove()
+  }, [dismiss, progress, prompt])
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, 1]),
@@ -62,18 +66,16 @@ export function ConfirmModalHost() {
   }
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
-      <View style={styles.screen} pointerEvents="box-none">
-        <Animated.View style={[styles.backdrop, backdropStyle]}>
-          <Pressable style={styles.fill} onPress={() => finish(dismiss)}>
-            <BlurView intensity={48} tint="dark" blurMethod="none" style={styles.fill} />
-            <View style={styles.dim} pointerEvents="none" />
-          </Pressable>
-        </Animated.View>
-        <Animated.View
-          style={[styles.card, { borderColor: theme.border }, cardStyle]}
-          pointerEvents="auto"
-        >
+    <View style={styles.screen} pointerEvents="box-none">
+      <Animated.View style={[styles.backdrop, backdropStyle]}>
+        <Pressable style={styles.fill} onPress={() => finish(dismiss)}>
+          <View style={styles.dim} pointerEvents="none" />
+        </Pressable>
+      </Animated.View>
+      <Animated.View
+        style={[styles.card, { borderColor: theme.border }, cardStyle]}
+        pointerEvents="auto"
+      >
           <Text style={styles.title}>{prompt.title}</Text>
           <Text style={styles.body} lightColor="#536471" darkColor="#71767b">
             {prompt.body}
@@ -108,15 +110,14 @@ export function ConfirmModalHost() {
             <Text style={styles.actionLabel}>{prompt.cancelLabel ?? messages.common.cancel}</Text>
           </Pressable>
         </Animated.View>
-      </View>
-    </Modal>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
-    width: SCREEN_W,
+    ...StyleSheet.absoluteFill,
+    zIndex: 80,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -11,6 +11,13 @@ export default function ProfileStack() {
         contentStyle: { backgroundColor: palette.dark.background },
         headerStyle: { backgroundColor: palette.dark.background },
         headerTintColor: palette.dark.foreground,
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "800",
+          letterSpacing: -0.4,
+          color: palette.dark.foreground,
+        },
+        headerTitleAlign: "left",
         headerShadowVisible: false,
         animation: "fade",
       }}

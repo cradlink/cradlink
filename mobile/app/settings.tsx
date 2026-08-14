@@ -9,7 +9,7 @@ import { LOCALES, type Locale } from "@/lib/i18n"
 
 export default function SettingsScreen() {
   const theme = useTheme()
-  const { user, signOut } = useAuth()
+  const { user, signOut, updateProfile } = useAuth()
   const { locale, setLocale, messages } = useI18n()
 
   return (
@@ -23,6 +23,34 @@ export default function SettingsScreen() {
         </Text>
         <Text key="email" style={styles.email} lightColor="#536471" darkColor="#71767b">
           {user?.email}
+        </Text>
+        <Text key="vis" style={[styles.kicker, styles.langKicker]} lightColor="#536471" darkColor="#71767b">
+          {messages.settings.visibility}
+        </Text>
+        <View key="vis-opts" style={styles.langs} lightColor="transparent" darkColor="transparent">
+          <LanguageRow
+            label={messages.settings.visibilityPublic}
+            selected={user?.visibility !== "private"}
+            onPress={() => {
+              if (user?.visibility !== "public") void updateProfile({ visibility: "public" })
+            }}
+            border={theme.border}
+            foreground={theme.foreground}
+            muted={theme.mutedForeground}
+          />
+          <LanguageRow
+            label={messages.settings.visibilityPrivate}
+            selected={user?.visibility === "private"}
+            onPress={() => {
+              if (user?.visibility !== "private") void updateProfile({ visibility: "private" })
+            }}
+            border={theme.border}
+            foreground={theme.foreground}
+            muted={theme.mutedForeground}
+          />
+        </View>
+        <Text key="vis-hint" style={styles.hint} lightColor="#536471" darkColor="#71767b">
+          {messages.settings.visibilityHint}
         </Text>
         <Text key="lang" style={[styles.kicker, styles.langKicker]} lightColor="#536471" darkColor="#71767b">
           {messages.settings.language}
@@ -96,6 +124,11 @@ const styles = StyleSheet.create({
   email: {
     marginTop: 4,
     fontSize: 15,
+  },
+  hint: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 18,
   },
   langKicker: {
     marginTop: 32,

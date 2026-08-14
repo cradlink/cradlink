@@ -8,6 +8,7 @@ import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
+import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 
 export default function PublicProfileScreen() {
@@ -17,13 +18,15 @@ export default function PublicProfileScreen() {
   const { user, getUser, reload } = useAuth()
   const { messages } = useI18n()
   const { activities } = useActivities()
+  const { canSeeActivities } = useConnections()
   const person = userId ? getUser(userId) : null
-  const hosted = person ? activities.filter((activity) => activity.creatorId === person.id) : []
+  const visible = person ? canSeeActivities(person) : false
+  const hosted = person && visible ? activities.filter((activity) => activity.creatorId === person.id) : []
   const isSelf = Boolean(person && user?.id === person.id)
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: person?.displayName ?? messages.tabs.profile })
-  }, [messages.tabs.profile, navigation, person?.displayName])
+    navigation.setOptions({ title: messages.profile.title })
+  }, [messages.profile.title, navigation])
 
   useEffect(() => {
     if (userId && !getUser(userId)) void reload()
@@ -42,8 +45,21 @@ export default function PublicProfileScreen() {
           <EmptyState key="missing" title={messages.profile.missingTitle} body={messages.profile.missingBody} />
         ) : (
           [
-            <ProfileView key="hero" user={person} hostedCount={hosted.length} />,
-            ...hosted.map((activity) => <ActivityCard key={activity.id} activity={activity} />),
+            <ProfileView
+              key="hero"
+              user={person}
+              hostedCount={activities.filter((activity) => activity.creatorId === person.id).length}
+            />,
+            ...(visible
+              ? hosted.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
+              : [
+                  <EmptyState
+                    key="private"
+                    title={messages.profile.privateTitle}
+                    body={messages.profile.privateBody}
+                    icon={{ ios: "lock.fill", android: "lock", web: "lock" }}
+                  />,
+                ]),
           ]
         )}
       </Stagger>

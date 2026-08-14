@@ -47,6 +47,7 @@ function mapUser(id: string, data: DocumentData): User {
     skills: Array.isArray(data.skills) ? data.skills : [],
     avatarUrl: (data.avatarUrl as string | null) ?? null,
     location: asString(data.location),
+    visibility: data.visibility === "private" ? "private" : "public",
     createdAt: asString(data.createdAt, nowIso()),
     updatedAt: asString(data.updatedAt, nowIso()),
   };

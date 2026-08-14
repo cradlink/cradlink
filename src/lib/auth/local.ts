@@ -59,6 +59,7 @@ export const localAuth: AuthRepo = {
       skills: [],
       avatarUrl: null,
       location: "",
+      visibility: "public",
       createdAt: timestamp,
       updatedAt: timestamp,
       passwordHash: await hashPassword(password),

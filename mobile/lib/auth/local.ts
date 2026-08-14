@@ -25,7 +25,7 @@ function nowIso() {
 
 function publicUser(stored: StoredUser): User {
   const { passwordHash: _, ...user } = stored
-  return user
+  return { ...user, visibility: user.visibility ?? "public" }
 }
 
 async function loadUsers(): Promise<Record<string, StoredUser>> {
@@ -60,6 +60,7 @@ function stub(
     skills,
     avatarUrl: null,
     location,
+    visibility: "public",
     createdAt: timestamp,
     updatedAt: timestamp,
     passwordHash: hashPassword(password),
@@ -122,6 +123,12 @@ async function ensureSeed() {
       dirty = true
     }
   }
+  for (const stored of Object.values(users)) {
+    if (!stored.visibility) {
+      stored.visibility = stored.id === "user_ana" || stored.id === "user_nina" ? "private" : "public"
+      dirty = true
+    }
+  }
   if (dirty) await saveUsers(users)
   return users
 }
@@ -165,6 +172,7 @@ export const localAuth: AuthRepo = {
       location: input.location !== undefined ? input.location.trim() : stored.location,
       skills: input.skills ?? stored.skills,
       avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl : stored.avatarUrl,
+      visibility: input.visibility ?? stored.visibility ?? "public",
       updatedAt: nowIso(),
     }
     await saveUsers(users)
@@ -195,6 +203,7 @@ export const localAuth: AuthRepo = {
       skills: [],
       avatarUrl: null,
       location: "",
+      visibility: "public",
       createdAt: timestamp,
       updatedAt: timestamp,
       passwordHash: hashPassword(password),

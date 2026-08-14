@@ -46,6 +46,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       skills: [],
       avatarUrl: fbUser.photoURL,
       location: "",
+      visibility: "public",
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -62,6 +63,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
     skills: (data.skills as string[]) || [],
     avatarUrl: (data.avatarUrl as string | null) ?? fbUser.photoURL,
     location: (data.location as string) || "",
+    visibility: data.visibility === "private" ? "private" : "public",
     createdAt: typeof data.createdAt === "string" ? data.createdAt : nowIso(),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : nowIso(),
   };

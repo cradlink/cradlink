@@ -15,6 +15,7 @@ import { ActivitiesProvider } from "@/hooks/use-activities"
 import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
+import { ConnectionsProvider } from "@/hooks/use-connections"
 import { I18nProvider, useI18n } from "@/hooks/use-i18n"
 import { MembershipProvider } from "@/hooks/use-memberships"
 import { NotificationsProvider } from "@/hooks/use-notifications"
@@ -71,12 +72,20 @@ function RootNav() {
   const { messages } = useI18n()
   return (
     <ThemeProvider value={cradlinkDark}>
+      <View style={{ flex: 1 }}>
       <AuthGate>
         <Stack
           screenOptions={{
             contentStyle: { backgroundColor: palette.dark.background },
             headerStyle: { backgroundColor: palette.dark.background },
             headerTintColor: palette.dark.foreground,
+            headerTitleStyle: {
+              fontSize: 20,
+              fontWeight: "800",
+              letterSpacing: -0.4,
+              color: palette.dark.foreground,
+            },
+            headerTitleAlign: "left",
             headerShadowVisible: false,
             animation: "fade",
           }}
@@ -102,8 +111,9 @@ function RootNav() {
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="search" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ title: messages.settings.title }} />
+          <Stack.Screen name="follow-requests" options={{ title: messages.profile.requestsTitle }} />
           <Stack.Screen name="activities/[id]" options={{ title: messages.common.activity }} />
-          <Stack.Screen name="u/[userId]" options={{ title: messages.tabs.profile }} />
+          <Stack.Screen name="u/[userId]" options={{ title: messages.profile.title }} />
         </Stack>
       </AuthGate>
       <ActivityPreview />
@@ -111,6 +121,7 @@ function RootNav() {
       <ToastHost />
       <StatusBar style="light" />
       <NavigationBar style="dark" />
+      </View>
     </ThemeProvider>
   )
 }
@@ -120,6 +131,7 @@ export default function RootLayout() {
     <I18nProvider>
       <AuthProvider>
         <ActivitiesProvider>
+          <ConnectionsProvider>
           <MembershipProvider>
             <NotificationsProvider>
               <ActivityPreviewProvider>
@@ -131,6 +143,7 @@ export default function RootLayout() {
               </ActivityPreviewProvider>
             </NotificationsProvider>
           </MembershipProvider>
+          </ConnectionsProvider>
         </ActivitiesProvider>
       </AuthProvider>
     </I18nProvider>

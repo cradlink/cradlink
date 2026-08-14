@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated"
 
+import { ConfirmModalHost } from "@/components/ConfirmDialog"
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
 import { CreatorPress } from "@/components/CreatorPress"
@@ -182,6 +183,7 @@ export function ActivityPreview() {
             <JoinButton activity={activity} wide />
           </RNView>
         </Animated.View>
+        <ConfirmModalHost />
       </RNView>
     </Modal>
   )
