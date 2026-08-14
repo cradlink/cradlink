@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -23,7 +24,6 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { useToast } from "@/hooks/use-toast"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import { presetsForType, resolveBannerKey } from "@/lib/banners"
-import { searchPlaces, type PlaceHit } from "@/lib/geocode"
 import {
   ACTIVITY_TYPES,
   type ActivityType,
@@ -52,11 +52,6 @@ export default function NewActivityScreen() {
   const [image, setImage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [placeHits, setPlaceHits] = useState<PlaceHit[]>([])
-  const cityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const cityAbort = useRef<AbortController | null>(null)
-  const skipCitySearch = useRef(false)
-  const scrollRef = useRef<ScrollView>(null)
 
   const dirty = title.trim().length > 0 || description.trim().length > 0 || image != null
   const canPost = title.trim().length >= 3 && description.trim().length >= 10 && !busy
@@ -71,41 +66,6 @@ export default function NewActivityScreen() {
         .filter(Boolean),
     [lookingFor],
   )
-
-  useEffect(() => {
-    if (cityTimer.current) clearTimeout(cityTimer.current)
-    cityAbort.current?.abort()
-    if (skipCitySearch.current) {
-      skipCitySearch.current = false
-      return
-    }
-    const q = city.trim()
-    if (place === "online" || q.length < 2) {
-      setPlaceHits([])
-      return
-    }
-    cityTimer.current = setTimeout(() => {
-      const ctrl = new AbortController()
-      cityAbort.current = ctrl
-      void searchPlaces(q, ctrl.signal)
-        .then((hits) => {
-          if (!ctrl.signal.aborted) setPlaceHits(hits)
-        })
-        .catch(() => {
-          if (!ctrl.signal.aborted) setPlaceHits([])
-        })
-    }, 280)
-    return () => {
-      if (cityTimer.current) clearTimeout(cityTimer.current)
-      cityAbort.current?.abort()
-    }
-  }, [city, place])
-
-  function choosePlace(hit: PlaceHit) {
-    skipCitySearch.current = true
-    setCity(hit.label)
-    setPlaceHits([])
-  }
 
   function setTypeAndMaybeClear(next: ActivityType) {
     setType(next)
@@ -127,6 +87,14 @@ export default function NewActivityScreen() {
       destructive: true,
       onConfirm: () => router.back(),
     })
+  }
+
+  function openMaps() {
+    const q = city.trim()
+    const url = q
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+      : "https://www.google.com/maps"
+    void Linking.openURL(url)
   }
 
   async function pickOwn() {
@@ -186,9 +154,8 @@ export default function NewActivityScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
-          ref={scrollRef}
-          keyboardShouldPersistTaps="always"
-          keyboardDismissMode="none"
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           contentContainerStyle={styles.body}
         >
           <View style={styles.compose}>
@@ -311,34 +278,25 @@ export default function NewActivityScreen() {
             })}
           </View>
           {place !== "online" ? (
-            <View style={styles.cityWrap}>
+            <View style={styles.addressRow}>
               <TextInput
                 value={city}
                 onChangeText={setCity}
-                placeholder="City"
+                placeholder="Exact address"
                 placeholderTextColor={theme.mutedForeground}
                 keyboardAppearance="dark"
                 selectionColor={theme.primary}
                 autoCorrect={false}
-                autoCapitalize="words"
                 style={[styles.city, { color: theme.foreground, borderBottomColor: theme.border }]}
               />
-              {placeHits.length > 0 ? (
-                <View style={[styles.suggest, { borderColor: theme.border }]}>
-                  {placeHits.map((hit) => (
-                    <Pressable
-                      key={hit.id}
-                      onPressIn={() => choosePlace(hit)}
-                      style={styles.suggestRow}
-                    >
-                      <Text style={styles.suggestName}>{hit.name}</Text>
-                      <Text style={styles.suggestMeta} lightColor="#536471" darkColor="#71767b">
-                        {[hit.admin1, hit.country].filter(Boolean).join(", ")}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
+              <Pressable onPress={openMaps} hitSlop={8} style={styles.mapBtn} accessibilityLabel="Open Google Maps">
+                <SymbolView
+                  name={{ ios: "map", android: "map", web: "map" }}
+                  tintColor={theme.primary}
+                  size={20}
+                />
+                <Text style={[styles.mapLabel, { color: theme.primary }]}>Maps</Text>
+              </Pressable>
             </View>
           ) : null}
 
@@ -510,34 +468,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  cityWrap: {
-    zIndex: 4,
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   city: {
+    flex: 1,
     marginTop: 8,
     fontSize: 15,
     paddingVertical: 6,
     paddingHorizontal: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  suggest: {
+  mapBtn: {
     marginTop: 8,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: "#16181c",
-    overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
   },
-  suggestRow: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 2,
-  },
-  suggestName: {
-    fontSize: 15,
+  mapLabel: {
+    fontSize: 14,
     fontWeight: "700",
-  },
-  suggestMeta: {
-    fontSize: 12,
   },
   bannerSlot: {
     alignSelf: "stretch",
