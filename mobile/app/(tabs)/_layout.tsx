@@ -43,7 +43,7 @@ export default function TabLayout() {
           title: "My activities",
           tabBarIcon: ({ color }) => (
             <SymbolView
-              name={{ ios: "calendar", android: "calendar-today", web: "calendar-today" }}
+              name={{ ios: "calendar", android: "calendar_today", web: "calendar_today" }}
               tintColor={color}
               size={26}
             />

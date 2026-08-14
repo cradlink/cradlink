@@ -28,20 +28,18 @@ export type ThemeColors = (typeof palette)[ThemeName]
 
 const Colors = {
   light: {
+    ...palette.light,
     text: palette.light.foreground,
-    background: palette.light.background,
     tint: palette.light.primary,
     tabIconDefault: palette.light.mutedForeground,
     tabIconSelected: palette.light.primary,
-    ...palette.light,
   },
   dark: {
+    ...palette.dark,
     text: palette.dark.foreground,
-    background: palette.dark.background,
     tint: palette.dark.primary,
     tabIconDefault: palette.dark.mutedForeground,
     tabIconSelected: palette.dark.primary,
-    ...palette.dark,
   },
 }
 

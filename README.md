@@ -2,7 +2,7 @@
 
 Find people. Do the thing.
 
-Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is this React (Vite) app. Phase 2 (later) is Expo, same Firebase project.
+Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is this React (Vite) app. Phase 2 is the Expo app in [`mobile/`](./mobile). Same Firebase project later.
 
 ## Run it
 
@@ -22,6 +22,18 @@ Demo account:
 - Email: `marko@cradlink.com`
 - Password: `demo1234`
 - **Continue as Marko Njegomir** (local mode) signs in as Marko.
+
+## Mobile
+
+Separate Expo / React Native project. From the repo root:
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+See [`mobile/README.md`](./mobile/README.md).
 
 ## What works
 
