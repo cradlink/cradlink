@@ -21,6 +21,8 @@ export function notificationCopy(item: AppNotification) {
       return { lead: name, rest: " requested to follow you." };
     case "followed":
       return { lead: name, rest: " started following you." };
+    case "kicked":
+      return { lead: "Removed", rest: ` from ${item.activityTitle}` };
     case "reminder_day":
       return { lead: "Tomorrow", rest: ` · ${item.activityTitle}` };
     case "reminder_hour":

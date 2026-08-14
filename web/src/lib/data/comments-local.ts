@@ -3,7 +3,7 @@ import { localActivities, localMembers, localUsers } from "@/lib/data/local";
 import { localNotifications } from "@/lib/data/notifications-local";
 import { notifyDiscussion } from "@/lib/data/notify";
 import { AppError } from "@/lib/errors";
-import { COMMENT_MAX_LENGTH, type ActivityComment } from "@/lib/types";
+import { COMMENT_MAX_LENGTH, isCommentDeleted, type ActivityComment } from "@/lib/types";
 import { createId, nowIso } from "@/lib/utils";
 
 const KEY = "cl_comments";
@@ -80,5 +80,25 @@ export const localComments: CommentsRepo = {
     save(rows);
     void notifyDiscussion(localNotifications, activity, comment, parent);
     return comment;
+  },
+
+  async remove(activityId, commentId, actorId) {
+    const activity = await localActivities.getById(activityId);
+    if (!activity) throw new AppError("Activity not found.");
+    const rows = load();
+    const current = rows[commentId];
+    if (!current || current.activityId !== activityId) throw new AppError("That reply is gone.");
+    if (isCommentDeleted(current)) return current;
+    if (activity.creatorId !== actorId && current.authorId !== actorId) {
+      throw new AppError("You can only delete your own replies.");
+    }
+    const next: ActivityComment = {
+      ...current,
+      deletedAt: nowIso(),
+      deletedBy: actorId,
+    };
+    rows[commentId] = next;
+    save(rows);
+    return next;
   },
 };

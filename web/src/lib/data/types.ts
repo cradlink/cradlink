@@ -37,6 +37,7 @@ export type MembersRepo = {
   leave(activityId: string, userId: string): Promise<Activity>;
   accept(activityId: string, userId: string, actorId: string): Promise<Activity>;
   decline(activityId: string, userId: string, actorId: string): Promise<Activity>;
+  kick(activityId: string, userId: string, actorId: string): Promise<Activity>;
 };
 
 export type StorageRepo = {
@@ -75,4 +76,5 @@ export type CommentsRepo = {
   listByActivity(activityId: string): Promise<ActivityComment[]>;
   getById(id: string): Promise<ActivityComment | null>;
   create(input: CreateCommentInput): Promise<ActivityComment>;
+  remove(activityId: string, commentId: string, actorId: string): Promise<ActivityComment>;
 };

@@ -16,7 +16,7 @@ import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
 import { AppError } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
-import { notifyActivityEdited, notifyDecision, notifyJoin } from "@/lib/data/notify";
+import { notifyActivityEdited, notifyDecision, notifyJoin, notifyKicked } from "@/lib/data/notify";
 import { defaultHeadcount, hardCap, isActivityFull, statusForCapacity } from "@/lib/headcount";
 import type {
   Activity,
@@ -414,6 +414,37 @@ export const firebaseMembers: MembersRepo = {
       const status = activity.status === "full" ? "open" : activity.status;
       tx.update(actRef, { memberCount, status, updatedAt: timestamp });
       return { ...activity, memberCount, status, updatedAt: timestamp };
+    });
+  },
+
+  async kick(activityId, userId, actorId) {
+    const db = getFirebaseDb();
+    return runTransaction(db, async (tx) => {
+      const actRef = doc(db, "activities", activityId);
+      const memRef = doc(db, "activityMembers", memberId(activityId, userId));
+      const actSnap = await tx.get(actRef);
+      if (!actSnap.exists()) throw new AppError("Activity not found.");
+      const activity = mapActivity(actSnap.id, actSnap.data());
+      if (activity.creatorId !== actorId) throw new AppError("Only the organizer can remove people.");
+      if (activity.creatorId === userId) throw new AppError("You can’t remove yourself.");
+      const memSnap = await tx.get(memRef);
+      if (!memSnap.exists() || (memSnap.data().status !== "joined" && memSnap.data().status !== "pending")) {
+        throw new AppError("They aren’t in this one.");
+      }
+      const timestamp = nowIso();
+      const wasJoined = memSnap.data().status === "joined";
+      tx.delete(memRef);
+      if (!wasJoined) {
+        tx.update(actRef, { updatedAt: timestamp });
+        return { ...activity, updatedAt: timestamp };
+      }
+      const memberCount = Math.max(1, activity.memberCount - 1);
+      const status = activity.status === "full" ? "open" : activity.status;
+      tx.update(actRef, { memberCount, status, updatedAt: timestamp });
+      return { ...activity, memberCount, status, updatedAt: timestamp };
+    }).then(async (activity) => {
+      void notifyKicked(firebaseNotifications, activity, userId);
+      return activity;
     });
   },
 

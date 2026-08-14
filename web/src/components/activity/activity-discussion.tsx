@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { ArrowLeft, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActivityComments, useCreateComment } from "@/hooks/use-comments";
+import { useActivityComments, useCreateComment, useRemoveComment } from "@/hooks/use-comments";
 import { errorMessage } from "@/lib/errors";
 import { formatCompactTime, handleFromName } from "@/lib/format";
-import { COMMENT_MAX_LENGTH, type Activity, type ActivityComment, type User } from "@/lib/types";
+import {
+  COMMENT_MAX_LENGTH,
+  isCommentDeleted,
+  type Activity,
+  type ActivityComment,
+  type User,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type CommentNode = ActivityComment & { replies: CommentNode[] };
@@ -175,6 +182,7 @@ function CommentItem({
   lineAbove = false,
   lineBelow = false,
   canReply,
+  canDelete,
   replyOpen,
   user,
   busy,
@@ -182,6 +190,7 @@ function CommentItem({
   onReply,
   onCancelReply,
   onSubmitReply,
+  onDelete,
 }: {
   node: CommentNode;
   parentName?: string;
@@ -190,6 +199,7 @@ function CommentItem({
   lineAbove?: boolean;
   lineBelow?: boolean;
   canReply: boolean;
+  canDelete: boolean;
   replyOpen: boolean;
   user: User | null;
   busy: boolean;
@@ -197,8 +207,11 @@ function CommentItem({
   onReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, body: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const count = replyCount(node);
+  const deleted = isCommentDeleted(node);
+  const [confirm, setConfirm] = useState(false);
 
   return (
     <div>
@@ -207,7 +220,7 @@ function CommentItem({
         onClick={() => onOpen(node.id)}
       >
         <div className="flex w-10 shrink-0 flex-col items-center">
-          {lineAbove ? <div className="h-2 w-[2px] bg-border" /> : <div className={large ? "h-3" : "h-3"} />}
+          {lineAbove ? <div className="h-2 w-[2px] bg-border" /> : <div className="h-3" />}
           <Link
             to={`/u/${node.authorId}`}
             className="shrink-0"
@@ -218,38 +231,61 @@ function CommentItem({
           {lineBelow ? <div className="mt-1 w-[2px] flex-1 bg-border" /> : <div className="flex-1" />}
         </div>
         <div className={cn("min-w-0 flex-1 pt-2", large ? "pb-4" : "pb-3")}>
-          <div className="flex flex-wrap items-baseline gap-x-1 text-[15px] leading-5">
-            <Link
-              to={`/u/${node.authorId}`}
-              className="truncate font-bold hover:underline"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {node.authorName}
-            </Link>
-            <span className="truncate text-muted-foreground">@{handleFromName(node.authorName)}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">{formatCompactTime(node.createdAt)}</span>
-          </div>
-          {parentName ? (
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
-              Replying to{" "}
-              <Link
-                to={`/activities/${activityId}#c-${node.parentId}`}
-                className="text-primary hover:underline"
-                onClick={(event) => event.stopPropagation()}
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-1 text-[15px] leading-5">
+                <Link
+                  to={`/u/${node.authorId}`}
+                  className="truncate font-bold hover:underline"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {node.authorName}
+                </Link>
+                <span className="truncate text-muted-foreground">@{handleFromName(node.authorName)}</span>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">{formatCompactTime(node.createdAt)}</span>
+              </div>
+              {parentName && !deleted ? (
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
+                  Replying to{" "}
+                  <Link
+                    to={`/activities/${activityId}#c-${node.parentId}`}
+                    className="text-primary hover:underline"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    @{handleFromName(parentName)}
+                  </Link>
+                </p>
+              ) : null}
+            </div>
+            {canDelete && !deleted ? (
+              <button
+                type="button"
+                aria-label="Delete"
+                className="rounded-full p-2 text-muted-foreground hover:bg-[#f4212e1a] hover:text-[#f4212e]"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setConfirm(true);
+                }}
               >
-                @{handleFromName(parentName)}
-              </Link>
+                <Trash2 className="size-4" />
+              </button>
+            ) : null}
+          </div>
+          {deleted ? (
+            <p className={cn("mt-1 italic text-muted-foreground", large ? "text-[17px]" : "text-[15px]")}>
+              This post was deleted.
             </p>
-          ) : null}
-          <p
-            className={cn(
-              "mt-1 whitespace-pre-wrap break-words text-foreground",
-              large ? "text-[17px] leading-6" : "text-[15px] leading-5",
-            )}
-          >
-            {node.body}
-          </p>
+          ) : (
+            <p
+              className={cn(
+                "mt-1 whitespace-pre-wrap break-words text-foreground",
+                large ? "text-[17px] leading-6" : "text-[15px] leading-5",
+              )}
+            >
+              {node.body}
+            </p>
+          )}
           {canReply ? (
             <button
               type="button"
@@ -286,6 +322,31 @@ function CommentItem({
           />
         </div>
       ) : null}
+      <Dialog open={confirm} onOpenChange={setConfirm}>
+        <h2 className="text-xl font-bold">Delete this post?</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Replies stay in the thread. People will see that this post was deleted.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setConfirm(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="ink"
+            disabled={busy}
+            onClick={async () => {
+              try {
+                await onDelete(node.id);
+                setConfirm(false);
+              } catch (err) {
+                toast.error(errorMessage(err));
+              }
+            }}
+          >
+            Delete
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }
@@ -296,6 +357,7 @@ function ThreadBranch({
   activityId,
   depth,
   canReply,
+  isOrganizer,
   replyToId,
   user,
   busy,
@@ -305,12 +367,14 @@ function ThreadBranch({
   onReply,
   onCancelReply,
   onSubmitReply,
+  onDelete,
 }: {
   node: CommentNode;
   parentName?: string;
   activityId: string;
   depth: number;
   canReply: boolean;
+  isOrganizer: boolean;
   replyToId: string | null;
   user: User | null;
   busy: boolean;
@@ -320,6 +384,7 @@ function ThreadBranch({
   onReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, body: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const showAll = depth === 0 || expanded.has(node.id);
   const hidden = showAll ? 0 : Math.max(0, node.replies.length - PREVIEW_REPLIES);
@@ -335,6 +400,7 @@ function ThreadBranch({
         lineAbove={depth > 0}
         lineBelow={hasKids || replyToId === node.id}
         canReply={canReply}
+        canDelete={Boolean(user && (isOrganizer || user.id === node.authorId))}
         replyOpen={replyToId === node.id}
         user={user}
         busy={busy}
@@ -342,6 +408,7 @@ function ThreadBranch({
         onReply={onReply}
         onCancelReply={onCancelReply}
         onSubmitReply={onSubmitReply}
+        onDelete={onDelete}
       />
       {visible.map((child) => (
         <ThreadBranch
@@ -351,6 +418,7 @@ function ThreadBranch({
           activityId={activityId}
           depth={depth + 1}
           canReply={canReply}
+          isOrganizer={isOrganizer}
           replyToId={replyToId}
           user={user}
           busy={busy}
@@ -360,6 +428,7 @@ function ThreadBranch({
           onReply={onReply}
           onCancelReply={onCancelReply}
           onSubmitReply={onSubmitReply}
+          onDelete={onDelete}
         />
       ))}
       {hidden > 0 ? (
@@ -379,15 +448,18 @@ export function ActivityDiscussion({
   activity,
   user,
   canDiscuss,
+  isOrganizer,
   membershipStatus,
 }: {
   activity: Activity;
   user: User | null;
   canDiscuss: boolean;
+  isOrganizer: boolean;
   membershipStatus?: "joined" | "pending" | null;
 }) {
   const commentsQuery = useActivityComments(activity.id);
   const createComment = useCreateComment();
+  const removeComment = useRemoveComment();
   const navigate = useNavigate();
   const location = useLocation();
   const [replyToId, setReplyToId] = useState<string | null>(null);
@@ -423,6 +495,17 @@ export function ActivityDiscussion({
     });
     setReplyToId(null);
   }
+
+  async function remove(commentId: string) {
+    if (!user) return;
+    await removeComment.mutateAsync({
+      activityId: activity.id,
+      commentId,
+      actorId: user.id,
+    });
+  }
+
+  const busy = createComment.isPending || removeComment.isPending;
 
   const lockCopy =
     membershipStatus === "pending"
@@ -472,13 +555,15 @@ export function ActivityDiscussion({
                   activityId={activity.id}
                   lineBelow
                   canReply={canDiscuss}
+                  canDelete={Boolean(user && (isOrganizer || user.id === item.authorId))}
                   replyOpen={replyToId === item.id}
                   user={user}
-                  busy={createComment.isPending}
+                  busy={busy}
                   onOpen={openThread}
                   onReply={(id) => setReplyToId((current) => (current === id ? null : id))}
                   onCancelReply={() => setReplyToId(null)}
                   onSubmitReply={(parentId, body) => post(body, parentId)}
+                  onDelete={remove}
                 />
               </div>
             );
@@ -492,13 +577,15 @@ export function ActivityDiscussion({
               large
               lineAbove={ancestors.length > 0}
               canReply={false}
+              canDelete={Boolean(user && (isOrganizer || user.id === focused.authorId))}
               replyOpen={false}
               user={user}
-              busy={createComment.isPending}
+              busy={busy}
               onOpen={() => undefined}
               onReply={() => undefined}
               onCancelReply={() => undefined}
               onSubmitReply={async () => undefined}
+              onDelete={remove}
             />
           </div>
 
@@ -525,9 +612,10 @@ export function ActivityDiscussion({
                 activityId={activity.id}
                 depth={0}
                 canReply={canDiscuss}
+                isOrganizer={isOrganizer}
                 replyToId={replyToId}
                 user={user}
-                busy={createComment.isPending}
+                busy={busy}
                 expanded={expanded}
                 onToggleExpand={(id) =>
                   setExpanded((current) => {
@@ -541,6 +629,7 @@ export function ActivityDiscussion({
                 onReply={(id) => setReplyToId((current) => (current === id ? null : id))}
                 onCancelReply={() => setReplyToId(null)}
                 onSubmitReply={(parentId, body) => post(body, parentId)}
+                onDelete={remove}
               />
             </div>
           ))}
@@ -593,9 +682,10 @@ export function ActivityDiscussion({
                   activityId={activity.id}
                   depth={0}
                   canReply={canDiscuss}
+                  isOrganizer={isOrganizer}
                   replyToId={replyToId}
                   user={user}
-                  busy={createComment.isPending}
+                  busy={busy}
                   expanded={expanded}
                   onToggleExpand={(id) =>
                     setExpanded((current) => {
@@ -609,6 +699,7 @@ export function ActivityDiscussion({
                   onReply={(id) => setReplyToId((current) => (current === id ? null : id))}
                   onCancelReply={() => setReplyToId(null)}
                   onSubmitReply={(parentId, body) => post(body, parentId)}
+                  onDelete={remove}
                 />
               </div>
             ))}

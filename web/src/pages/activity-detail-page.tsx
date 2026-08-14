@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Calendar, Lock, MapPin, Users } from "lucide-react";
 import { ActivityDiscussion } from "@/components/activity/activity-discussion";
@@ -8,6 +9,7 @@ import { FollowButton } from "@/components/profile/follow-button";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActivity, useActivityMembers, useMembership } from "@/hooks/use-activity";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,7 +28,8 @@ export function ActivityDetailPage() {
   const activityQuery = useActivity(id);
   const membersQuery = useActivityMembers(id);
   const membershipQuery = useMembership(id, user?.id);
-  const { accept, decline } = useJoinLeave();
+  const { accept, decline, kick } = useJoinLeave();
+  const [kickUserId, setKickUserId] = useState<string | null>(null);
   const activity = activityQuery.data;
   const joined = (membersQuery.data ?? []).filter((m) => m.status === "joined");
   const pending = (membersQuery.data ?? []).filter((m) => m.status === "pending");
@@ -225,13 +228,10 @@ export function ActivityDetailPage() {
           {membersQuery.isLoading ? <Skeleton className="h-20 w-full" /> : null}
           <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
             {joined.map((member) => (
-              <li key={member.id}>
-                <Link
-                  to={`/u/${member.user.id}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-hover"
-                >
+              <li key={member.id} className="flex items-center gap-3 px-4 py-3">
+                <Link to={`/u/${member.user.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-90">
                   <Avatar name={member.user.displayName} src={member.user.avatarUrl} />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <p className="truncate font-bold">{member.user.displayName}</p>
                     <p className="truncate text-[13px] text-muted-foreground">
                       {member.role === "organizer" ? "Organizer" : "Joined"}
@@ -239,6 +239,11 @@ export function ActivityDetailPage() {
                     </p>
                   </div>
                 </Link>
+                {isOrganizer && member.user.id !== user?.id ? (
+                  <Button size="sm" variant="outline" onClick={() => setKickUserId(member.user.id)}>
+                    Remove
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -249,8 +254,41 @@ export function ActivityDetailPage() {
         activity={activity}
         user={user}
         canDiscuss={canDiscuss}
+        isOrganizer={isOrganizer}
         membershipStatus={membershipStatus}
       />
+
+      <Dialog open={Boolean(kickUserId)} onOpenChange={(open) => !open && setKickUserId(null)}>
+        <h2 className="text-xl font-bold">Remove this person?</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          They’ll leave the activity. Their replies stay in the discussion.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setKickUserId(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="ink"
+            disabled={kick.isPending}
+            onClick={async () => {
+              if (!user || !kickUserId) return;
+              try {
+                await kick.mutateAsync({
+                  activityId: activity.id,
+                  userId: kickUserId,
+                  actorId: user.id,
+                });
+                toast.success("Removed.");
+                setKickUserId(null);
+              } catch (err) {
+                toast.error(errorMessage(err));
+              }
+            }}
+          >
+            Remove
+          </Button>
+        </div>
+      </Dialog>
     </article>
   );
 }

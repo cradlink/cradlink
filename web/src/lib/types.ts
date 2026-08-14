@@ -155,7 +155,13 @@ export type ActivityComment = {
   authorAvatar: string | null;
   body: string;
   createdAt: string;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 };
+
+export function isCommentDeleted(comment: Pick<ActivityComment, "deletedAt">) {
+  return Boolean(comment.deletedAt);
+}
 
 export type NotificationKind =
   | "joined"
@@ -167,6 +173,7 @@ export type NotificationKind =
   | "reply"
   | "follow_request"
   | "followed"
+  | "kicked"
   | "reminder_day"
   | "reminder_hour";
 

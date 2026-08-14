@@ -5,7 +5,7 @@ import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyDiscussion } from "@/lib/data/notify";
 import { AppError, isPermissionDenied } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
-import { COMMENT_MAX_LENGTH, type ActivityComment } from "@/lib/types";
+import { COMMENT_MAX_LENGTH, isCommentDeleted, type ActivityComment } from "@/lib/types";
 import { createId, nowIso, stripUndefined } from "@/lib/utils";
 
 const DISCUSSION_CAP = 400;
@@ -22,6 +22,8 @@ function mapComment(id: string, data: DocumentData, fallbackActivityId = ""): Ac
     authorAvatar: (data.authorAvatar as string | null) ?? null,
     body: typeof data.body === "string" ? data.body : "",
     createdAt: typeof data.createdAt === "string" ? data.createdAt : nowIso(),
+    deletedAt: typeof data.deletedAt === "string" ? data.deletedAt : null,
+    deletedBy: typeof data.deletedBy === "string" ? data.deletedBy : null,
   };
 }
 
@@ -35,7 +37,7 @@ function readDiscussion(activityId: string, data: DocumentData | undefined): Act
       if (!id) return null;
       return mapComment(id, item, activityId);
     })
-    .filter((row): row is ActivityComment => Boolean(row && row.body));
+    .filter((row): row is ActivityComment => Boolean(row));
 }
 
 async function assertCanDiscuss(activityId: string, userId: string) {
@@ -116,6 +118,44 @@ export const firebaseComments: CommentsRepo = {
       if (err instanceof AppError) throw err;
       if (isPermissionDenied(err)) {
         throw new AppError("Couldn’t save this reply. Publish the latest Firestore rules, then try again.");
+      }
+      throw err;
+    }
+  },
+
+  async remove(activityId, commentId, actorId) {
+    try {
+      return await runTransaction(getFirebaseDb(), async (tx) => {
+        const actRef = doc(getFirebaseDb(), "activities", activityId);
+        const snap = await tx.get(actRef);
+        if (!snap.exists()) throw new AppError("Activity not found.");
+        const activity = snap.data();
+        const existing = readDiscussion(activityId, activity);
+        const index = existing.findIndex((row) => row.id === commentId);
+        if (index < 0) throw new AppError("That reply is gone.");
+        const current = existing[index];
+        if (isCommentDeleted(current)) return current;
+        const organizer = activity.creatorId === actorId;
+        if (!organizer && current.authorId !== actorId) {
+          throw new AppError("You can only delete your own replies.");
+        }
+        const next: ActivityComment = {
+          ...current,
+          deletedAt: nowIso(),
+          deletedBy: actorId,
+        };
+        const discussion = existing.slice();
+        discussion[index] = next;
+        tx.update(actRef, {
+          discussion: discussion.map((row) => stripUndefined(row)),
+          updatedAt: nowIso(),
+        });
+        return next;
+      });
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      if (isPermissionDenied(err)) {
+        throw new AppError("Couldn’t delete this reply. Publish the latest Firestore rules, then try again.");
       }
       throw err;
     }

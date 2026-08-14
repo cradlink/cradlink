@@ -53,5 +53,18 @@ export function useJoinLeave() {
     onSuccess: (_data, vars) => invalidate(vars.activityId),
   });
 
-  return { join, leave, accept, decline };
+  const kick = useMutation({
+    mutationFn: ({
+      activityId,
+      userId,
+      actorId,
+    }: {
+      activityId: string;
+      userId: string;
+      actorId: string;
+    }) => backend.members.kick(activityId, userId, actorId),
+    onSuccess: (_data, vars) => invalidate(vars.activityId),
+  });
+
+  return { join, leave, accept, decline, kick };
 }

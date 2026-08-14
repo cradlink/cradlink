@@ -11,7 +11,7 @@ import type {
   User,
 } from "@/lib/types";
 import { localNotifications } from "@/lib/data/notifications-local";
-import { notifyActivityEdited, notifyDecision, notifyJoin } from "@/lib/data/notify";
+import { notifyActivityEdited, notifyDecision, notifyJoin, notifyKicked } from "@/lib/data/notify";
 import { defaultHeadcount, hardCap, isActivityFull, statusForCapacity } from "@/lib/headcount";
 import { createId, memberId, nowIso } from "@/lib/utils";
 
@@ -285,6 +285,30 @@ export const localMembers: MembersRepo = {
     }
     activity.updatedAt = nowIso();
     saveDb(db);
+    return activity;
+  },
+
+  async kick(activityId, userId, actorId) {
+    await ensureSeed();
+    const db = loadDb();
+    const activity = db.activities[activityId];
+    if (!activity) throw new AppError("Activity not found.");
+    if (activity.creatorId !== actorId) throw new AppError("Only the organizer can remove people.");
+    if (activity.creatorId === userId) throw new AppError("You can’t remove yourself.");
+    const mid = memberId(activityId, userId);
+    const existing = db.members[mid];
+    if (!existing || (existing.status !== "joined" && existing.status !== "pending")) {
+      throw new AppError("They aren’t in this one.");
+    }
+    const wasJoined = existing.status === "joined";
+    delete db.members[mid];
+    if (wasJoined) {
+      activity.memberCount = Math.max(1, activity.memberCount - 1);
+      if (activity.status === "full") activity.status = "open";
+    }
+    activity.updatedAt = nowIso();
+    saveDb(db);
+    void notifyKicked(localNotifications, activity, userId);
     return activity;
   },
 

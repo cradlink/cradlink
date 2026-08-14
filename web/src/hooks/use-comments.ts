@@ -34,3 +34,19 @@ export function useCreateComment() {
     },
   });
 }
+
+export function useRemoveComment() {
+  const backend = getBackend();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { activityId: string; commentId: string; actorId: string }) =>
+      backend.comments.remove(input.activityId, input.commentId, input.actorId),
+    onSuccess: (comment, vars) => {
+      queryClient.setQueryData<ActivityComment[]>(["comments", vars.activityId], (current) =>
+        (current ?? []).map((row) => (row.id === comment.id ? comment : row)),
+      );
+      void queryClient.invalidateQueries({ queryKey: ["comments", vars.activityId] });
+    },
+  });
+}

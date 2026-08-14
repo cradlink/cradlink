@@ -53,6 +53,15 @@ service cloud.firestore {
         && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body.size() <= 840;
     }
 
+    function isDiscussionSoftDelete(activityId) {
+      return signedIn()
+        && canDiscuss(activityId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["discussion", "updatedAt"])
+        && request.resource.data.discussion is list
+        && request.resource.data.discussion.size() == discussionSize(resource.data);
+    }
+
     match /activities/{activityId} {
       allow read: if signedIn() && (
         resource.data.visibility == "public"
@@ -65,6 +74,7 @@ service cloud.firestore {
         || request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(["memberCount", "status", "updatedAt"])
         || isDiscussionAppend(activityId)
+        || isDiscussionSoftDelete(activityId)
       );
       allow delete: if signedIn() && resource.data.creatorId == request.auth.uid;
     }

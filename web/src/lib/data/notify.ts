@@ -83,6 +83,23 @@ export async function notifyActivityEdited(
   );
 }
 
+export async function notifyKicked(
+  repo: NotificationsRepo,
+  activity: Activity,
+  userId: string,
+) {
+  return notify(repo, {
+    id: `kicked_${activity.id}_${userId}_${createId("n")}`,
+    recipientId: userId,
+    kind: "kicked",
+    activityId: activity.id,
+    activityTitle: activity.title,
+    actorId: activity.creatorId,
+    actorName: activity.creatorName,
+    actorAvatar: activity.creatorAvatar,
+  });
+}
+
 export async function notifyFollowRequest(
   repo: NotificationsRepo,
   actor: Pick<User, "id" | "displayName" | "avatarUrl">,
