@@ -25,6 +25,8 @@
             document.documentElement.classList.remove("dark");
             document.documentElement.style.colorScheme = "light";
           }
+          var locale = localStorage.getItem("cl_locale");
+          if (locale) document.documentElement.lang = locale;
         } catch (e) {
           document.documentElement.classList.add("dark");
         }

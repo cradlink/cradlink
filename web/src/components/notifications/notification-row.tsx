@@ -1,13 +1,28 @@
 import { Bell } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { FollowRequestActions } from "@/components/notifications/follow-request-row";
-import { isFollowNotice, isReminder, notificationCopy } from "@/components/notifications/notification-copy";
+import { NOTIFICATION_COPY_KEY, isFollowNotice, isReminder } from "@/components/notifications/notification-copy";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/hooks/use-profile";
 import { formatCompactTime } from "@/lib/format";
 import type { AppNotification } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+function NotificationCopy({ item }: { item: AppNotification }) {
+  const { t } = useTranslation();
+  return (
+    <Trans
+      i18nKey={NOTIFICATION_COPY_KEY[item.kind]}
+      values={{
+        name: item.actorName || t("common.someone"),
+        title: item.activityTitle ?? "",
+      }}
+      components={{ bold: <span className="font-bold" /> }}
+    />
+  );
+}
 
 export function NotificationRow({
   item,
@@ -16,9 +31,9 @@ export function NotificationRow({
   item: AppNotification;
   onOpen: (item: AppNotification) => void;
 }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const actor = useUser(item.kind === "follow_request" ? item.actorId : undefined);
-  const copy = notificationCopy(item);
   const to = isFollowNotice(item.kind)
     ? `/u/${item.actorId}`
     : item.kind === "comment" || item.kind === "reply"
@@ -36,12 +51,11 @@ export function NotificationRow({
         )}
       >
         <Link to={`/u/${item.actorId}`} onClick={() => onOpen(item)} className="shrink-0">
-          <Avatar name={item.actorName || "Member"} src={item.actorAvatar} />
+          <Avatar name={item.actorName || t("common.member")} src={item.actorAvatar} />
         </Link>
         <Link to={`/u/${item.actorId}`} onClick={() => onOpen(item)} className="min-w-0 flex-1">
           <p className="text-[15px] leading-5">
-            <span className="font-bold">{copy.lead}</span>
-            <span>{copy.rest}</span>
+            <NotificationCopy item={item} />
           </p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">{formatCompactTime(item.createdAt)}</p>
         </Link>
@@ -64,12 +78,11 @@ export function NotificationRow({
           <Bell className="size-5" />
         </span>
       ) : (
-        <Avatar name={item.actorName || "Member"} src={item.actorAvatar} />
+        <Avatar name={item.actorName || t("common.member")} src={item.actorAvatar} />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-[15px] leading-5">
-          <span className="font-bold">{copy.lead}</span>
-          <span>{copy.rest}</span>
+          <NotificationCopy item={item} />
         </p>
         <p className="mt-0.5 text-[13px] text-muted-foreground">{formatCompactTime(item.createdAt)}</p>
       </div>

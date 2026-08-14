@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ActivityCard } from "@/components/activity/activity-card";
 import {
@@ -17,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
 import { useUploadActivityImages } from "@/hooks/use-profile";
-import { ACTIVITY_META } from "@/lib/activity-meta";
+import { activityTypeLabel, locationLabel } from "@/lib/activity-meta";
 import { errorMessage } from "@/lib/errors";
 import { datetimeLocalToIso, isoToDatetimeLocal } from "@/lib/format";
 import { ACTIVITY_TYPES, type Activity, type ActivityType, type LocationType } from "@/lib/types";
@@ -84,6 +85,7 @@ export function EditActivityForm({ activity }: { activity: Activity }) {
 }
 
 function ActivityForm({ activity }: { activity?: Activity }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const create = useCreateActivity();
@@ -99,7 +101,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
     const capacity = form.capacity ? Number(form.capacity) : null;
     return {
       id: activity?.id ?? "preview",
-      title: form.title.trim() || "Untitled activity",
+      title: form.title.trim() || t("activity.untitled"),
       description: form.description,
       type: form.type,
       lookingFor: form.lookingFor,
@@ -125,7 +127,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
       joinPolicy: activity?.joinPolicy ?? "auto",
       headcount: activity?.headcount ?? { mode: "open" },
     };
-  }, [activity, form, user]);
+  }, [activity, form, t, user]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -148,16 +150,16 @@ function ActivityForm({ activity }: { activity?: Activity }) {
     if (!user) return;
     const title = form.title.trim();
     const description = form.description.trim();
-    if (title.length < 3) return setError("Give it a title (at least 3 characters).");
-    if (description.length < 10) return setError("Add a short description so people know what they’re joining.");
-    if (form.lookingFor.length === 0) return setError("Add at least one role or skill you’re looking for.");
+    if (title.length < 3) return setError(t("activity.form.errorTitle"));
+    if (description.length < 10) return setError(t("activity.form.errorDescription"));
+    if (form.lookingFor.length === 0) return setError(t("activity.form.errorLookingFor"));
     if (form.locationType !== "online" && !form.city.trim()) {
-      return setError("Add a city for in-person or hybrid activities.");
+      return setError(t("activity.form.errorCity"));
     }
-    if (!form.isFlexible && !form.startAt) return setError("Pick a start time, or mark it as flexible.");
+    if (!form.isFlexible && !form.startAt) return setError(t("activity.form.errorStart"));
     const capacity = form.capacity ? Number(form.capacity) : null;
     if (form.capacity && (!Number.isFinite(capacity) || (capacity ?? 0) < 1)) {
-      return setError("Capacity must be a positive number, or leave it blank.");
+      return setError(t("activity.form.errorCapacity"));
     }
 
     setError(null);
@@ -184,7 +186,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         ? await update.mutateAsync({ id: activity!.id, actorId: user.id, input })
         : await create.mutateAsync({ creator: user, input });
       form.images.forEach(revokeDraftImage);
-      toast.success(editing ? "Activity updated." : "Activity posted.");
+      toast.success(editing ? t("activity.updated") : t("activity.posted"));
       navigate(`/activities/${saved.id}`);
     } catch (err) {
       setError(errorMessage(err));
@@ -194,16 +196,16 @@ function ActivityForm({ activity }: { activity?: Activity }) {
   return (
     <div>
       <form onSubmit={onSubmit} className="space-y-5 px-4 py-4">
-        <Field label="Title">
+        <Field label={t("activity.form.title")}>
           <Input
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
-            placeholder="Sunday pickup football"
+            placeholder={t("activity.form.titlePlaceholder")}
           />
         </Field>
 
         <div className="space-y-2">
-          <Label>Type</Label>
+          <Label>{t("activity.form.type")}</Label>
           <div className="flex flex-wrap gap-2">
             {ACTIVITY_TYPES.map((type) => (
               <button
@@ -221,32 +223,32 @@ function ActivityForm({ activity }: { activity?: Activity }) {
           </div>
         </div>
 
-        <Field label="Description">
+        <Field label={t("activity.form.description")}>
           <Textarea
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
-            placeholder="What happens, who it’s for, what to bring."
+            placeholder={t("activity.form.descriptionPlaceholder")}
           />
         </Field>
 
-        <Field label="Tags" hint="What this is about.">
+        <Field label={t("activity.form.tags")} hint={t("activity.form.tagsHint")}>
           <TagInput
             value={form.tags}
             onChange={(next) => set("tags", next)}
-            placeholder="Film, Hiking, AI"
+            placeholder={t("activity.form.tagsPlaceholder")}
           />
         </Field>
 
-        <Field label="Looking for" hint="Press Enter after each role.">
+        <Field label={t("activity.form.lookingFor")} hint={t("activity.form.lookingForHint")}>
           <TagInput
             value={form.lookingFor}
             onChange={(next) => set("lookingFor", next)}
-            placeholder="Designer, beginner climber, +1"
+            placeholder={t("activity.form.lookingForPlaceholder")}
           />
         </Field>
 
         <div className="space-y-2">
-          <Label>Where</Label>
+          <Label>{t("activity.form.where")}</Label>
           <div className="flex flex-wrap gap-2">
             {LOCATIONS.map((value) => (
               <button
@@ -260,7 +262,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
                     : "border-border bg-transparent text-muted-foreground hover:bg-hover",
                 )}
               >
-                {value.replace("-", " ")}
+                {locationLabel(value)}
               </button>
             ))}
           </div>
@@ -268,19 +270,27 @@ function ActivityForm({ activity }: { activity?: Activity }) {
 
         {form.locationType !== "online" ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="City">
-              <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Belgrade" />
+            <Field label={t("activity.form.city")}>
+              <Input
+                value={form.city}
+                onChange={(e) => set("city", e.target.value)}
+                placeholder={t("activity.form.cityPlaceholder")}
+              />
             </Field>
-            <Field label="Venue (optional)">
-              <Input value={form.venue} onChange={(e) => set("venue", e.target.value)} placeholder="Ada Ciganlija" />
+            <Field label={t("activity.form.venue")}>
+              <Input
+                value={form.venue}
+                onChange={(e) => set("venue", e.target.value)}
+                placeholder={t("activity.form.venuePlaceholder")}
+              />
             </Field>
           </div>
         ) : (
-          <Field label="Link or note (optional)">
+          <Field label={t("activity.form.linkNote")}>
             <Input
               value={form.venue}
               onChange={(e) => set("venue", e.target.value)}
-              placeholder="Meet link goes out the day before"
+              placeholder={t("activity.form.linkPlaceholder")}
             />
           </Field>
         )}
@@ -292,25 +302,25 @@ function ActivityForm({ activity }: { activity?: Activity }) {
             onChange={(e) => set("isFlexible", e.target.checked)}
             className="size-4 accent-primary"
           />
-          Dates are flexible
+          {t("activity.form.datesFlexible")}
         </label>
 
         {!form.isFlexible ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Starts">
+            <Field label={t("activity.form.starts")}>
               <Input type="datetime-local" value={form.startAt} onChange={(e) => set("startAt", e.target.value)} />
             </Field>
-            <Field label="Ends (optional)">
+            <Field label={t("activity.form.ends")}>
               <Input type="datetime-local" value={form.endAt} onChange={(e) => set("endAt", e.target.value)} />
             </Field>
           </div>
         ) : null}
 
-        <Field label="Photos" hint="Optional. Up to 6. Empty uses the type default.">
+        <Field label={t("activity.form.photos")} hint={t("activity.form.photosHint")}>
           <ImagePicker value={form.images} onChange={setImages} />
         </Field>
 
-        <Field label="Capacity" hint="Leave blank for no limit.">
+        <Field label={t("activity.form.capacity")} hint={t("activity.form.capacityHint")}>
           <Input
             type="number"
             min={1}
@@ -325,18 +335,18 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         <div className="flex flex-wrap gap-2">
           <Button type="submit" variant="terracotta" size="lg" disabled={posting}>
             {upload.isPending
-              ? "Uploading photos…"
+              ? t("activity.uploadingPhotos")
               : update.isPending
-                ? "Saving…"
+                ? t("common.saving")
                 : create.isPending
-                  ? "Posting…"
+                  ? t("activity.posting")
                   : editing
-                    ? "Save changes"
-                    : "Post activity"}
+                    ? t("activity.saveChanges")
+                    : t("activity.postActivity")}
           </Button>
           {editing ? (
             <Button type="button" variant="ghost" size="lg" onClick={() => navigate(`/activities/${activity!.id}`)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           ) : null}
         </div>
@@ -344,7 +354,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
 
       <div className="border-t border-border">
         <p className="px-4 pt-3 text-[13px] text-muted-foreground">
-          Preview · {ACTIVITY_META[form.type].label}
+          {t("activity.preview", { type: activityTypeLabel(form.type) })}
         </p>
         {preview ? <ActivityCard activity={preview} showJoin={false} /> : null}
       </div>

@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import type { Activity, Headcount, JoinPolicy } from "@/lib/types";
 
 export function defaultHeadcount(capacity: number | null): Headcount {
@@ -39,19 +40,23 @@ export function isActivityFull(activity: Activity) {
 export function formatHeadcount(activity: Activity) {
   const going = activity.memberCount;
   const h = activity.headcount;
-  if (!h || h.mode === "open") return `${going} going`;
-  if (h.mode === "limit" && h.max != null) return `${going}/${h.max} going`;
+  if (!h || h.mode === "open") return i18n.t("activity.headcount.open", { count: going });
+  if (h.mode === "limit" && h.max != null) return i18n.t("activity.headcount.limit", { count: going, max: h.max });
   if (h.mode === "range") {
     const min = h.min;
     const max = h.max;
-    if (min != null && max != null) return `${going} going · looking for ${min}–${max}`;
-    if (min != null) return `${going} going · looking for ${min}+`;
-    if (max != null) return `${going}/${max} going`;
+    if (min != null && max != null) {
+      return i18n.t("activity.headcount.range", { count: going, min, max });
+    }
+    if (min != null) return i18n.t("activity.headcount.rangeMin", { count: going, min });
+    if (max != null) return i18n.t("activity.headcount.limit", { count: going, max });
   }
-  if (h.mode === "estimate" && h.about != null) return `${going} going · around ${h.about} people`;
-  return `${going} going`;
+  if (h.mode === "estimate" && h.about != null) {
+    return i18n.t("activity.headcount.estimate", { count: going, about: h.about });
+  }
+  return i18n.t("activity.headcount.open", { count: going });
 }
 
 export function formatJoinPolicy(policy: JoinPolicy) {
-  return policy === "manual" ? "Organizer accepts" : "Instant join";
+  return policy === "manual" ? i18n.t("activity.joinPolicyManual") : i18n.t("activity.joinPolicyInstant");
 }

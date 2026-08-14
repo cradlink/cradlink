@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
 import { FeedFilters } from "@/components/activity/feed-filters";
@@ -11,6 +12,7 @@ import { FEED_GRID } from "@/lib/activity-meta";
 import type { ActivityType, LocationType } from "@/lib/types";
 
 export function FeedPage() {
+  const { t } = useTranslation();
   const { user, ready } = useAuth();
   const [type, setType] = useState<ActivityType | "all">("all");
   const [locationType, setLocationType] = useState<LocationType | "all">("all");
@@ -38,9 +40,11 @@ export function FeedPage() {
   return (
     <div>
       <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
-        <h1 className="text-xl font-bold">Home</h1>
+        <h1 className="text-xl font-bold">{t("feed.title")}</h1>
         <p className="text-[13px] text-muted-foreground">
-          {ready && user ? `Hi ${user.displayName.split(" ")[0]}.` : "What’s assembling"}
+          {ready && user
+            ? t("feed.greeting", { name: user.displayName.split(" ")[0] })
+            : t("feed.assembling")}
         </p>
       </div>
 
@@ -62,20 +66,22 @@ export function FeedPage() {
       ) : null}
 
       {feed.isError ? (
-        <Empty title="Couldn’t load the feed." body="Refresh and try again." />
+        <Empty title={t("feed.loadErrorTitle")} body={t("common.refreshTryAgain")} />
       ) : null}
 
       {!feed.isLoading && recommended.picks.length > 0 ? (
         <section className="border-b border-border">
           <div className="px-4 pb-1 pt-3">
-            <h2 className="text-xl font-bold">For you</h2>
-            <p className="text-[13px] text-muted-foreground">Based on your skills, place, and who you follow.</p>
+            <h2 className="text-xl font-bold">{t("feed.forYou")}</h2>
+            <p className="text-[13px] text-muted-foreground">{t("feed.forYouHint")}</p>
           </div>
           <div className={FEED_GRID}>
             {recommended.picks.map((row) => (
               <div key={row.activity.id}>
                 {row.reasons[0] ? (
-                  <p className="px-4 pt-3 text-[13px] text-primary">{row.reasons[0]}</p>
+                  <p className="px-4 pt-3 text-[13px] text-primary">
+                    {t(row.reasons[0].key, { city: row.reasons[0].city })}
+                  </p>
                 ) : null}
                 <ActivityCard activity={row.activity} />
               </div>
@@ -86,14 +92,14 @@ export function FeedPage() {
 
       {!feed.isLoading && (latest.length > 0 || activities.length > 0) && recommended.picks.length > 0 ? (
         <div className="px-4 pb-1 pt-3">
-          <h2 className="text-xl font-bold">Latest</h2>
+          <h2 className="text-xl font-bold">{t("feed.latest")}</h2>
         </div>
       ) : null}
 
       {!feed.isLoading && activities.length === 0 ? (
         <Empty
-          title="Nothing here yet."
-          body="Try another filter, or be the one who posts first."
+          title={t("feed.emptyTitle")}
+          body={t("feed.emptyBody")}
         />
       ) : null}
 
@@ -105,7 +111,7 @@ export function FeedPage() {
 
       <div ref={sentinel} />
       {feed.isFetchingNextPage ? (
-        <p className="py-4 text-center text-[13px] text-muted-foreground">Loading more…</p>
+        <p className="py-4 text-center text-[13px] text-muted-foreground">{t("common.loadingMore")}</p>
       ) : null}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Calendar, Lock, MapPin, Users } from "lucide-react";
 import { ActivityDiscussion } from "@/components/activity/activity-discussion";
 import { ActivityGallery } from "@/components/activity/activity-gallery";
@@ -23,6 +24,7 @@ import { formatActivityWhen, formatLocation } from "@/lib/format";
 import { toast } from "sonner";
 
 export function ActivityDetailPage() {
+  const { t } = useTranslation();
   const { id = "" } = useParams<{ id: string }>();
   const { user } = useAuth();
   const activityQuery = useActivity(id);
@@ -60,10 +62,10 @@ export function ActivityDetailPage() {
   if (!activity) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-16 text-center">
-        <h1 className="font-display text-3xl">This activity isn’t here.</h1>
-        <p className="mt-2 text-sm text-muted-foreground">It may have been removed.</p>
+        <h1 className="font-display text-3xl">{t("activity.missingTitle")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("activity.missingBody")}</p>
         <Link to="/" className="mt-4 inline-block text-sm underline">
-          Back to feed
+          {t("activity.backToFeed")}
         </Link>
       </div>
     );
@@ -83,15 +85,15 @@ export function ActivityDetailPage() {
     return (
       <article>
         <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
-          <h1 className="truncate text-xl font-bold">Private activity</h1>
+          <h1 className="truncate text-xl font-bold">{t("activity.privateTitle")}</h1>
         </div>
         <div className="px-8 py-16 text-center">
           <span className="mx-auto flex size-16 items-center justify-center rounded-full border-2 border-foreground">
             <Lock className="size-7" />
           </span>
-          <h1 className="mt-4 text-3xl font-bold">This activity is private</h1>
+          <h1 className="mt-4 text-3xl font-bold">{t("activity.privateHeading")}</h1>
           <p className="mt-2 text-[15px] text-muted-foreground">
-            Follow {creatorQuery.data.displayName} to see it. They’ll have to confirm your request.
+            {t("activity.privateBody", { name: creatorQuery.data.displayName })}
           </p>
           <div className="mt-5 flex justify-center">
             <FollowButton user={creatorQuery.data} size="default" />
@@ -132,14 +134,14 @@ export function ActivityDetailPage() {
           <Link to={`/u/${activity.creatorId}`} className="flex items-center gap-3">
             <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
             <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Organizer</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("activity.organizer")}</p>
               <p className="font-medium">{activity.creatorName}</p>
             </div>
           </Link>
           <div className="flex flex-wrap gap-2">
             {isOrganizer ? (
               <Button asChild variant="outline" size="lg">
-                <Link to={`/activities/edit/${activity.id}`}>Edit</Link>
+                <Link to={`/activities/edit/${activity.id}`}>{t("common.edit")}</Link>
               </Button>
             ) : null}
             <JoinButton activity={activity} size="lg" />
@@ -147,27 +149,27 @@ export function ActivityDetailPage() {
         </div>
 
         <div className="max-w-2xl space-y-3">
-          <h2 className="font-display text-2xl">The idea</h2>
+          <h2 className="font-display text-2xl">{t("activity.theIdea")}</h2>
           <p className="whitespace-pre-wrap text-base leading-relaxed">{activity.description}</p>
         </div>
 
         {activity.tags?.length ? (
           <div className="space-y-3">
-            <h2 className="text-2xl font-bold">Tags</h2>
+            <h2 className="text-2xl font-bold">{t("activity.tags")}</h2>
             <LookingForChips items={activity.tags} limit={12} />
           </div>
         ) : null}
 
         {activity.lookingFor.length > 0 ? (
           <div className="space-y-3">
-            <h2 className="text-2xl font-bold">Looking for</h2>
+            <h2 className="text-2xl font-bold">{t("activity.lookingFor")}</h2>
             <LookingForChips items={activity.lookingFor} limit={12} />
           </div>
         ) : null}
 
         {isOrganizer && pending.length > 0 ? (
           <div className="space-y-3">
-            <h2 className="text-2xl font-bold">Requests</h2>
+            <h2 className="text-2xl font-bold">{t("activity.requests")}</h2>
             <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
               {pending.map((member) => (
                 <li key={member.id} className="flex items-center gap-3 px-4 py-3">
@@ -175,7 +177,7 @@ export function ActivityDetailPage() {
                     <Avatar name={member.user.displayName} src={member.user.avatarUrl} />
                     <div className="min-w-0">
                       <p className="truncate font-bold">{member.user.displayName}</p>
-                      <p className="truncate text-[13px] text-muted-foreground">Wants to join</p>
+                      <p className="truncate text-[13px] text-muted-foreground">{t("activity.wantsToJoin")}</p>
                     </div>
                   </Link>
                   <Button
@@ -190,13 +192,13 @@ export function ActivityDetailPage() {
                           userId: member.userId,
                           actorId: user.id,
                         });
-                        toast.success("Declined.");
+                        toast.success(t("common.declined"));
                       } catch (err) {
                         toast.error(errorMessage(err));
                       }
                     }}
                   >
-                    Decline
+                    {t("common.decline")}
                   </Button>
                   <Button
                     size="sm"
@@ -209,13 +211,13 @@ export function ActivityDetailPage() {
                           userId: member.userId,
                           actorId: user.id,
                         });
-                        toast.success("Accepted.");
+                        toast.success(t("common.accepted"));
                       } catch (err) {
                         toast.error(errorMessage(err));
                       }
                     }}
                   >
-                    Accept
+                    {t("common.accept")}
                   </Button>
                 </li>
               ))}
@@ -224,7 +226,7 @@ export function ActivityDetailPage() {
         ) : null}
 
         <div className="space-y-3">
-          <h2 className="text-2xl font-bold">People</h2>
+          <h2 className="text-2xl font-bold">{t("activity.people")}</h2>
           {membersQuery.isLoading ? <Skeleton className="h-20 w-full" /> : null}
           <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
             {joined.map((member) => (
@@ -234,14 +236,14 @@ export function ActivityDetailPage() {
                   <div className="min-w-0">
                     <p className="truncate font-bold">{member.user.displayName}</p>
                     <p className="truncate text-[13px] text-muted-foreground">
-                      {member.role === "organizer" ? "Organizer" : "Joined"}
+                      {member.role === "organizer" ? t("activity.organizer") : t("activity.joined")}
                       {member.user.location ? ` · ${member.user.location}` : ""}
                     </p>
                   </div>
                 </Link>
                 {isOrganizer && member.user.id !== user?.id ? (
                   <Button size="sm" variant="outline" onClick={() => setKickUserId(member.user.id)}>
-                    Remove
+                    {t("common.remove")}
                   </Button>
                 ) : null}
               </li>
@@ -259,13 +261,11 @@ export function ActivityDetailPage() {
       />
 
       <Dialog open={Boolean(kickUserId)} onOpenChange={(open) => !open && setKickUserId(null)}>
-        <h2 className="text-xl font-bold">Remove this person?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          They’ll leave the activity. Their replies stay in the discussion.
-        </p>
+        <h2 className="text-xl font-bold">{t("activity.removePersonTitle")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("activity.removePersonBody")}</p>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setKickUserId(null)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="ink"
@@ -278,14 +278,14 @@ export function ActivityDetailPage() {
                   userId: kickUserId,
                   actorId: user.id,
                 });
-                toast.success("Removed.");
+                toast.success(t("common.removed"));
                 setKickUserId(null);
               } catch (err) {
                 toast.error(errorMessage(err));
               }
             }}
           >
-            Remove
+            {t("common.remove")}
           </Button>
         </div>
       </Dialog>

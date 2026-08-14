@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { ActivityCover } from "@/components/activity/activity-gallery";
 import { JoinButton } from "@/components/activity/join-button";
 import { LookingForChips } from "@/components/activity/looking-for-chips";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
-import { LOCATION_LABELS } from "@/lib/activity-meta";
+import { locationLabel } from "@/lib/activity-meta";
 import { formatHeadcount, formatJoinPolicy } from "@/lib/headcount";
 import { formatActivityWhen, formatLocation } from "@/lib/format";
 import type { Activity } from "@/lib/types";
@@ -17,6 +18,7 @@ export function ActivityCard({
   activity: Activity;
   showJoin?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <article className="border-b border-border px-4 py-3 transition-colors hover:bg-hover">
       <div className="flex gap-3">
@@ -32,8 +34,8 @@ export function ActivityCard({
             <span className="text-muted-foreground">·</span>
             <TypeBadge type={activity.type} />
             <span className="text-[13px] text-muted-foreground">
-              {LOCATION_LABELS[activity.location.type]}
-              {activity.status === "full" ? " · Full" : ""}
+              {locationLabel(activity.location.type)}
+              {activity.status === "full" ? ` · ${t("activity.statusFull")}` : ""}
             </span>
           </div>
 

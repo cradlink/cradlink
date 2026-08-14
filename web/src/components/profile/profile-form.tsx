@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { TagInput } from "@/components/activity/tag-input";
 import { Avatar } from "@/components/ui/avatar";
@@ -14,6 +15,7 @@ import { errorMessage } from "@/lib/errors";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { refresh } = useAuth();
   const update = useUpdateProfile(user.id);
@@ -39,7 +41,7 @@ export function ProfileForm({ user }: { user: User }) {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (displayName.trim().length < 2) {
-      setError("Name needs at least 2 characters.");
+      setError(t("profile.nameTooShort"));
       return;
     }
     setError(null);
@@ -56,7 +58,7 @@ export function ProfileForm({ user }: { user: User }) {
         await getBackend().follows.acceptAllPending(user.id);
       }
       await refresh();
-      toast.success("Profile saved.");
+      toast.success(t("profile.saved"));
       navigate("/profile");
     } catch (err) {
       setError(errorMessage(err));
@@ -68,7 +70,7 @@ export function ProfileForm({ user }: { user: User }) {
       <div className="flex items-center gap-4">
         <Avatar name={displayName || user.displayName} src={avatarUrl} size="lg" />
         <div>
-          <Label htmlFor="avatar">Avatar</Label>
+          <Label htmlFor="avatar">{t("profile.avatar")}</Label>
           <Input
             id="avatar"
             type="file"
@@ -79,33 +81,32 @@ export function ProfileForm({ user }: { user: User }) {
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="displayName">Name</Label>
+        <Label htmlFor="displayName">{t("profile.name")}</Label>
         <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="location">Location</Label>
+        <Label htmlFor="location">{t("profile.location")}</Label>
         <Input
           id="location"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          placeholder="Belgrade"
+          placeholder={t("profile.locationPlaceholder")}
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="bio">Bio</Label>
+        <Label htmlFor="bio">{t("profile.bio")}</Label>
         <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <Label>Skills</Label>
-        <TagInput value={skills} onChange={setSkills} placeholder="Research, climbing, Figma" />
+        <Label>{t("profile.skills")}</Label>
+        <TagInput value={skills} onChange={setSkills} placeholder={t("profile.skillsPlaceholder")} />
       </div>
       <div className="rounded-2xl border border-border px-4 py-3">
         <label className="flex items-start justify-between gap-4">
           <span>
-            <span className="block text-sm font-medium">Private account</span>
+            <span className="block text-sm font-medium">{t("profile.privateAccount")}</span>
             <span className="mt-1 block text-[13px] leading-5 text-muted-foreground">
-              Like Instagram: people must send a follow request. Only people you confirm can see your
-              activities.
+              {t("profile.privateAccountHint")}
             </span>
           </span>
           <input
@@ -119,10 +120,10 @@ export function ProfileForm({ user }: { user: User }) {
       {error ? <p className="text-sm text-[#f4212e]">{error}</p> : null}
       <div className="flex gap-2">
         <Button type="submit" variant="terracotta" disabled={update.isPending || upload.isPending}>
-          {update.isPending ? "Saving…" : "Save"}
+          {update.isPending ? t("common.saving") : t("common.save")}
         </Button>
         <Button type="button" variant="ghost" onClick={() => navigate("/profile")}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
     </form>

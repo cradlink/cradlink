@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export function Dialog({
@@ -29,11 +30,24 @@ export function Dialog({
 
   if (!open || typeof document === "undefined") return null;
 
+  return <DialogPortal onOpenChange={onOpenChange} className={className}>{children}</DialogPortal>;
+}
+
+function DialogPortal({
+  onOpenChange,
+  children,
+  className,
+}: {
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const { t } = useTranslation();
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t("common.close")}
         className="absolute inset-0 bg-black/70"
         onClick={() => onOpenChange(false)}
       />

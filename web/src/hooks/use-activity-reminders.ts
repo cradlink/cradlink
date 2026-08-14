@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import i18n from "@/i18n";
 import { useCreatedActivities, useJoinedActivities } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
 import { getBackend } from "@/lib/backend";
@@ -38,7 +39,7 @@ async function ensureReminders(user: User, activities: Activity[]) {
         actorId: user.id,
       });
       if (result.created) {
-        showBrowserAlert("Tomorrow", activity.title);
+        showBrowserAlert(i18n.t("alerts.tomorrow"), activity.title);
       }
     }
 
@@ -52,7 +53,7 @@ async function ensureReminders(user: User, activities: Activity[]) {
         actorId: user.id,
       });
       if (result.created) {
-        showBrowserAlert("Starting in an hour", activity.title);
+        showBrowserAlert(i18n.t("alerts.inAnHour"), activity.title);
       }
     }
   }

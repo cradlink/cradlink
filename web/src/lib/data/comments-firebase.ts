@@ -3,7 +3,7 @@ import type { CommentsRepo } from "@/lib/data/types";
 import { firebaseActivities, firebaseMembers, firebaseUsers } from "@/lib/data/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyDiscussion } from "@/lib/data/notify";
-import { AppError, isPermissionDenied } from "@/lib/errors";
+import { AppError, appError, isPermissionDenied } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
 import { COMMENT_MAX_LENGTH, isCommentDeleted, type ActivityComment } from "@/lib/types";
 import { createId, nowIso, stripUndefined } from "@/lib/utils";
@@ -42,11 +42,11 @@ function readDiscussion(activityId: string, data: DocumentData | undefined): Act
 
 async function assertCanDiscuss(activityId: string, userId: string) {
   const activity = await firebaseActivities.getById(activityId);
-  if (!activity) throw new AppError("Activity not found.");
+  if (!activity) throw appError("errors.activityNotFound");
   if (activity.creatorId === userId) return activity;
   const membership = await firebaseMembers.getMembership(activityId, userId);
   if (membership?.status !== "joined") {
-    throw new AppError("Join this activity to take part in the discussion.");
+    throw appError("errors.joinToDiscuss");
   }
   return activity;
 }
@@ -66,14 +66,14 @@ export const firebaseComments: CommentsRepo = {
 
   async create(input) {
     const body = input.body.trim();
-    if (!body) throw new AppError("Write something first.");
+    if (!body) throw appError("errors.writeSomething");
     if (body.length > COMMENT_MAX_LENGTH) {
-      throw new AppError(`Keep it under ${COMMENT_MAX_LENGTH} characters.`);
+      throw appError("errors.commentTooLong", { max: COMMENT_MAX_LENGTH });
     }
 
     const activity = await assertCanDiscuss(input.activityId, input.authorId);
     const author = await firebaseUsers.getById(input.authorId);
-    if (!author) throw new AppError("User not found.");
+    if (!author) throw appError("errors.userNotFound");
 
     const parentId = input.parentId || null;
     const commentId = createId("cmt");
@@ -82,15 +82,15 @@ export const firebaseComments: CommentsRepo = {
       const saved = await runTransaction(getFirebaseDb(), async (tx) => {
         const actRef = doc(getFirebaseDb(), "activities", input.activityId);
         const snap = await tx.get(actRef);
-        if (!snap.exists()) throw new AppError("Activity not found.");
+        if (!snap.exists()) throw appError("errors.activityNotFound");
         const existing = readDiscussion(input.activityId, snap.data());
         if (existing.length >= DISCUSSION_CAP) {
-          throw new AppError("This thread is full.");
+          throw appError("errors.threadFull");
         }
 
         const parent = parentId ? existing.find((row) => row.id === parentId) ?? null : null;
         if (parentId && (!parent || parent.activityId !== input.activityId)) {
-          throw new AppError("That reply is gone.");
+          throw appError("errors.replyGone");
         }
 
         const comment: ActivityComment = {
@@ -117,7 +117,7 @@ export const firebaseComments: CommentsRepo = {
     } catch (err) {
       if (err instanceof AppError) throw err;
       if (isPermissionDenied(err)) {
-        throw new AppError("Couldn’t save this reply. Publish the latest Firestore rules, then try again.");
+        throw appError("errors.saveReplyRules");
       }
       throw err;
     }
@@ -128,16 +128,16 @@ export const firebaseComments: CommentsRepo = {
       return await runTransaction(getFirebaseDb(), async (tx) => {
         const actRef = doc(getFirebaseDb(), "activities", activityId);
         const snap = await tx.get(actRef);
-        if (!snap.exists()) throw new AppError("Activity not found.");
+        if (!snap.exists()) throw appError("errors.activityNotFound");
         const activity = snap.data();
         const existing = readDiscussion(activityId, activity);
         const index = existing.findIndex((row) => row.id === commentId);
-        if (index < 0) throw new AppError("That reply is gone.");
+        if (index < 0) throw appError("errors.replyGone");
         const current = existing[index];
         if (isCommentDeleted(current)) return current;
         const organizer = activity.creatorId === actorId;
         if (!organizer && current.authorId !== actorId) {
-          throw new AppError("You can only delete your own replies.");
+          throw appError("errors.deleteOwnReplies");
         }
         const next: ActivityComment = {
           ...current,
@@ -155,7 +155,7 @@ export const firebaseComments: CommentsRepo = {
     } catch (err) {
       if (err instanceof AppError) throw err;
       if (isPermissionDenied(err)) {
-        throw new AppError("Couldn’t delete this reply. Publish the latest Firestore rules, then try again.");
+        throw appError("errors.deleteReplyRules");
       }
       throw err;
     }

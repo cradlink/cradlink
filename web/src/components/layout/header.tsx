@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bell, Search } from "lucide-react";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Logo } from "@/components/layout/logo";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -9,15 +11,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/", label: "Feed", short: "Feed" },
-  { href: "/search", label: "Explore", short: "Search" },
-  { href: "/notifications", label: "Alerts", short: "Alerts" },
-  { href: "/me", label: "My activities", short: "Mine" },
-];
-
 export function Header() {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
+  const nav = [
+    { href: "/", label: t("nav.feed"), short: t("nav.feed") },
+    { href: "/search", label: t("nav.explore"), short: t("nav.search") },
+    { href: "/notifications", label: t("nav.alerts"), short: t("nav.alerts") },
+    { href: "/me", label: t("nav.myActivities"), short: t("nav.mine") },
+  ];
   const unread = useUnreadCount(user?.id);
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ export function Header() {
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-4">
         <Logo />
         <nav className="flex items-center gap-1">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               to={item.href}
@@ -57,18 +59,19 @@ export function Header() {
           <Link
             to="/search"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
-            aria-label="Search"
+            aria-label={t("nav.search")}
           >
             <Search className="size-5" />
           </Link>
           <Link
             to="/notifications"
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
-            aria-label="Notifications"
+            aria-label={t("nav.notifications")}
           >
             <Bell className="size-5" />
             <NotificationBadge count={unread} className="right-0 top-0" />
           </Link>
+          <LanguageSwitcher compact align="right" />
           <ThemeToggle />
         {user ? (
           <div className="relative" ref={menuRef}>
@@ -86,13 +89,13 @@ export function Header() {
                   <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                 </div>
                 <MenuLink href="/notifications" onClick={() => setOpen(false)}>
-                  Notifications
+                  {t("nav.notifications")}
                 </MenuLink>
                 <MenuLink href="/profile" onClick={() => setOpen(false)}>
-                  Profile
+                  {t("nav.profile")}
                 </MenuLink>
                 <MenuLink href="/me" onClick={() => setOpen(false)}>
-                  My activities
+                  {t("nav.myActivities")}
                 </MenuLink>
                 <button
                   type="button"
@@ -103,14 +106,14 @@ export function Header() {
                     navigate("/login");
                   }}
                 >
-                  Sign out
+                  {t("nav.signOut")}
                 </button>
               </div>
             ) : null}
           </div>
         ) : (
           <Link to="/login" className="text-sm text-muted-foreground">
-            Sign in
+            {t("nav.signIn")}
           </Link>
         )}
         </div>

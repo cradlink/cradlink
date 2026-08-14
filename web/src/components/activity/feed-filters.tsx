@@ -1,13 +1,7 @@
-import { ACTIVITY_META } from "@/lib/activity-meta";
+import { useTranslation } from "react-i18next";
+import { ACTIVITY_META, activityTypeLabel, locationLabel } from "@/lib/activity-meta";
 import { ACTIVITY_TYPES, type ActivityType, type LocationType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const LOCATIONS: { value: LocationType | "all"; label: string }[] = [
-  { value: "all", label: "Any place" },
-  { value: "online", label: "Online" },
-  { value: "in-person", label: "In person" },
-  { value: "hybrid", label: "Hybrid" },
-];
 
 export function FeedFilters({
   type,
@@ -20,21 +14,28 @@ export function FeedFilters({
   onType: (value: ActivityType | "all") => void;
   onLocation: (value: LocationType | "all") => void;
 }) {
+  const { t } = useTranslation();
+  const locations: { value: LocationType | "all"; label: string }[] = [
+    { value: "all", label: t("feed.anyPlace") },
+    { value: "online", label: locationLabel("online") },
+    { value: "in-person", label: locationLabel("in-person") },
+    { value: "hybrid", label: locationLabel("hybrid") },
+  ];
   return (
     <div className="space-y-3">
       <div className="flex gap-2 overflow-x-auto pb-1">
         <FilterChip active={type === "all"} onClick={() => onType("all")}>
-          All types
+          {t("feed.allTypes")}
         </FilterChip>
         {ACTIVITY_TYPES.map((value) => (
           <FilterChip key={value} active={type === value} onClick={() => onType(value)}>
             <span className={cn("size-1.5 rounded-full", ACTIVITY_META[value].dot)} />
-            {ACTIVITY_META[value].label}
+            {activityTypeLabel(value)}
           </FilterChip>
         ))}
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {LOCATIONS.map((item) => (
+        {locations.map((item) => (
           <FilterChip
             key={item.value}
             active={locationType === item.value}

@@ -7,7 +7,7 @@ import {
   setSessionUserId,
   type StoredUser,
 } from "@/lib/data/store";
-import { AppError } from "@/lib/errors";
+import { appError } from "@/lib/errors";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
 import type { User } from "@/lib/types";
 import { createId, hashPassword, nowIso } from "@/lib/utils";
@@ -39,15 +39,15 @@ export const localAuth: AuthRepo = {
     await ensureSeed();
     const trimmedEmail = email.trim().toLowerCase();
     const name = displayName.trim();
-    if (!name) throw new AppError("Please add a name.");
+    if (!name) throw appError("errors.addName");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      throw new AppError("That email doesn’t look right.");
+      throw appError("errors.invalidEmail");
     }
-    if (password.length < 6) throw new AppError("Password needs at least 6 characters.");
+    if (password.length < 6) throw appError("errors.weakPassword");
 
     const db = loadDb();
     if (Object.values(db.users).some((u) => u.email.toLowerCase() === trimmedEmail)) {
-      throw new AppError("An account with that email already exists.");
+      throw appError("errors.emailInUse");
     }
 
     const timestamp = nowIso();
@@ -77,9 +77,9 @@ export const localAuth: AuthRepo = {
     const trimmedEmail = email.trim().toLowerCase();
     const db = loadDb();
     const stored = Object.values(db.users).find((u) => u.email.toLowerCase() === trimmedEmail);
-    if (!stored?.passwordHash) throw new AppError("Wrong email or password.");
+    if (!stored?.passwordHash) throw appError("errors.wrongCredentials");
     const incoming = await hashPassword(password);
-    if (incoming !== stored.passwordHash) throw new AppError("Wrong email or password.");
+    if (incoming !== stored.passwordHash) throw appError("errors.wrongCredentials");
     setSessionUserId(stored.id);
     const user = publicUser(stored);
     emit(user);
@@ -90,7 +90,7 @@ export const localAuth: AuthRepo = {
     await ensureSeed();
     const db = loadDb();
     const stored = db.users[DEMO_GOOGLE_USER_ID];
-    if (!stored) throw new AppError("Demo Google account is missing. Refresh and try again.");
+    if (!stored) throw appError("errors.demoGoogleMissing");
     setSessionUserId(stored.id);
     const user = publicUser(stored);
     emit(user);

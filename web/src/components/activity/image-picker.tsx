@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
-import { AppError, errorMessage } from "@/lib/errors";
+import { useTranslation } from "react-i18next";
+import { appError, errorMessage } from "@/lib/errors";
 import { createId } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -13,8 +14,8 @@ export type DraftImage = {
 };
 
 function assertImage(file: File) {
-  if (!file.type.startsWith("image/")) throw new AppError("Please choose image files.");
-  if (file.size > MAX_BYTES) throw new AppError("Keep each image under 1.5 MB.");
+  if (!file.type.startsWith("image/")) throw appError("errors.chooseImages");
+  if (file.size > MAX_BYTES) throw appError("errors.eachImageTooLarge");
 }
 
 export function imagesFromFiles(files: File[]): DraftImage[] {
@@ -40,6 +41,7 @@ export function ImagePicker({
   value: DraftImage[];
   onChange: (next: DraftImage[]) => void;
 }) {
+  const { t } = useTranslation();
   function onFiles(files: FileList | null) {
     if (!files?.length) return;
     try {
@@ -68,7 +70,7 @@ export function ImagePicker({
                   onChange(value.filter((item) => item.id !== image.id));
                 }}
                 className="absolute right-1 top-1 rounded-full bg-black/80 p-0.5 text-white"
-                aria-label="Remove image"
+                aria-label={t("activity.form.removeImage")}
               >
                 <X className="size-3.5" />
               </button>
@@ -77,7 +79,7 @@ export function ImagePicker({
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          None added — we’ll use the default photo for this type.
+          {t("activity.form.photosEmpty")}
         </p>
       )}
       <input

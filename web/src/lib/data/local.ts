@@ -2,7 +2,7 @@ import { PAGE_SIZE } from "@/lib/config";
 import { ensureSeed } from "@/lib/data/seed";
 import { loadDb, publicUser, saveDb } from "@/lib/data/store";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
-import { AppError } from "@/lib/errors";
+import { appError } from "@/lib/errors";
 import type {
   Activity,
   ActivityMember,
@@ -54,7 +54,7 @@ export const localUsers: UsersRepo = {
     await ensureSeed();
     const db = loadDb();
     const existing = db.users[id];
-    if (!existing) throw new AppError("User not found.");
+    if (!existing) throw appError("errors.userNotFound");
     const next = {
       ...existing,
       ...patch,
@@ -149,8 +149,8 @@ export const localActivities: ActivitiesRepo = {
     await ensureSeed();
     const db = loadDb();
     const existing = db.activities[id];
-    if (!existing) throw new AppError("Activity not found.");
-    if (existing.creatorId !== actorId) throw new AppError("Only the organizer can edit this.");
+    if (!existing) throw appError("errors.activityNotFound");
+    if (existing.creatorId !== actorId) throw appError("errors.onlyOrganizerEdit");
     const next = {
       ...existing,
       title: input.title.trim(),
@@ -232,16 +232,16 @@ export const localMembers: MembersRepo = {
     await ensureSeed();
     const db = loadDb();
     const activity = db.activities[activityId];
-    if (!activity) throw new AppError("Activity not found.");
-    if (activity.status === "cancelled") throw new AppError("This activity was cancelled.");
-    if (activity.status === "completed") throw new AppError("This activity has ended.");
+    if (!activity) throw appError("errors.activityNotFound");
+    if (activity.status === "cancelled") throw appError("errors.cancelled");
+    if (activity.status === "completed") throw appError("errors.ended");
     const mid = memberId(activityId, userId);
-    if (db.members[mid]?.status === "joined") throw new AppError("You’re already in.");
-    if (db.members[mid]?.status === "pending") throw new AppError("Request already sent.");
+    if (db.members[mid]?.status === "joined") throw appError("errors.alreadyIn");
+    if (db.members[mid]?.status === "pending") throw appError("errors.requestAlreadySent");
     if (isActivityFull(activity)) {
       activity.status = "full";
       saveDb(db);
-      throw new AppError("This activity is full.");
+      throw appError("errors.activityFull");
     }
     const timestamp = nowIso();
     const auto = (activity.joinPolicy ?? "auto") === "auto";
@@ -268,14 +268,14 @@ export const localMembers: MembersRepo = {
     await ensureSeed();
     const db = loadDb();
     const activity = db.activities[activityId];
-    if (!activity) throw new AppError("Activity not found.");
+    if (!activity) throw appError("errors.activityNotFound");
     if (activity.creatorId === userId) {
-      throw new AppError("Organizers can’t leave. Stay, or cancel the activity later.");
+      throw appError("errors.organizerCantLeave");
     }
     const mid = memberId(activityId, userId);
     const existing = db.members[mid];
     if (!existing || (existing.status !== "joined" && existing.status !== "pending")) {
-      throw new AppError("You’re not in this one.");
+      throw appError("errors.notInThisOne");
     }
     const wasJoined = existing.status === "joined";
     delete db.members[mid];
@@ -292,13 +292,13 @@ export const localMembers: MembersRepo = {
     await ensureSeed();
     const db = loadDb();
     const activity = db.activities[activityId];
-    if (!activity) throw new AppError("Activity not found.");
-    if (activity.creatorId !== actorId) throw new AppError("Only the organizer can remove people.");
-    if (activity.creatorId === userId) throw new AppError("You can’t remove yourself.");
+    if (!activity) throw appError("errors.activityNotFound");
+    if (activity.creatorId !== actorId) throw appError("errors.onlyOrganizerRemove");
+    if (activity.creatorId === userId) throw appError("errors.cantRemoveSelf");
     const mid = memberId(activityId, userId);
     const existing = db.members[mid];
     if (!existing || (existing.status !== "joined" && existing.status !== "pending")) {
-      throw new AppError("They aren’t in this one.");
+      throw appError("errors.theyArentIn");
     }
     const wasJoined = existing.status === "joined";
     delete db.members[mid];
@@ -316,12 +316,12 @@ export const localMembers: MembersRepo = {
     await ensureSeed();
     const db = loadDb();
     const activity = db.activities[activityId];
-    if (!activity) throw new AppError("Activity not found.");
-    if (activity.creatorId !== actorId) throw new AppError("Only the organizer can accept people.");
-    if (isActivityFull(activity)) throw new AppError("This activity is full.");
+    if (!activity) throw appError("errors.activityNotFound");
+    if (activity.creatorId !== actorId) throw appError("errors.onlyOrganizerAccept");
+    if (isActivityFull(activity)) throw appError("errors.activityFull");
     const mid = memberId(activityId, userId);
     const existing = db.members[mid];
-    if (!existing || existing.status !== "pending") throw new AppError("No request to accept.");
+    if (!existing || existing.status !== "pending") throw appError("errors.noRequestAccept");
     existing.status = "joined";
     activity.memberCount += 1;
     const cap = hardCap(activity);
@@ -336,11 +336,11 @@ export const localMembers: MembersRepo = {
     await ensureSeed();
     const db = loadDb();
     const activity = db.activities[activityId];
-    if (!activity) throw new AppError("Activity not found.");
-    if (activity.creatorId !== actorId) throw new AppError("Only the organizer can decline people.");
+    if (!activity) throw appError("errors.activityNotFound");
+    if (activity.creatorId !== actorId) throw appError("errors.onlyOrganizerDecline");
     const mid = memberId(activityId, userId);
     const existing = db.members[mid];
-    if (!existing || existing.status !== "pending") throw new AppError("No request to decline.");
+    if (!existing || existing.status !== "pending") throw appError("errors.noRequestDecline");
     delete db.members[mid];
     activity.updatedAt = nowIso();
     saveDb(db);

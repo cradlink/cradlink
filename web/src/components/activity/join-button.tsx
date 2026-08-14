@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -16,6 +17,7 @@ export function JoinButton({
   activity: Activity;
   size?: "default" | "sm" | "lg";
 }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: membership } = useMembership(activity.id, user?.id);
   const { join, leave } = useJoinLeave();
@@ -31,7 +33,7 @@ export function JoinButton({
   if (isOrganizer) {
     return (
       <Button size={size} variant="outline" disabled>
-        Organizer
+        {t("activity.organizer")}
       </Button>
     );
   }
@@ -40,16 +42,14 @@ export function JoinButton({
     return (
       <>
         <Button size={size} variant="outline" onClick={() => setConfirm("leave")}>
-          Requested
+          {t("activity.requested")}
         </Button>
         <Dialog open={confirm === "leave"} onOpenChange={(open) => !open && setConfirm(null)}>
-          <h2 className="text-xl font-bold">Withdraw request?</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            The organizer won’t see this request anymore.
-          </p>
+          <h2 className="text-xl font-bold">{t("activity.withdrawTitle")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{t("activity.withdrawBody")}</p>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirm(null)}>
-              Keep it
+              {t("follows.keepIt")}
             </Button>
             <Button
               variant="ink"
@@ -58,14 +58,14 @@ export function JoinButton({
                 if (!user) return;
                 try {
                   await leave.mutateAsync({ activityId: activity.id, userId: user.id });
-                  toast.success("Request withdrawn.");
+                  toast.success(t("activity.requestWithdrawn"));
                   setConfirm(null);
                 } catch (err) {
                   toast.error(errorMessage(err));
                 }
               }}
             >
-              Withdraw
+              {t("activity.withdraw")}
             </Button>
           </div>
         </Dialog>
@@ -77,16 +77,14 @@ export function JoinButton({
     return (
       <>
         <Button size={size} variant="outline" onClick={() => setConfirm("leave")}>
-          Leave
+          {t("activity.leave")}
         </Button>
         <Dialog open={confirm === "leave"} onOpenChange={(open) => !open && setConfirm(null)}>
-          <h2 className="text-xl font-bold">Leave this activity?</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You can join again later if there is still a spot.
-          </p>
+          <h2 className="text-xl font-bold">{t("activity.leaveTitle")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{t("activity.leaveBody")}</p>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirm(null)}>
-              Stay
+              {t("activity.stay")}
             </Button>
             <Button
               variant="ink"
@@ -95,14 +93,14 @@ export function JoinButton({
                 if (!user) return;
                 try {
                   await leave.mutateAsync({ activityId: activity.id, userId: user.id });
-                  toast.success("You’ve left.");
+                  toast.success(t("activity.left"));
                   setConfirm(null);
                 } catch (err) {
                   toast.error(errorMessage(err));
                 }
               }}
             >
-              Leave
+              {t("activity.leave")}
             </Button>
           </div>
         </Dialog>
@@ -118,20 +116,20 @@ export function JoinButton({
         disabled={isFull || busy}
         onClick={() => setConfirm("join")}
       >
-        {isFull ? "Full" : manual ? "Request to join" : "Join"}
+        {isFull ? t("common.full") : manual ? t("activity.requestToJoin") : t("activity.join")}
       </Button>
       <Dialog open={confirm === "join"} onOpenChange={(open) => !open && setConfirm(null)}>
         <h2 className="text-xl font-bold">
-          {manual ? `Request to join ${activity.title}?` : `Join ${activity.title}?`}
+          {manual
+            ? t("activity.requestTitle", { title: activity.title })
+            : t("activity.joinTitle", { title: activity.title })}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {manual
-            ? "The organizer will accept or decline. You’ll see Requested until they do."
-            : "You’ll show up on the member list. The organizer can see your name."}
+          {manual ? t("activity.requestBody") : t("activity.joinBody")}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setConfirm(null)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="terracotta"
@@ -140,14 +138,14 @@ export function JoinButton({
               if (!user) return;
               try {
                 await join.mutateAsync({ activityId: activity.id, userId: user.id });
-                toast.success(manual ? "Request sent." : "You’re in.");
+                toast.success(manual ? t("activity.requestSent") : t("activity.youreIn"));
                 setConfirm(null);
               } catch (err) {
                 toast.error(errorMessage(err));
               }
             }}
           >
-            {manual ? "Send request" : "Confirm join"}
+            {manual ? t("activity.sendRequest") : t("activity.confirmJoin")}
           </Button>
         </div>
       </Dialog>

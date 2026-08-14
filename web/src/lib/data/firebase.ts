@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
-import { AppError } from "@/lib/errors";
+import { appError } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyActivityEdited, notifyDecision, notifyJoin, notifyKicked } from "@/lib/data/notify";
@@ -122,7 +122,7 @@ export const firebaseUsers: UsersRepo = {
   async update(id, patch) {
     const ref = doc(getFirebaseDb(), "users", id);
     const snap = await getDoc(ref);
-    if (!snap.exists()) throw new AppError("User not found.");
+    if (!snap.exists()) throw appError("errors.userNotFound");
     const next = mapUser(id, { ...snap.data(), ...patch, updatedAt: nowIso() });
     await updateDoc(ref, stripUndefined({ ...patch, updatedAt: nowIso() }));
 
@@ -204,7 +204,7 @@ export const firebaseActivities: ActivitiesRepo = {
     };
 
     if (activity.images.some((src) => src.startsWith("data:"))) {
-      throw new AppError("Photos are too large to save in the activity. They need to be uploaded first.");
+      throw appError("errors.photosTooLarge");
     }
 
     const db = getFirebaseDb();
@@ -226,10 +226,10 @@ export const firebaseActivities: ActivitiesRepo = {
 
   async update(id, actorId, input) {
     const existing = await firebaseActivities.getById(id);
-    if (!existing) throw new AppError("Activity not found.");
-    if (existing.creatorId !== actorId) throw new AppError("Only the organizer can edit this.");
+    if (!existing) throw appError("errors.activityNotFound");
+    if (existing.creatorId !== actorId) throw appError("errors.onlyOrganizerEdit");
     if ((input.images ?? []).some((src) => src.startsWith("data:"))) {
-      throw new AppError("Photos are too large to save in the activity. They need to be uploaded first.");
+      throw appError("errors.photosTooLarge");
     }
 
     const next = {
@@ -347,18 +347,18 @@ export const firebaseMembers: MembersRepo = {
       const actRef = doc(db, "activities", activityId);
       const memRef = doc(db, "activityMembers", memberId(activityId, userId));
       const actSnap = await tx.get(actRef);
-      if (!actSnap.exists()) throw new AppError("Activity not found.");
+      if (!actSnap.exists()) throw appError("errors.activityNotFound");
       const activity = mapActivity(actSnap.id, actSnap.data());
-      if (activity.status === "cancelled") throw new AppError("This activity was cancelled.");
-      if (activity.status === "completed") throw new AppError("This activity has ended.");
+      if (activity.status === "cancelled") throw appError("errors.cancelled");
+      if (activity.status === "completed") throw appError("errors.ended");
       const memSnap = await tx.get(memRef);
       if (memSnap.exists() && memSnap.data().status === "joined") {
-        throw new AppError("You’re already in.");
+        throw appError("errors.alreadyIn");
       }
       if (memSnap.exists() && memSnap.data().status === "pending") {
-        throw new AppError("Request already sent.");
+        throw appError("errors.requestAlreadySent");
       }
-      if (isActivityFull(activity)) throw new AppError("This activity is full.");
+      if (isActivityFull(activity)) throw appError("errors.activityFull");
       const timestamp = nowIso();
       const auto = (activity.joinPolicy ?? "auto") === "auto";
       tx.set(memRef, {
@@ -394,14 +394,14 @@ export const firebaseMembers: MembersRepo = {
       const actRef = doc(db, "activities", activityId);
       const memRef = doc(db, "activityMembers", memberId(activityId, userId));
       const actSnap = await tx.get(actRef);
-      if (!actSnap.exists()) throw new AppError("Activity not found.");
+      if (!actSnap.exists()) throw appError("errors.activityNotFound");
       const activity = mapActivity(actSnap.id, actSnap.data());
       if (activity.creatorId === userId) {
-        throw new AppError("Organizers can’t leave. Stay, or cancel the activity later.");
+        throw appError("errors.organizerCantLeave");
       }
       const memSnap = await tx.get(memRef);
       if (!memSnap.exists() || (memSnap.data().status !== "joined" && memSnap.data().status !== "pending")) {
-        throw new AppError("You’re not in this one.");
+        throw appError("errors.notInThisOne");
       }
       const timestamp = nowIso();
       const wasJoined = memSnap.data().status === "joined";
@@ -423,13 +423,13 @@ export const firebaseMembers: MembersRepo = {
       const actRef = doc(db, "activities", activityId);
       const memRef = doc(db, "activityMembers", memberId(activityId, userId));
       const actSnap = await tx.get(actRef);
-      if (!actSnap.exists()) throw new AppError("Activity not found.");
+      if (!actSnap.exists()) throw appError("errors.activityNotFound");
       const activity = mapActivity(actSnap.id, actSnap.data());
-      if (activity.creatorId !== actorId) throw new AppError("Only the organizer can remove people.");
-      if (activity.creatorId === userId) throw new AppError("You can’t remove yourself.");
+      if (activity.creatorId !== actorId) throw appError("errors.onlyOrganizerRemove");
+      if (activity.creatorId === userId) throw appError("errors.cantRemoveSelf");
       const memSnap = await tx.get(memRef);
       if (!memSnap.exists() || (memSnap.data().status !== "joined" && memSnap.data().status !== "pending")) {
-        throw new AppError("They aren’t in this one.");
+        throw appError("errors.theyArentIn");
       }
       const timestamp = nowIso();
       const wasJoined = memSnap.data().status === "joined";
@@ -454,13 +454,13 @@ export const firebaseMembers: MembersRepo = {
       const actRef = doc(db, "activities", activityId);
       const memRef = doc(db, "activityMembers", memberId(activityId, userId));
       const actSnap = await tx.get(actRef);
-      if (!actSnap.exists()) throw new AppError("Activity not found.");
+      if (!actSnap.exists()) throw appError("errors.activityNotFound");
       const activity = mapActivity(actSnap.id, actSnap.data());
-      if (activity.creatorId !== actorId) throw new AppError("Only the organizer can accept people.");
-      if (isActivityFull(activity)) throw new AppError("This activity is full.");
+      if (activity.creatorId !== actorId) throw appError("errors.onlyOrganizerAccept");
+      if (isActivityFull(activity)) throw appError("errors.activityFull");
       const memSnap = await tx.get(memRef);
       if (!memSnap.exists() || memSnap.data().status !== "pending") {
-        throw new AppError("No request to accept.");
+        throw appError("errors.noRequestAccept");
       }
       const timestamp = nowIso();
       const memberCount = activity.memberCount + 1;
@@ -481,12 +481,12 @@ export const firebaseMembers: MembersRepo = {
       const actRef = doc(db, "activities", activityId);
       const memRef = doc(db, "activityMembers", memberId(activityId, userId));
       const actSnap = await tx.get(actRef);
-      if (!actSnap.exists()) throw new AppError("Activity not found.");
+      if (!actSnap.exists()) throw appError("errors.activityNotFound");
       const activity = mapActivity(actSnap.id, actSnap.data());
-      if (activity.creatorId !== actorId) throw new AppError("Only the organizer can decline people.");
+      if (activity.creatorId !== actorId) throw appError("errors.onlyOrganizerDecline");
       const memSnap = await tx.get(memRef);
       if (!memSnap.exists() || memSnap.data().status !== "pending") {
-        throw new AppError("No request to decline.");
+        throw appError("errors.noRequestDecline");
       }
       const timestamp = nowIso();
       tx.delete(memRef);

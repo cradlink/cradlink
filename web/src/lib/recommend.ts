@@ -11,10 +11,24 @@ export type RecommendContext = {
   now?: number;
 };
 
+export type RecommendReason = {
+  key:
+    | "recommend.matchesJoin"
+    | "recommend.similarTags"
+    | "recommend.matchesSkills"
+    | "recommend.nearCity"
+    | "recommend.nearYou"
+    | "recommend.followOrganizer"
+    | "recommend.followGoing"
+    | "recommend.startingSoon"
+    | "recommend.thisWeek";
+  city?: string;
+};
+
 export type ScoredActivity = {
   activity: Activity;
   score: number;
-  reasons: string[];
+  reasons: RecommendReason[];
 };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -49,7 +63,7 @@ export function isRecommendable(activity: Activity, ctx: RecommendContext) {
 }
 
 export function scoreActivity(activity: Activity, ctx: RecommendContext): ScoredActivity {
-  const reasons: string[] = [];
+  const reasons: RecommendReason[] = [];
   let score = 0;
   const taste = ctx.tasteActivities;
   const types = new Set(taste.map((item) => item.type));
@@ -59,19 +73,19 @@ export function scoreActivity(activity: Activity, ctx: RecommendContext): Scored
 
   if (types.has(activity.type)) {
     score += 3;
-    reasons.push("Matches what you join");
+    reasons.push({ key: "recommend.matchesJoin" });
   }
 
   const tagHits = overlap(activity.tags ?? [], tags);
   if (tagHits > 0) {
     score += Math.min(2, tagHits);
-    reasons.push("Similar tags");
+    reasons.push({ key: "recommend.similarTags" });
   }
 
   const skillHits = overlap(activity.lookingFor, skills) + overlap(activity.tags ?? [], skills);
   if (skillHits > 0) {
     score += Math.min(2, skillHits);
-    reasons.push("Matches your skills");
+    reasons.push({ key: "recommend.matchesSkills" });
   }
 
   const lookingHits = overlap(activity.lookingFor, looking);
@@ -81,7 +95,11 @@ export function scoreActivity(activity: Activity, ctx: RecommendContext): Scored
 
   if (samePlace(ctx.user.location, activity)) {
     score += 2;
-    reasons.push(activity.location.city ? `Near ${activity.location.city}` : "Near you");
+    reasons.push(
+      activity.location.city
+        ? { key: "recommend.nearCity", city: activity.location.city }
+        : { key: "recommend.nearYou" },
+    );
   }
 
   const placeTypes = new Set(taste.map((item) => item.location.type));
@@ -91,12 +109,12 @@ export function scoreActivity(activity: Activity, ctx: RecommendContext): Scored
 
   if (ctx.followedIds.has(activity.creatorId)) {
     score += 4;
-    reasons.unshift("You follow the organizer");
+    reasons.unshift({ key: "recommend.followOrganizer" });
   }
 
   if (ctx.followedJoinedIds.has(activity.id)) {
     score += 3;
-    reasons.unshift("People you follow are going");
+    reasons.unshift({ key: "recommend.followGoing" });
   }
 
   const now = ctx.now ?? Date.now();
@@ -108,10 +126,10 @@ export function scoreActivity(activity: Activity, ctx: RecommendContext): Scored
       const until = start - now;
       if (until <= 3 * DAY) {
         score += 3;
-        reasons.push("Starting soon");
+        reasons.push({ key: "recommend.startingSoon" });
       } else if (until <= 7 * DAY) {
         score += 2;
-        reasons.push("This week");
+        reasons.push({ key: "recommend.thisWeek" });
       } else if (until <= 14 * DAY) {
         score += 1;
       }

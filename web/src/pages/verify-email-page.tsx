@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { errorMessage } from "@/lib/errors";
 import { needsEmailVerification } from "@/lib/types";
 
 export function VerifyEmailPage() {
+  const { t } = useTranslation();
   const { user, ready, sendVerificationEmail, reloadUser, signOut } = useAuth();
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
@@ -19,7 +21,7 @@ export function VerifyEmailPage() {
     try {
       const next = await reloadUser();
       if (next && next.emailVerified !== false) {
-        toast.success("Email confirmed.");
+        toast.success(t("auth.emailConfirmed"));
         navigate("/", { replace: true });
       }
     } catch (err) {
@@ -54,7 +56,7 @@ export function VerifyEmailPage() {
     setSendError(null);
     try {
       await sendVerificationEmail();
-      toast.success("Verification email sent. Check inbox and spam.");
+      toast.success(t("auth.verificationSent"));
     } catch (err) {
       const message = errorMessage(err);
       setSendError(message);
@@ -67,23 +69,25 @@ export function VerifyEmailPage() {
   return (
     <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
       <Logo />
-      <h1 className="mt-6 font-display text-3xl leading-tight">Confirm your email.</h1>
+      <h1 className="mt-6 font-display text-3xl leading-tight">{t("auth.verifyTitle")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        We asked Firebase to email <span className="font-medium text-foreground">{user.email}</span>.
-        The sender is usually <span className="font-medium text-foreground">noreply@cradlink.firebaseapp.com</span>.
-        Check spam and promotions.
+        <Trans
+          i18nKey="auth.verifyBody"
+          values={{ email: user.email, sender: "noreply@cradlink.firebaseapp.com" }}
+          components={{
+            email: <span className="font-medium text-foreground" />,
+            sender: <span className="font-medium text-foreground" />,
+          }}
+        />
       </p>
       {sendError ? <p className="mt-3 text-sm text-[#f4212e]">{sendError}</p> : null}
-      <p className="mt-3 text-xs text-muted-foreground">
-        If Resend says it was sent and nothing arrives, Firebase’s default mail is being dropped.
-        Set a custom SMTP server in Firebase Console → Authentication → Templates → SMTP settings.
-      </p>
+      <p className="mt-3 text-xs text-muted-foreground">{t("auth.verifySmtpHint")}</p>
       <div className="mt-6 space-y-3">
         <Button className="w-full" variant="ink" disabled={checking} onClick={() => void checkVerified()}>
-          {checking ? "Checking…" : "I’ve confirmed"}
+          {checking ? t("auth.checking") : t("auth.iveConfirmed")}
         </Button>
         <Button className="w-full" variant="outline" disabled={pending} onClick={() => void resend()}>
-          {pending ? "Sending…" : "Resend email"}
+          {pending ? t("auth.sending") : t("auth.resendEmail")}
         </Button>
         <Button
           className="w-full"
@@ -93,7 +97,7 @@ export function VerifyEmailPage() {
             navigate("/login", { replace: true });
           }}
         >
-          Use a different account
+          {t("auth.useDifferentAccount")}
         </Button>
       </div>
     </div>

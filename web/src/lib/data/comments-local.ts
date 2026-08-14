@@ -2,7 +2,7 @@ import type { CommentsRepo } from "@/lib/data/types";
 import { localActivities, localMembers, localUsers } from "@/lib/data/local";
 import { localNotifications } from "@/lib/data/notifications-local";
 import { notifyDiscussion } from "@/lib/data/notify";
-import { AppError } from "@/lib/errors";
+import { appError } from "@/lib/errors";
 import { COMMENT_MAX_LENGTH, isCommentDeleted, type ActivityComment } from "@/lib/types";
 import { createId, nowIso } from "@/lib/utils";
 
@@ -22,11 +22,11 @@ function save(rows: Record<string, ActivityComment>) {
 
 async function assertCanDiscuss(activityId: string, userId: string) {
   const activity = await localActivities.getById(activityId);
-  if (!activity) throw new AppError("Activity not found.");
+  if (!activity) throw appError("errors.activityNotFound");
   if (activity.creatorId === userId) return activity;
   const membership = await localMembers.getMembership(activityId, userId);
   if (membership?.status !== "joined") {
-    throw new AppError("Join this activity to take part in the discussion.");
+    throw appError("errors.joinToDiscuss");
   }
   return activity;
 }
@@ -48,20 +48,20 @@ export const localComments: CommentsRepo = {
 
   async create(input) {
     const body = input.body.trim();
-    if (!body) throw new AppError("Write something first.");
+    if (!body) throw appError("errors.writeSomething");
     if (body.length > COMMENT_MAX_LENGTH) {
-      throw new AppError(`Keep it under ${COMMENT_MAX_LENGTH} characters.`);
+      throw appError("errors.commentTooLong", { max: COMMENT_MAX_LENGTH });
     }
 
     const activity = await assertCanDiscuss(input.activityId, input.authorId);
     const author = await localUsers.getById(input.authorId);
-    if (!author) throw new AppError("User not found.");
+    if (!author) throw appError("errors.userNotFound");
 
     const parentId = input.parentId || null;
     const rows = load();
     const parent = parentId ? (rows[parentId] ?? null) : null;
     if (parentId && (!parent || parent.activityId !== input.activityId)) {
-      throw new AppError("That reply is gone.");
+      throw appError("errors.replyGone");
     }
 
     const id = createId("cmt");
@@ -84,13 +84,13 @@ export const localComments: CommentsRepo = {
 
   async remove(activityId, commentId, actorId) {
     const activity = await localActivities.getById(activityId);
-    if (!activity) throw new AppError("Activity not found.");
+    if (!activity) throw appError("errors.activityNotFound");
     const rows = load();
     const current = rows[commentId];
-    if (!current || current.activityId !== activityId) throw new AppError("That reply is gone.");
+    if (!current || current.activityId !== activityId) throw appError("errors.replyGone");
     if (isCommentDeleted(current)) return current;
     if (activity.creatorId !== actorId && current.authorId !== actorId) {
-      throw new AppError("You can only delete your own replies.");
+      throw appError("errors.deleteOwnReplies");
     }
     const next: ActivityComment = {
       ...current,

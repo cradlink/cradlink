@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, CalendarDays, Lock, MapPin } from "lucide-react";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
@@ -32,6 +33,7 @@ export function ProfileView({
   user: User;
   isSelf?: boolean;
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user: me } = useAuth();
   const created = useCreatedActivities(user.id);
@@ -66,7 +68,7 @@ export function ProfileView({
             type="button"
             onClick={() => navigate(-1)}
             className="flex size-9 items-center justify-center rounded-full hover:bg-hover"
-            aria-label="Back"
+            aria-label={t("common.back")}
           >
             <ArrowLeft className="size-5" />
           </button>
@@ -74,8 +76,8 @@ export function ProfileView({
             <h1 className="truncate text-xl font-bold leading-6">{user.displayName}</h1>
             <p className="text-[13px] text-muted-foreground">
               {locked
-                ? "Private account"
-                : `${visible.length} ${visible.length === 1 ? "activity" : "activities"}`}
+                ? t("profile.privateAccount")
+                : t("profile.activityCount", { count: visible.length })}
             </p>
           </div>
         </div>
@@ -91,7 +93,7 @@ export function ProfileView({
           <div className="mb-1 flex flex-wrap justify-end gap-2">
             {isSelf ? (
               <Button asChild variant="outline" size="sm">
-                <Link to="/profile/edit">Edit profile</Link>
+                <Link to="/profile/edit">{t("profile.edit")}</Link>
               </Button>
             ) : (
               <FollowButton user={user} />
@@ -102,13 +104,15 @@ export function ProfileView({
         <div className="mt-3">
           <h2 className="inline-flex items-center gap-1.5 text-xl font-bold leading-6">
             {user.displayName}
-            {privateAccount ? <Lock className="size-4 text-muted-foreground" aria-label="Private account" /> : null}
+            {privateAccount ? (
+              <Lock className="size-4 text-muted-foreground" aria-label={t("profile.privateAccount")} />
+            ) : null}
           </h2>
           <p className="text-[15px] leading-5 text-muted-foreground">@{handle}</p>
         </div>
 
         <p className="mt-3 whitespace-pre-wrap text-[15px] leading-5">
-          {user.bio || (isSelf ? "No bio yet. Edit your profile to add one." : "No bio yet.")}
+          {user.bio || (isSelf ? t("profile.noBioSelf") : t("profile.noBio"))}
         </p>
 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px] text-muted-foreground">
@@ -127,11 +131,12 @@ export function ProfileView({
         </div>
 
         <p className="mt-3 text-[15px] leading-5">
-          <span className="font-bold">{followerCount}</span>{" "}
-          <span className="text-muted-foreground">{followerCount === 1 ? "follower" : "followers"}</span>
+          <span className="font-bold text-foreground">
+            {t("profile.followerCount", { count: followerCount })}
+          </span>
           <span className="mx-2 text-muted-foreground">·</span>
           <span className="font-bold">{followingCount}</span>{" "}
-          <span className="text-muted-foreground">following</span>
+          <span className="text-muted-foreground">{t("profile.following")}</span>
         </p>
 
         {user.skills.length > 0 ? (
@@ -146,9 +151,9 @@ export function ProfileView({
           <span className="mx-auto flex size-16 items-center justify-center rounded-full border-2 border-foreground">
             <Lock className="size-7" />
           </span>
-          <h2 className="mt-4 text-3xl font-bold">This account is private</h2>
+          <h2 className="mt-4 text-3xl font-bold">{t("profile.privateLock")}</h2>
           <p className="mt-2 text-[15px] text-muted-foreground">
-            Follow @{handle} to see their activities. They’ll have to confirm your request.
+            {t("profile.privateHint", { handle })}
           </p>
         </div>
       ) : (
@@ -158,8 +163,8 @@ export function ProfileView({
               value={tab}
               onChange={setTab}
               items={[
-                { value: "active", label: "Active" },
-                { value: "past", label: "Past" },
+                { value: "active", label: t("profile.tabActive") },
+                { value: "past", label: t("profile.tabPast") },
               ]}
             />
           </div>
@@ -174,16 +179,16 @@ export function ProfileView({
           {!created.isLoading && list.length === 0 ? (
             <div className="px-8 py-16 text-center">
               <h2 className="text-3xl font-bold">
-                {tab === "past" ? "No past activities." : "No active activities."}
+                {tab === "past" ? t("profile.noPast") : t("profile.noActive")}
               </h2>
               <p className="mt-2 text-[15px] text-muted-foreground">
                 {tab === "past"
                   ? isSelf
-                    ? "Finished and cancelled ones will land here."
-                    : `${user.displayName} hasn’t wrapped any activities yet.`
+                    ? t("profile.pastEmptySelf")
+                    : t("profile.pastEmptyOther", { name: user.displayName })
                   : isSelf
-                    ? "Create one and it’ll show up here."
-                    : `${user.displayName} hasn’t posted anything upcoming.`}
+                    ? t("profile.activeEmptySelf")
+                    : t("profile.activeEmptyOther", { name: user.displayName })}
               </p>
             </div>
           ) : null}

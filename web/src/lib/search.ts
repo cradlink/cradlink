@@ -1,4 +1,6 @@
 import { format, isValid, parseISO } from "date-fns";
+import i18n from "@/i18n";
+import { getDateLocale } from "@/i18n/dates";
 import { handleFromName } from "@/lib/format";
 import type { Activity, User } from "@/lib/types";
 
@@ -51,5 +53,5 @@ export function isActivityPast(activity: Activity) {
 export function formatJoined(iso: string) {
   const date = parseISO(iso);
   if (!isValid(date)) return null;
-  return `Joined ${format(date, "MMMM yyyy")}`;
+  return i18n.t("profile.joinedIn", { date: format(date, "LLLL yyyy", { locale: getDateLocale() }) });
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ export function FollowButton({
   user: User;
   size?: "sm" | "default";
 }) {
+  const { t } = useTranslation();
   const { user: me } = useAuth();
   const outgoing = useFollow(me?.id, user.id);
   const incoming = useFollow(user.id, me?.id);
@@ -31,7 +33,11 @@ export function FollowButton({
   async function sendFollow() {
     try {
       const result = await follow.mutateAsync({ actorId: me!.id, targetId: user.id });
-      toast.success(result.status === "pending" ? "Request sent." : `You’re following ${user.displayName}.`);
+      toast.success(
+        result.status === "pending"
+          ? t("follows.requestSent")
+          : t("follows.nowFollowing", { name: user.displayName }),
+      );
     } catch (err) {
       toast.error(errorMessage(err));
     }
@@ -40,7 +46,7 @@ export function FollowButton({
   async function confirmIncoming() {
     try {
       await accept.mutateAsync({ actorId: me!.id, followerId: user.id });
-      toast.success("Confirmed.");
+      toast.success(t("follows.confirmed"));
     } catch (err) {
       toast.error(errorMessage(err));
     }
@@ -50,18 +56,16 @@ export function FollowButton({
     return (
       <>
         <Button size={size} variant="outline" disabled={busy} onClick={() => setConfirm("unfollow")}>
-          Following
+          {t("follows.following")}
         </Button>
         <Dialog open={confirm === "unfollow"} onOpenChange={(open) => !open && setConfirm(null)}>
-          <h2 className="text-xl font-bold">Unfollow @{handle}?</h2>
+          <h2 className="text-xl font-bold">{t("follows.unfollowTitle", { handle })}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {isPrivateProfile(user)
-              ? "Their activities will be hidden until they accept you again."
-              : "You can follow them again later."}
+            {isPrivateProfile(user) ? t("follows.unfollowPrivate") : t("follows.unfollowPublic")}
           </p>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirm(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="ink"
@@ -75,7 +79,7 @@ export function FollowButton({
                 }
               }}
             >
-              Unfollow
+              {t("follows.unfollow")}
             </Button>
           </div>
         </Dialog>
@@ -87,16 +91,14 @@ export function FollowButton({
     return (
       <>
         <Button size={size} variant="outline" disabled={busy} onClick={() => setConfirm("cancel")}>
-          Requested
+          {t("follows.requested")}
         </Button>
         <Dialog open={confirm === "cancel"} onOpenChange={(open) => !open && setConfirm(null)}>
-          <h2 className="text-xl font-bold">Cancel follow request?</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            @{handle} won’t be notified. You can request again later.
-          </p>
+          <h2 className="text-xl font-bold">{t("follows.cancelTitle")}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{t("follows.cancelBody", { handle })}</p>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirm(null)}>
-              Keep it
+              {t("follows.keepIt")}
             </Button>
             <Button
               variant="ink"
@@ -110,7 +112,7 @@ export function FollowButton({
                 }
               }}
             >
-              Cancel request
+              {t("follows.cancelRequest")}
             </Button>
           </div>
         </Dialog>
@@ -121,11 +123,11 @@ export function FollowButton({
   return (
     <div className="flex flex-wrap gap-2">
       <Button size={size} variant="terracotta" disabled={busy} onClick={() => void sendFollow()}>
-        {theyFollow ? "Follow back" : "Follow"}
+        {theyFollow ? t("follows.followBack") : t("follows.follow")}
       </Button>
       {incoming.data?.status === "pending" ? (
         <Button size={size} variant="outline" disabled={busy} onClick={() => void confirmIncoming()}>
-          Confirm
+          {t("follows.confirm")}
         </Button>
       ) : null}
     </div>

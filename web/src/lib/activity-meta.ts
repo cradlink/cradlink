@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import type { Activity, ActivityType, LocationType } from "@/lib/types";
 
 export type ActivityMeta = {
@@ -93,3 +94,11 @@ export const LOCATION_LABELS: Record<LocationType, string> = {
   "in-person": "In person",
   hybrid: "Hybrid",
 };
+
+export function activityTypeLabel(type: ActivityType) {
+  return i18n.t(`activity.types.${type}`);
+}
+
+export function locationLabel(type: LocationType) {
+  return i18n.t(`activity.location.${type}`);
+}

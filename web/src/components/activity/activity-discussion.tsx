@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { ArrowLeft, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
@@ -89,6 +90,7 @@ function Composer({
   onSubmit: (body: string) => Promise<void>;
   onCancel?: () => void;
 }) {
+  const { t } = useTranslation();
   const [body, setBody] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const remaining = COMMENT_MAX_LENGTH - body.length;
@@ -124,7 +126,11 @@ function Composer({
       <div className="min-w-0 flex-1">
         {replyToName ? (
           <p className="mb-1 text-[13px] text-muted-foreground">
-            Replying to <span className="text-primary">@{handleFromName(replyToName)}</span>
+            <Trans
+              i18nKey="discussion.replyingTo"
+              values={{ handle: handleFromName(replyToName) }}
+              components={{ handle: <span className="text-primary" /> }}
+            />
           </p>
         ) : null}
         <textarea
@@ -156,7 +162,7 @@ function Composer({
                 onClick={onCancel}
                 className="text-[13px] text-muted-foreground hover:text-foreground"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             ) : null}
             {body.length > 200 ? (
@@ -166,7 +172,7 @@ function Composer({
             ) : null}
           </div>
           <Button size="sm" disabled={!canPost} onClick={() => void submit()}>
-            {busy ? "Posting…" : "Reply"}
+            {busy ? t("discussion.posting") : t("discussion.reply")}
           </Button>
         </div>
       </div>
@@ -209,6 +215,7 @@ function CommentItem({
   onSubmitReply: (parentId: string, body: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const count = replyCount(node);
   const deleted = isCommentDeleted(node);
   const [confirm, setConfirm] = useState(false);
@@ -247,21 +254,26 @@ function CommentItem({
               </div>
               {parentName && !deleted ? (
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  Replying to{" "}
-                  <Link
-                    to={`/activities/${activityId}#c-${node.parentId}`}
-                    className="text-primary hover:underline"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    @{handleFromName(parentName)}
-                  </Link>
+                  <Trans
+                    i18nKey="discussion.replyingTo"
+                    values={{ handle: handleFromName(parentName) }}
+                    components={{
+                      handle: (
+                        <Link
+                          to={`/activities/${activityId}#c-${node.parentId}`}
+                          className="text-primary hover:underline"
+                          onClick={(event) => event.stopPropagation()}
+                        />
+                      ),
+                    }}
+                  />
                 </p>
               ) : null}
             </div>
             {canDelete && !deleted ? (
               <button
                 type="button"
-                aria-label="Delete"
+                aria-label={t("common.delete")}
                 className="rounded-full p-2 text-muted-foreground hover:bg-[#f4212e1a] hover:text-[#f4212e]"
                 onClick={(event) => {
                   event.stopPropagation();
@@ -274,7 +286,7 @@ function CommentItem({
           </div>
           {deleted ? (
             <p className={cn("mt-1 italic text-muted-foreground", large ? "text-[17px]" : "text-[15px]")}>
-              This post was deleted.
+              {t("discussion.deleted")}
             </p>
           ) : (
             <p
@@ -289,7 +301,7 @@ function CommentItem({
           {canReply ? (
             <button
               type="button"
-              aria-label={replyOpen ? "Cancel reply" : "Reply"}
+              aria-label={replyOpen ? t("discussion.cancelReply") : t("discussion.reply")}
               onClick={(event) => {
                 event.stopPropagation();
                 onReply(node.id);
@@ -313,7 +325,7 @@ function CommentItem({
         <div className="border-t border-border" onClick={(event) => event.stopPropagation()}>
           <Composer
             user={user}
-            placeholder="Post your reply"
+            placeholder={t("discussion.placeholder")}
             replyToName={node.authorName}
             busy={busy}
             autoFocus
@@ -323,13 +335,11 @@ function CommentItem({
         </div>
       ) : null}
       <Dialog open={confirm} onOpenChange={setConfirm}>
-        <h2 className="text-xl font-bold">Delete this post?</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Replies stay in the thread. People will see that this post was deleted.
-        </p>
+        <h2 className="text-xl font-bold">{t("discussion.deleteTitle")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("discussion.deleteBody")}</p>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setConfirm(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="ink"
@@ -343,7 +353,7 @@ function CommentItem({
               }
             }}
           >
-            Delete
+            {t("discussion.deleteAction")}
           </Button>
         </div>
       </Dialog>
@@ -386,6 +396,7 @@ function ThreadBranch({
   onSubmitReply: (parentId: string, body: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const showAll = depth === 0 || expanded.has(node.id);
   const hidden = showAll ? 0 : Math.max(0, node.replies.length - PREVIEW_REPLIES);
   const visible = hidden > 0 ? node.replies.slice(0, PREVIEW_REPLIES) : node.replies;
@@ -437,7 +448,7 @@ function ThreadBranch({
           onClick={() => onToggleExpand(node.id)}
           className="px-4 py-2 text-left text-[15px] text-primary hover:underline"
         >
-          Show {hidden} more {hidden === 1 ? "reply" : "replies"}
+          {t("discussion.showMore", { count: hidden })}
         </button>
       ) : null}
     </div>
@@ -457,6 +468,7 @@ export function ActivityDiscussion({
   isOrganizer: boolean;
   membershipStatus?: "joined" | "pending" | null;
 }) {
+  const { t } = useTranslation();
   const commentsQuery = useActivityComments(activity.id);
   const createComment = useCreateComment();
   const removeComment = useRemoveComment();
@@ -508,9 +520,7 @@ export function ActivityDiscussion({
   const busy = createComment.isPending || removeComment.isPending;
 
   const lockCopy =
-    membershipStatus === "pending"
-      ? "You’ll be able to reply once the organizer accepts you."
-      : "Join this activity to reply.";
+    membershipStatus === "pending" ? t("discussion.lockPending") : t("discussion.lockJoin");
 
   return (
     <section id="discussion" className="border-t border-border">
@@ -521,22 +531,22 @@ export function ActivityDiscussion({
               type="button"
               onClick={closeThread}
               className="flex size-9 items-center justify-center rounded-full hover:bg-hover"
-              aria-label="Back to discussion"
+              aria-label={t("discussion.back")}
             >
               <ArrowLeft className="size-5" />
             </button>
             <div>
-              <h2 className="text-xl font-bold">Thread</h2>
+              <h2 className="text-xl font-bold">{t("discussion.thread")}</h2>
               <p className="text-[13px] text-muted-foreground">{activity.title}</p>
             </div>
           </div>
         ) : (
           <>
-            <h2 className="text-xl font-bold">Discussion</h2>
+            <h2 className="text-xl font-bold">{t("discussion.title")}</h2>
             <p className="text-[13px] text-muted-foreground">
               {!comments?.length
-                ? "Reply as many times as you want. Replies can have replies."
-                : `${comments.length} ${comments.length === 1 ? "reply" : "replies"}`}
+                ? t("discussion.emptyHint")
+                : t("discussion.replyCount", { count: comments.length })}
             </p>
           </>
         )}
@@ -593,7 +603,7 @@ export function ActivityDiscussion({
             <div className="border-b border-border">
               <Composer
                 user={user}
-                placeholder="Post your reply"
+                placeholder={t("discussion.placeholder")}
                 replyToName={focused.authorName}
                 busy={createComment.isPending}
                 autoFocus
@@ -636,7 +646,7 @@ export function ActivityDiscussion({
 
           {focused.replies.length === 0 ? (
             <p className="px-4 py-10 text-center text-[15px] text-muted-foreground">
-              No replies yet. {canDiscuss ? "Keep the thread going." : ""}
+              {t("discussion.noReplies")} {canDiscuss ? t("discussion.keepGoing") : ""}
             </p>
           ) : null}
         </div>
@@ -646,7 +656,7 @@ export function ActivityDiscussion({
             <div className="border-b border-border">
               <Composer
                 user={user}
-                placeholder="Post your reply"
+                placeholder={t("discussion.placeholder")}
                 busy={createComment.isPending}
                 onSubmit={(body) => post(body, null)}
               />
@@ -664,13 +674,13 @@ export function ActivityDiscussion({
 
           {commentsQuery.isError ? (
             <p className="px-4 py-8 text-center text-[15px] text-muted-foreground">
-              Couldn’t load replies. Try refreshing.
+              {t("discussion.loadError")}
             </p>
           ) : null}
 
           {!commentsQuery.isLoading && !commentsQuery.isError && tree.length === 0 ? (
             <p className="px-4 py-10 text-center text-[15px] text-muted-foreground">
-              No replies yet. {canDiscuss ? "Start the thread — you can post more than once." : ""}
+              {t("discussion.noReplies")} {canDiscuss ? t("discussion.startThread") : ""}
             </p>
           ) : null}
 

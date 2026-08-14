@@ -11,7 +11,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import type { AuthRepo } from "@/lib/auth/types";
-import { AppError } from "@/lib/errors";
+import { appError } from "@/lib/errors";
 import { appEnv } from "@/lib/env";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
@@ -22,29 +22,25 @@ function mapAuthError(err: unknown): never {
   const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
   const message =
     typeof err === "object" && err && "message" in err ? String((err as { message: string }).message) : "";
-  if (code === "auth/email-already-in-use") throw new AppError("An account with that email already exists.");
-  if (code === "auth/invalid-email") throw new AppError("That email doesn’t look right.");
-  if (code === "auth/weak-password") throw new AppError("Password needs at least 6 characters.");
+  if (code === "auth/email-already-in-use") throw appError("errors.emailInUse");
+  if (code === "auth/invalid-email") throw appError("errors.invalidEmail");
+  if (code === "auth/weak-password") throw appError("errors.weakPassword");
   if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
-    throw new AppError("Wrong email or password.");
+    throw appError("errors.wrongCredentials");
   }
-  if (code === "auth/popup-closed-by-user") throw new AppError("Google sign-in was closed.");
-  if (code === "auth/popup-blocked") throw new AppError("The browser blocked the Google popup.");
+  if (code === "auth/popup-closed-by-user") throw appError("errors.googleClosed");
+  if (code === "auth/popup-blocked") throw appError("errors.googleBlocked");
   if (
     code === "auth/too-many-requests" ||
     code === "TOO_MANY_ATTEMPTS_TRY_LATER" ||
     message.includes("TOO_MANY_ATTEMPTS")
   ) {
-    throw new AppError("Firebase paused confirmation emails. Wait about an hour, then tap Resend once.");
+    throw appError("errors.tooManyEmails");
   }
   if (code === "auth/unauthorized-continue-uri" || code === "auth/invalid-continue-uri") {
-    throw new AppError(
-      "Firebase rejected the confirmation link. Add localhost and 127.0.0.1 under Authentication → Settings → Authorized domains.",
-    );
+    throw appError("errors.unauthorizedDomain");
   }
-  throw new AppError(
-    message.replace(/^Firebase:\s*/i, "").replace(/\s*\([^)]*\)\s*$/, "") || "Something went wrong. Try again.",
-  );
+  throw appError("errors.tryAgain");
 }
 
 function toUser(fbUser: FirebaseUser, data?: Partial<User>): User {
@@ -70,7 +66,7 @@ async function sendVerification(fbUser: FirebaseUser) {
   if (fbUser.emailVerified) return;
   const last = Number(localStorage.getItem(VERIFY_COOLDOWN_KEY) || 0);
   if (last && Date.now() - last < VERIFY_COOLDOWN_MS) {
-    throw new AppError("Wait a minute before sending another confirmation email.");
+    throw appError("errors.waitBeforeResend");
   }
   const apiKey = appEnv.firebase.apiKey;
   if (!apiKey) {
@@ -183,7 +179,7 @@ export const firebaseAuth: AuthRepo = {
 
   async sendVerificationEmail() {
     const current = getFirebaseAuth().currentUser;
-    if (!current) throw new AppError("Sign in first, then we can send the email.");
+    if (!current) throw appError("errors.signInToSendEmail");
     try {
       await sendVerification(current);
     } catch (err) {

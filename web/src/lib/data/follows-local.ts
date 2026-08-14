@@ -2,7 +2,7 @@ import type { FollowsRepo } from "@/lib/data/types";
 import { localUsers } from "@/lib/data/local";
 import { localNotifications } from "@/lib/data/notifications-local";
 import { notifyFollowRequest, notifyFollowed } from "@/lib/data/notify";
-import { AppError } from "@/lib/errors";
+import { appError } from "@/lib/errors";
 import { isPrivateProfile, type Follow, type FollowWithUser } from "@/lib/types";
 import { followId, nowIso } from "@/lib/utils";
 
@@ -44,16 +44,16 @@ export const localFollows: FollowsRepo = {
   },
 
   async follow(actorId, targetId) {
-    if (actorId === targetId) throw new AppError("You can’t follow yourself.");
+    if (actorId === targetId) throw appError("errors.cantFollowSelf");
     const rows = load();
     const id = followId(actorId, targetId);
-    if (rows[id]?.status === "accepted") throw new AppError("You’re already following them.");
+    if (rows[id]?.status === "accepted") throw appError("errors.alreadyFollowing");
     if (rows[id]?.status === "pending") return rows[id];
 
     const target = await localUsers.getById(targetId);
-    if (!target) throw new AppError("User not found.");
+    if (!target) throw appError("errors.userNotFound");
     const actor = await localUsers.getById(actorId);
-    if (!actor) throw new AppError("User not found.");
+    if (!actor) throw appError("errors.userNotFound");
 
     const follow: Follow = {
       id,
@@ -85,7 +85,7 @@ export const localFollows: FollowsRepo = {
     const rows = load();
     const id = followId(followerId, actorId);
     const existing = rows[id];
-    if (!existing || existing.status !== "pending") throw new AppError("No request to confirm.");
+    if (!existing || existing.status !== "pending") throw appError("errors.noRequestConfirm");
     rows[id] = { ...existing, status: "accepted" };
     save(rows);
     await localNotifications.remove(`follow_request_${followerId}`, actorId);

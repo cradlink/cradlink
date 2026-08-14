@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getBackend } from "@/lib/backend";
+import { appError } from "@/lib/errors";
 import type { UpdateProfileInput } from "@/lib/types";
 
 export function useUser(userId: string | undefined) {
@@ -16,7 +17,7 @@ export function useUpdateProfile(userId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (patch: UpdateProfileInput) => {
-      if (!userId) throw new Error("Not signed in");
+      if (!userId) throw appError("errors.notSignedIn");
       return backend.users.update(userId, patch);
     },
     onSuccess: (user) => {

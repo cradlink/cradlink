@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { NotificationRow } from "@/components/notifications/notification-row";
 import { isFollowNotice, isReminder } from "@/components/notifications/notification-copy";
@@ -15,6 +16,7 @@ import {
 import type { AppNotification } from "@/lib/types";
 
 export function NotificationsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const list = useNotifications(user?.id);
   const requests = useFollowRequests(user?.id);
@@ -47,11 +49,11 @@ export function NotificationsPage() {
     <div>
       <div className="sticky top-0 z-20 border-b border-border bg-background/65 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold">Notifications</h1>
+          <h1 className="text-xl font-bold">{t("notifications.title")}</h1>
           <div className="flex items-center gap-3">
             {!alertsOn ? (
               <button type="button" onClick={() => void enableAlerts()} className="text-[13px] text-primary">
-                Turn on alerts
+                {t("notifications.turnOnAlerts")}
               </button>
             ) : null}
             {user && (list.data ?? []).some((item) => !item.read) ? (
@@ -60,7 +62,7 @@ export function NotificationsPage() {
                 onClick={() => void markAll.mutateAsync(user.id)}
                 className="text-[13px] text-primary"
               >
-                Mark all read
+                {t("notifications.markAllRead")}
               </button>
             ) : null}
           </div>
@@ -69,8 +71,8 @@ export function NotificationsPage() {
           value={tab}
           onChange={setTab}
           items={[
-            { value: "all", label: "All" },
-            { value: "activity", label: "Activity" },
+            { value: "all", label: t("notifications.tabAll") },
+            { value: "activity", label: t("notifications.tabActivity") },
           ]}
         />
       </div>
@@ -91,9 +93,9 @@ export function NotificationsPage() {
             ))}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold leading-5">Follow requests</p>
+            <p className="text-[15px] font-bold leading-5">{t("notifications.followRequests")}</p>
             <p className="text-[13px] text-muted-foreground">
-              {pending.length} {pending.length === 1 ? "request" : "requests"}
+              {t("follows.requestCount", { count: pending.length })}
             </p>
           </div>
           <ChevronRight className="size-5 text-muted-foreground" />
@@ -101,15 +103,13 @@ export function NotificationsPage() {
       ) : null}
 
       {list.isLoading ? (
-        <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">Loading…</p>
+        <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">{t("common.loading")}</p>
       ) : null}
 
       {!list.isLoading && items.length === 0 ? (
         <div className="px-8 py-16 text-center">
-          <h2 className="text-3xl font-bold">Nothing yet.</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">
-            Follows, joins, replies, and reminders will show up here.
-          </p>
+          <h2 className="text-3xl font-bold">{t("notifications.emptyTitle")}</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">{t("notifications.emptyBody")}</p>
         </div>
       ) : null}
 

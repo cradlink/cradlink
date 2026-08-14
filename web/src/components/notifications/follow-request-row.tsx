@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ export function FollowRequestActions({
   meId: string;
   follower: User;
 }) {
+  const { t } = useTranslation();
   const { accept, decline } = useFollowActions();
   const busy = accept.isPending || decline.isPending;
 
@@ -30,7 +32,7 @@ export function FollowRequestActions({
           }
         }}
       >
-        Confirm
+        {t("follows.confirm")}
       </Button>
       <Button
         size="sm"
@@ -44,7 +46,7 @@ export function FollowRequestActions({
           }
         }}
       >
-        Delete
+        {t("follows.delete")}
       </Button>
     </div>
   );
@@ -57,6 +59,7 @@ export function FollowRequestRow({
   meId: string;
   request: FollowWithUser;
 }) {
+  const { t } = useTranslation();
   const follower = request.user;
   return (
     <div className="flex items-center gap-3 border-b border-border px-4 py-3">
@@ -67,7 +70,7 @@ export function FollowRequestRow({
         <Link to={`/u/${follower.id}`} className="block">
           <p className="truncate text-[15px] font-bold leading-5 hover:underline">{follower.displayName}</p>
           <p className="text-[13px] text-muted-foreground">
-            requested to follow you · {formatCompactTime(request.createdAt)}
+            {t("follows.requestedToFollow", { time: formatCompactTime(request.createdAt) })}
           </p>
         </Link>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, X } from "lucide-react";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
@@ -10,13 +11,7 @@ import { useSearchResults } from "@/hooks/use-search";
 import { useVisibleActivities } from "@/hooks/use-visible-activities";
 import { FEED_GRID } from "@/lib/activity-meta";
 
-const TABS = [
-  { value: "top", label: "Top" },
-  { value: "activities", label: "Activities" },
-  { value: "people", label: "People" },
-] as const;
-
-type SearchTab = (typeof TABS)[number]["value"];
+type SearchTab = "top" | "activities" | "people";
 
 function parseTab(value: string | null): SearchTab {
   if (value === "activities" || value === "people") return value;
@@ -24,7 +19,13 @@ function parseTab(value: string | null): SearchTab {
 }
 
 export function SearchPage() {
+  const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
+  const tabs = [
+    { value: "top", label: t("search.tabTop") },
+    { value: "activities", label: t("search.tabActivities") },
+    { value: "people", label: t("search.tabPeople") },
+  ];
   const q = params.get("q") ?? "";
   const tab = parseTab(params.get("f"));
   const [draft, setDraft] = useState(q);
@@ -80,7 +81,7 @@ export function SearchPage() {
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Search"
+              placeholder={t("search.placeholder")}
               autoFocus
               className="h-8 w-full bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
             />
@@ -89,22 +90,20 @@ export function SearchPage() {
                 type="button"
                 onClick={() => setDraft("")}
                 className="flex size-5 items-center justify-center rounded-full bg-foreground text-background"
-                aria-label="Clear search"
+                aria-label={t("search.clear")}
               >
                 <X className="size-3.5" />
               </button>
             ) : null}
           </label>
         </div>
-        <Tabs value={tab} onChange={setTab} items={[...TABS]} />
+        <Tabs value={tab} onChange={setTab} items={tabs} />
       </div>
 
       {!q ? (
         <div className="px-8 py-16 text-center">
-          <h2 className="text-3xl font-bold">Search Cradlink</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">
-            Find people or activities — same idea as Explore on X.
-          </p>
+          <h2 className="text-3xl font-bold">{t("search.title")}</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">{t("search.hint")}</p>
         </div>
       ) : null}
 
@@ -117,15 +116,15 @@ export function SearchPage() {
 
       {q && results.isError ? (
         <div className="px-8 py-16 text-center">
-          <h2 className="text-3xl font-bold">Couldn’t search.</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">Refresh and try again.</p>
+          <h2 className="text-3xl font-bold">{t("search.errorTitle")}</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">{t("common.refreshTryAgain")}</p>
         </div>
       ) : null}
 
       {empty ? (
         <div className="px-8 py-16 text-center">
-          <h2 className="text-3xl font-bold">No results for “{q}”</h2>
-          <p className="mt-2 text-[15px] text-muted-foreground">Try a name, a place, or an activity type.</p>
+          <h2 className="text-3xl font-bold">{t("search.emptyTitle", { query: q })}</h2>
+          <p className="mt-2 text-[15px] text-muted-foreground">{t("search.emptyBody")}</p>
         </div>
       ) : null}
 
@@ -134,7 +133,7 @@ export function SearchPage() {
           {showPeople && people.length > 0 ? (
             <section>
               {tab === "top" ? (
-                <h2 className="px-4 pb-1 pt-3 text-xl font-bold">People</h2>
+                <h2 className="px-4 pb-1 pt-3 text-xl font-bold">{t("search.people")}</h2>
               ) : null}
               <div className="divide-y divide-border border-b border-border">
                 {people.map((user) => (
@@ -147,7 +146,7 @@ export function SearchPage() {
           {showActivities && activities.length > 0 ? (
             <section>
               {tab === "top" ? (
-                <h2 className="px-4 pb-1 pt-3 text-xl font-bold">Activities</h2>
+                <h2 className="px-4 pb-1 pt-3 text-xl font-bold">{t("search.activities")}</h2>
               ) : null}
               <div className={FEED_GRID}>
                 {activities.map((activity) => (
@@ -158,10 +157,10 @@ export function SearchPage() {
           ) : null}
 
           {tab === "people" && people.length === 0 && activities.length > 0 ? (
-            <p className="px-8 py-12 text-center text-[15px] text-muted-foreground">No people match that.</p>
+            <p className="px-8 py-12 text-center text-[15px] text-muted-foreground">{t("search.noPeople")}</p>
           ) : null}
           {tab === "activities" && activities.length === 0 && people.length > 0 ? (
-            <p className="px-8 py-12 text-center text-[15px] text-muted-foreground">No activities match that.</p>
+            <p className="px-8 py-12 text-center text-[15px] text-muted-foreground">{t("search.noActivities")}</p>
           ) : null}
         </div>
       ) : null}

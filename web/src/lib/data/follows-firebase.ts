@@ -3,7 +3,7 @@ import type { FollowsRepo } from "@/lib/data/types";
 import { firebaseUsers } from "@/lib/data/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyFollowRequest, notifyFollowed } from "@/lib/data/notify";
-import { AppError, isPermissionDenied } from "@/lib/errors";
+import { appError, isPermissionDenied } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
 import { isPrivateProfile, type Follow, type FollowWithUser } from "@/lib/types";
 import { followId, nowIso, stripUndefined } from "@/lib/utils";
@@ -51,15 +51,15 @@ export const firebaseFollows: FollowsRepo = {
   },
 
   async follow(actorId, targetId) {
-    if (actorId === targetId) throw new AppError("You can’t follow yourself.");
+    if (actorId === targetId) throw appError("errors.cantFollowSelf");
     const existing = await firebaseFollows.get(actorId, targetId);
-    if (existing?.status === "accepted") throw new AppError("You’re already following them.");
+    if (existing?.status === "accepted") throw appError("errors.alreadyFollowing");
     if (existing?.status === "pending") return existing;
 
     const target = await firebaseUsers.getById(targetId);
-    if (!target) throw new AppError("User not found.");
+    if (!target) throw appError("errors.userNotFound");
     const actor = await firebaseUsers.getById(actorId);
-    if (!actor) throw new AppError("User not found.");
+    if (!actor) throw appError("errors.userNotFound");
 
     const status = isPrivateProfile(target) ? "pending" : "accepted";
     const follow: Follow = {
@@ -73,7 +73,7 @@ export const firebaseFollows: FollowsRepo = {
       await setDoc(doc(getFirebaseDb(), "follows", follow.id), stripUndefined(follow));
     } catch (err) {
       if (isPermissionDenied(err)) {
-        throw new AppError("Couldn’t follow. Publish the latest Firestore rules, then try again.");
+        throw appError("errors.followRules");
       }
       throw err;
     }
@@ -93,7 +93,7 @@ export const firebaseFollows: FollowsRepo = {
 
   async accept(actorId, followerId) {
     const existing = await firebaseFollows.get(followerId, actorId);
-    if (!existing || existing.status !== "pending") throw new AppError("No request to confirm.");
+    if (!existing || existing.status !== "pending") throw appError("errors.noRequestConfirm");
     await updateDoc(doc(getFirebaseDb(), "follows", existing.id), { status: "accepted" });
     await firebaseNotifications.remove(`follow_request_${followerId}`, actorId);
     return { ...existing, status: "accepted" };

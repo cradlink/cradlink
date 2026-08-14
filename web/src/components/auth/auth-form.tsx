@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { APP_TAGLINE, getBackendName } from "@/lib/config";
+import { getBackendName } from "@/lib/config";
 import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/lib/data/seed";
 import { errorMessage } from "@/lib/errors";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+  const { t } = useTranslation();
   const { user, ready, signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [search] = useSearchParams();
@@ -56,7 +58,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     try {
       await signInWithGoogle();
       if (local) {
-        toast.message("Signed in as Marko Njegomir.");
+        toast.message(t("auth.signedInDemo"));
       }
       go();
     } catch (err) {
@@ -70,36 +72,36 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
       <Logo />
       <h1 className="mt-6 font-display text-3xl leading-tight">
-        {mode === "login" ? "Welcome back." : "Come in."}
+        {mode === "login" ? t("auth.welcomeBack") : t("auth.comeIn")}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">{APP_TAGLINE}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{t("app.tagline")}</p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         {mode === "signup" ? (
           <div className="space-y-1.5">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t("auth.name")}</Label>
             <Input
               id="name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t("auth.namePlaceholder")}
               required
             />
           </div>
         ) : null}
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("auth.email")}</Label>
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t("auth.emailPlaceholder")}
             required
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("auth.password")}</Label>
           <Input
             id="password"
             type="password"
@@ -112,34 +114,34 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </div>
         {error ? <p className="text-sm text-[#f4212e]">{error}</p> : null}
         <Button type="submit" className="w-full" variant="ink" disabled={pending}>
-          {pending ? "Working…" : mode === "login" ? "Sign in" : "Create account"}
+          {pending ? t("common.working") : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
         </Button>
       </form>
 
       <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
         <span className="h-px flex-1 bg-border" />
-        or
+        {t("common.or")}
         <span className="h-px flex-1 bg-border" />
       </div>
 
       <Button type="button" variant="outline" className="w-full" onClick={onGoogle} disabled={pending}>
         {local ? null : <GoogleMark />}
-        {local ? "Continue as Marko Njegomir" : "Continue with Google"}
+        {local ? t("auth.continueDemo") : t("auth.continueGoogle")}
       </Button>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "login" ? (
           <>
-            New here?{" "}
+            {t("auth.newHere")}{" "}
             <Link to="/signup" className="text-foreground underline">
-              Create an account
+              {t("auth.createAccount")}
             </Link>
           </>
         ) : (
           <>
-            Already have one?{" "}
+            {t("auth.alreadyHaveOne")}{" "}
             <Link to="/login" className="text-foreground underline">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </>
         )}
@@ -147,8 +149,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
       {getBackendName() === "local" ? (
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Demo account is prefilled:{" "}
-          <span className="font-medium text-foreground">marko@cradlink.com / demo1234</span>
+          {t("auth.demoPrefill", { account: "marko@cradlink.com / demo1234" })}
         </p>
       ) : null}
     </div>
