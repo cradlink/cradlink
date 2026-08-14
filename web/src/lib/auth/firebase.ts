@@ -118,7 +118,10 @@ export const firebaseAuth: AuthRepo = {
 
   onAuthChange(cb) {
     return onAuthStateChanged(getFirebaseAuth(), (fbUser) => {
-      void fromFirebase(fbUser).then(cb);
+      void fromFirebase(fbUser).then(cb).catch((err) => {
+        console.error(err);
+        cb(null);
+      });
     });
   },
 };

@@ -9,6 +9,13 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function isActivityOrganizer(activityId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/activities/$(activityId))
+        && get(/databases/$(database)/documents/activities/$(activityId)).data.creatorId
+          == request.auth.uid;
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if isSelf(userId);
@@ -16,7 +23,10 @@ service cloud.firestore {
     }
 
     match /activities/{activityId} {
-      allow read: if signedIn() && resource.data.visibility == "public";
+      allow read: if signedIn() && (
+        resource.data.visibility == "public"
+        || resource.data.creatorId == request.auth.uid
+      );
       allow create: if signedIn()
         && request.resource.data.creatorId == request.auth.uid;
       allow update: if signedIn() && (
@@ -30,7 +40,10 @@ service cloud.firestore {
     match /activityMembers/{memberId} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        || isActivityOrganizer(resource.data.activityId)
+      );
     }
   }
 }
