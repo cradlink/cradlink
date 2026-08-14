@@ -13,12 +13,14 @@ export function TopBar({
   searchValue,
   onSearchChange,
   action,
+  onSettings,
 }: {
   title?: string
   search?: boolean
   searchValue?: string
   onSearchChange?: (value: string) => void
   action?: { label: string; onPress: () => void }
+  onSettings?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
@@ -61,6 +63,15 @@ export function TopBar({
           <Text style={styles.title}>{title}</Text>
           <View style={styles.right}>
             {bell}
+            {onSettings ? (
+              <Pressable onPress={onSettings} hitSlop={8} accessibilityLabel="Settings" style={styles.bellBtn}>
+                <SymbolView
+                  name={{ ios: "gearshape", android: "settings", web: "settings" }}
+                  tintColor={theme.foreground}
+                  size={22}
+                />
+              </Pressable>
+            ) : null}
             {action ? (
               <Pressable onPress={action.onPress} hitSlop={10} accessibilityLabel={action.label}>
                 <Text style={[styles.action, { color: theme.primary }]}>{action.label}</Text>

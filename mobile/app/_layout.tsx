@@ -98,6 +98,7 @@ function RootNav() {
             }}
           />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ title: "Settings" }} />
           <Stack.Screen name="activities/[id]" options={{ title: "Activity" }} />
           <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
         </Stack>

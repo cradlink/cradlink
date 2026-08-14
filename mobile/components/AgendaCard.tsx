@@ -2,6 +2,7 @@ import { Image, StyleSheet } from "react-native"
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { ActivityPressable, listHairline } from "@/components/ActivityPressable"
+import { CreatorPress } from "@/components/CreatorPress"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
 import { ACTIVITY_META } from "@/lib/activity-meta"
@@ -39,9 +40,11 @@ export function AgendaHero({
       <Text style={styles.line} lightColor="#536471" darkColor="#71767b">
         {formatPlace(activity)}
       </Text>
-      <Text style={styles.line} lightColor="#536471" darkColor="#71767b">
-        {activity.creatorName} · {formatHeadcount(activity)}
-      </Text>
+      <CreatorPress userId={activity.creatorId}>
+        <Text style={styles.line} lightColor="#536471" darkColor="#71767b">
+          {activity.creatorName} · {formatHeadcount(activity)}
+        </Text>
+      </CreatorPress>
     </ActivityPressable>
   )
 }
@@ -91,9 +94,11 @@ export function AgendaRow({
               : `Flexible · ${formatPlace(activity)}`}
         </Text>
         <View style={styles.foot} lightColor="transparent" darkColor="transparent">
-          <Text style={[styles.line, styles.footText]} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-            {activity.creatorName} · {formatHeadcount(activity)}
-          </Text>
+          <CreatorPress userId={activity.creatorId}>
+            <Text style={[styles.line, styles.footText]} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
+              {activity.creatorName} · {formatHeadcount(activity)}
+            </Text>
+          </CreatorPress>
           {pending ? <StatusPill label="Requested" color={theme.primary} /> : null}
         </View>
       </View>

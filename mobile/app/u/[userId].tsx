@@ -1,24 +1,45 @@
+import { useEffect, useLayoutEffect } from "react"
 import { StyleSheet } from "react-native"
-import { useLocalSearchParams } from "expo-router"
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router"
 
+import { ActivityCard } from "@/components/ActivityCard"
+import { EmptyState } from "@/components/EmptyState"
+import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
-import { Text } from "@/components/Themed"
+import { useActivities } from "@/hooks/use-activities"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function PublicProfileScreen() {
+  const navigation = useNavigation()
+  const router = useRouter()
   const { userId } = useLocalSearchParams<{ userId: string }>()
+  const { user, getUser } = useAuth()
+  const { activities } = useActivities()
+  const person = userId ? getUser(userId) : null
+  const hosted = person ? activities.filter((activity) => activity.creatorId === person.id) : []
+  const isSelf = Boolean(person && user?.id === person.id)
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: person?.displayName ?? "Profile" })
+  }, [navigation, person?.displayName])
+
+  useEffect(() => {
+    if (isSelf) router.replace("/profile")
+  }, [isSelf, router])
+
+  if (isSelf) return null
 
   return (
     <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
-        <Text key="title" style={styles.title}>
-          Public profile
-        </Text>
-        <Text key="id" style={styles.body} lightColor="#536471" darkColor="#71767b">
-          {userId}
-        </Text>
-        <Text key="copy" style={styles.body}>
-          Same user model as the web app. Data wiring is next.
-        </Text>
+        {!person ? (
+          <EmptyState key="missing" title="No one here by that name." body="They may have left, or this link is old." />
+        ) : (
+          [
+            <ProfileView key="hero" user={person} hostedCount={hosted.length} />,
+            ...hosted.map((activity) => <ActivityCard key={activity.id} activity={activity} />),
+          ]
+        )}
       </Stagger>
     </Refreshable>
   )
@@ -27,17 +48,6 @@ export default function PublicProfileScreen() {
 const styles = StyleSheet.create({
   list: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
     paddingBottom: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  body: {
-    marginTop: 8,
-    fontSize: 16,
-    lineHeight: 22,
   },
 })

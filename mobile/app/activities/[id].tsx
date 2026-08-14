@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router"
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { CreatorPress } from "@/components/CreatorPress"
 import { EditPencil } from "@/components/EditPencil"
 import { EmptyState } from "@/components/EmptyState"
 import { JoinButton } from "@/components/JoinButton"
@@ -33,9 +34,13 @@ export default function ActivityDetailScreen() {
         ) : (
           [
             <View key="byline" style={styles.byline}>
-              <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
+              <CreatorPress userId={activity.creatorId}>
+                <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
+              </CreatorPress>
               <View style={styles.bylineText}>
-                <Text style={styles.creator}>{activity.creatorName}</Text>
+                <CreatorPress userId={activity.creatorId}>
+                  <Text style={styles.creator}>{activity.creatorName}</Text>
+                </CreatorPress>
                 <TypeBadge type={activity.type} />
               </View>
               {isOrganizer(activity) ? <EditPencil activityId={activity.id} /> : null}

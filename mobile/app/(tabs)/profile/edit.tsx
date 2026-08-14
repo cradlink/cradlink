@@ -1,24 +1,281 @@
-import { StyleSheet } from "react-native"
+import { useState, type ReactNode } from "react"
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native"
+import { useRouter } from "expo-router"
+import * as ImagePicker from "expo-image-picker"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { EmptyState } from "@/components/EmptyState"
-import { Refreshable, Stagger } from "@/components/Refreshable"
+import { Avatar } from "@/components/Avatar"
+import { Button } from "@/components/Button"
+import { Text, useTheme } from "@/components/Themed"
+import { useAuth } from "@/hooks/use-auth"
+import { useConfirm } from "@/hooks/use-confirm"
+import { useToast } from "@/hooks/use-toast"
 
 export default function EditProfileScreen() {
+  const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const { user, updateProfile } = useAuth()
+  const { ask } = useConfirm()
+  const { show } = useToast()
+
+  const [displayName, setDisplayName] = useState(user?.displayName ?? "")
+  const [bio, setBio] = useState(user?.bio ?? "")
+  const [location, setLocation] = useState(user?.location ?? "")
+  const [skills, setSkills] = useState(user?.skills ?? [])
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? null)
+  const [draft, setDraft] = useState("")
+  const [busy, setBusy] = useState(false)
+
+  if (!user) return null
+
+  const dirty =
+    displayName !== user.displayName ||
+    bio !== user.bio ||
+    location !== user.location ||
+    avatarUrl !== user.avatarUrl ||
+    skills.join("\0") !== user.skills.join("\0")
+
+  const canSave = displayName.trim().length >= 2 && dirty && !busy
+
+  function addSkill() {
+    const next = draft.trim()
+    if (!next || skills.includes(next)) {
+      setDraft("")
+      return
+    }
+    setSkills([...skills, next])
+    setDraft("")
+  }
+
+  async function pickAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) return
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.85,
+    })
+    if (!result.canceled && result.assets[0]?.uri) {
+      setAvatarUrl(result.assets[0].uri)
+    }
+  }
+
+  function close() {
+    if (!dirty) {
+      router.back()
+      return
+    }
+    ask({
+      title: "Discard changes?",
+      body: "Your edits won’t be saved.",
+      confirmLabel: "Discard",
+      cancelLabel: "Keep editing",
+      destructive: true,
+      onConfirm: () => router.back(),
+    })
+  }
+
+  async function save() {
+    if (!canSave) return
+    setBusy(true)
+    try {
+      await updateProfile({
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        location: location.trim(),
+        skills,
+        avatarUrl,
+      })
+      show({ title: "Profile saved" })
+      router.back()
+    } catch {
+      show({ title: "Couldn’t save", tone: "error" })
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
-    <Refreshable contentContainerStyle={styles.list}>
-      <Stagger>
-        <EmptyState
-          key="empty"
-          title="Edit profile"
-          body="Form comes next. Same fields as the web app: name, bio, skills, location, avatar."
-        />
-      </Stagger>
-    </Refreshable>
+    <View style={[styles.screen, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={styles.body}
+        >
+          <Pressable onPress={() => void pickAvatar()} style={styles.avatarWrap}>
+            <Avatar name={displayName || user.displayName} src={avatarUrl} size={80} />
+            <Text style={[styles.change, { color: theme.primary }]}>Change photo</Text>
+          </Pressable>
+
+          <Field label="Name">
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder="Your name"
+              placeholderTextColor={theme.mutedForeground}
+              keyboardAppearance="dark"
+              selectionColor={theme.primary}
+              style={[styles.input, { color: theme.foreground, borderBottomColor: theme.border }]}
+            />
+          </Field>
+
+          <Field label="Location">
+            <TextInput
+              value={location}
+              onChangeText={setLocation}
+              placeholder="Belgrade"
+              placeholderTextColor={theme.mutedForeground}
+              keyboardAppearance="dark"
+              selectionColor={theme.primary}
+              style={[styles.input, { color: theme.foreground, borderBottomColor: theme.border }]}
+            />
+          </Field>
+
+          <Field label="Bio">
+            <TextInput
+              value={bio}
+              onChangeText={setBio}
+              placeholder="A line about you."
+              placeholderTextColor={theme.mutedForeground}
+              keyboardAppearance="dark"
+              selectionColor={theme.primary}
+              multiline
+              style={[styles.input, styles.bio, { color: theme.foreground, borderBottomColor: theme.border }]}
+            />
+          </Field>
+
+          <Field label="Skills">
+            <View style={styles.skillRow}>
+              {skills.map((skill) => (
+                <Pressable
+                  key={skill}
+                  onPress={() => setSkills(skills.filter((item) => item !== skill))}
+                  style={styles.skill}
+                >
+                  <Text style={styles.skillLabel}>{skill}</Text>
+                  <Text style={styles.skillX}>×</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={addSkill}
+              placeholder="Add a skill"
+              placeholderTextColor={theme.mutedForeground}
+              keyboardAppearance="dark"
+              selectionColor={theme.primary}
+              returnKeyType="done"
+              style={[styles.input, { color: theme.foreground, borderBottomColor: theme.border }]}
+            />
+          </Field>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Button label="Cancel" variant="ghost" size="compact" onPress={close} style={styles.half} />
+          <Button
+            label={busy ? "Saving…" : "Save"}
+            variant="ink"
+            size="compact"
+            disabled={!canSave}
+            onPress={() => void save()}
+            style={styles.half}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </View>
+  )
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label} lightColor="#536471" darkColor="#71767b">
+        {label}
+      </Text>
+      {children}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  list: {
-    flexGrow: 1,
+  screen: {
+    flex: 1,
+  },
+  flex: {
+    flex: 1,
+  },
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 28,
+    gap: 22,
+  },
+  avatarWrap: {
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  change: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  field: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  input: {
+    fontSize: 17,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  bio: {
+    minHeight: 88,
+    textAlignVertical: "top",
+  },
+  skillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  skill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    backgroundColor: "#1d9bf01a",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  skillLabel: {
+    fontSize: 13,
+    color: "#1d9bf0",
+    fontWeight: "600",
+  },
+  skillX: {
+    fontSize: 14,
+    color: "#1d9bf0",
+  },
+  footer: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+  },
+  half: {
+    flex: 1,
   },
 })

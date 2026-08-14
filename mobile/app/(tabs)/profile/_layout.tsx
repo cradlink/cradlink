@@ -13,7 +13,7 @@ export default function ProfileStack() {
         animation: "fade",
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Profile" }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="edit" options={{ title: "Edit profile" }} />
     </Stack>
   )

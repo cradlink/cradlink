@@ -12,7 +12,7 @@ export default function SettingsScreen() {
     <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
         <Text key="kicker" style={styles.kicker} lightColor="#536471" darkColor="#71767b">
-          Signed in as
+          Account
         </Text>
         <Text key="name" style={styles.name}>
           {user?.displayName}
@@ -37,11 +37,13 @@ const styles = StyleSheet.create({
   },
   kicker: {
     fontSize: 13,
+    fontWeight: "600",
   },
   name: {
     marginTop: 6,
     fontSize: 24,
     fontWeight: "800",
+    letterSpacing: -0.4,
   },
   email: {
     marginTop: 4,

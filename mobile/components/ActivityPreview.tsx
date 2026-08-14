@@ -13,6 +13,7 @@ import Animated, {
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { CreatorPress } from "@/components/CreatorPress"
 import { EditPencil } from "@/components/EditPencil"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
@@ -120,9 +121,13 @@ export function ActivityPreview() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.byline}>
-              <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
+              <CreatorPress userId={activity.creatorId}>
+                <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
+              </CreatorPress>
               <View style={styles.bylineText}>
-                <Text style={styles.creator}>{activity.creatorName}</Text>
+                <CreatorPress userId={activity.creatorId}>
+                  <Text style={styles.creator}>{activity.creatorName}</Text>
+                </CreatorPress>
                 <TypeBadge type={activity.type} />
               </View>
             </View>

@@ -82,12 +82,18 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     await AsyncStorage.setItem(EDITS_KEY, JSON.stringify(next))
   }, [])
 
-  const activities = useMemo(
-    () => [...created, ...MOCK_ACTIVITIES.filter((activity) => !created.some((row) => row.id === activity.id))].map(
-      (activity) => edits[activity.id] ?? activity,
-    ),
-    [created, edits],
-  )
+  const activities = useMemo(() => {
+    const list = [
+      ...created,
+      ...MOCK_ACTIVITIES.filter((activity) => !created.some((row) => row.id === activity.id)),
+    ].map((activity) => edits[activity.id] ?? activity)
+    if (!user) return list
+    return list.map((activity) =>
+      activity.creatorId === user.id
+        ? { ...activity, creatorName: user.displayName, creatorAvatar: user.avatarUrl }
+        : activity,
+    )
+  }, [created, edits, user])
 
   const value = useMemo<ActivitiesValue>(() => {
     const get = (id: string) => activities.find((activity) => activity.id === id) ?? null

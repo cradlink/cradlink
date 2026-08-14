@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD, DEMO_USER_ID } from "@/constants/config"
 import { createId, hashPassword } from "@/lib/hash"
-import type { User } from "@/lib/types"
+import type { UpdateProfileInput, User } from "@/lib/types"
 import type { AuthRepo, SignInInput, SignUpInput } from "@/lib/auth/types"
 
 const USERS_KEY = "cl.users"
@@ -42,23 +42,74 @@ async function saveUsers(users: Record<string, StoredUser>) {
   await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users))
 }
 
-async function ensureSeed() {
-  const users = await loadUsers()
-  if (users[DEMO_USER_ID]) return users
-  const timestamp = nowIso()
-  users[DEMO_USER_ID] = {
-    id: DEMO_USER_ID,
-    displayName: "Marko Njegomir",
-    email: DEMO_ACCOUNT_EMAIL,
-    bio: "Doctoral student. I start things so other people have a place to show up.",
-    skills: ["AI", "Research", "Building"],
+function stub(
+  id: string,
+  displayName: string,
+  email: string,
+  bio: string,
+  skills: string[],
+  location: string,
+  password: string,
+  timestamp: string,
+): StoredUser {
+  return {
+    id,
+    displayName,
+    email,
+    bio,
+    skills,
     avatarUrl: null,
-    location: "Belgrade",
+    location,
     createdAt: timestamp,
     updatedAt: timestamp,
-    passwordHash: hashPassword(DEMO_ACCOUNT_PASSWORD),
+    passwordHash: hashPassword(password),
   }
-  await saveUsers(users)
+}
+
+async function ensureSeed() {
+  const users = await loadUsers()
+  const timestamp = nowIso()
+  let dirty = false
+  if (!users[DEMO_USER_ID]) {
+    users[DEMO_USER_ID] = stub(
+      DEMO_USER_ID,
+      "Marko Njegomir",
+      DEMO_ACCOUNT_EMAIL,
+      "Doctoral student. I start things so other people have a place to show up.",
+      ["AI", "Research", "Building"],
+      "Belgrade",
+      DEMO_ACCOUNT_PASSWORD,
+      timestamp,
+    )
+    dirty = true
+  }
+  if (!users.user_bogdan) {
+    users.user_bogdan = stub(
+      "user_bogdan",
+      "Bogdan Ljubinkovic",
+      "bogdan@cradlink.com",
+      "I build things that help people actually meet. Less slides, more showing up.",
+      ["Product", "Design", "Community"],
+      "Belgrade",
+      "not-a-login",
+      timestamp,
+    )
+    dirty = true
+  }
+  if (!users.user_sam) {
+    users.user_sam = stub(
+      "user_sam",
+      "Sam Okonkwo",
+      "sam@cradlink.com",
+      "Board games, night tables, and teaching one more person SETI.",
+      ["Games", "Teaching"],
+      "Belgrade",
+      "not-a-login",
+      timestamp,
+    )
+    dirty = true
+  }
+  if (dirty) await saveUsers(users)
   return users
 }
 
@@ -73,6 +124,40 @@ export const localAuth: AuthRepo = {
     if (!id) return null
     const stored = users[id]
     return stored ? publicUser(stored) : null
+  },
+
+  async getUser(id: string) {
+    const users = await ensureSeed()
+    const stored = users[id]
+    return stored ? publicUser(stored) : null
+  },
+
+  async listUsers() {
+    const users = await ensureSeed()
+    return Object.values(users).map(publicUser)
+  },
+
+  async updateProfile(input: UpdateProfileInput) {
+    const id = await AsyncStorage.getItem(SESSION_KEY)
+    if (!id) throw new AppError("Sign in first.")
+    const users = await ensureSeed()
+    const stored = users[id]
+    if (!stored) throw new AppError("Account not found.")
+    const name = input.displayName?.trim()
+    if (name !== undefined && name.length < 2) throw new AppError("Name needs at least 2 characters.")
+    users[id] = {
+      ...stored,
+      displayName: name ?? stored.displayName,
+      bio: input.bio !== undefined ? input.bio.trim() : stored.bio,
+      location: input.location !== undefined ? input.location.trim() : stored.location,
+      skills: input.skills ?? stored.skills,
+      avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl : stored.avatarUrl,
+      updatedAt: nowIso(),
+    }
+    await saveUsers(users)
+    const user = publicUser(users[id])
+    emit(user)
+    return user
   },
 
   async signUp({ email, password, displayName }: SignUpInput) {
