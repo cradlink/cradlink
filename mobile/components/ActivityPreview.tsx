@@ -33,13 +33,24 @@ const FADE_H = 72
 
 export function ActivityPreview() {
   const theme = useTheme()
-  const { preview, close } = useActivityPreview()
+  const { preview, close, registerCloser } = useActivityPreview()
   const { decorate } = useMemberships()
   const progress = useSharedValue(0)
   const fromX = useSharedValue(0)
   const fromY = useSharedValue(0)
   const [fadeW, setFadeW] = useState(TARGET_W)
   const [footerH, setFooterH] = useState(70)
+
+  function dismiss() {
+    progress.value = withTiming(0, CLOSE, (finished) => {
+      if (finished) runOnJS(close)()
+    })
+  }
+
+  useEffect(() => {
+    registerCloser(dismiss)
+    return () => registerCloser(null)
+  })
 
   useEffect(() => {
     if (!preview) return
@@ -72,12 +83,6 @@ export function ActivityPreview() {
 
   const activity = preview.activity
   const viewed = decorate(activity)
-
-  function dismiss() {
-    progress.value = withTiming(0, CLOSE, (finished) => {
-      if (finished) runOnJS(close)()
-    })
-  }
 
   return (
     <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={dismiss}>

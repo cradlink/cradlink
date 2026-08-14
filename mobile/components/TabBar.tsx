@@ -16,7 +16,7 @@ const ICONS = {
     active: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
   },
   me: {
-    label: "Mine",
+    label: "My activities",
     idle: { ios: "square.and.pencil", android: "edit", web: "edit" },
     active: { ios: "square.and.pencil", android: "edit", web: "edit" },
   },
@@ -74,7 +74,10 @@ export function TabBar({ state, descriptors, navigation }: any) {
               tintColor={color}
               size={26}
             />
-            <Text style={[styles.label, { color, fontWeight: focused ? "700" : "500" }]}>
+            <Text
+              numberOfLines={2}
+              style={[styles.label, { color, fontWeight: focused ? "700" : "500" }]}
+            >
               {meta.label}
             </Text>
           </Pressable>
@@ -98,7 +101,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   label: {
-    fontSize: 11,
-    letterSpacing: -0.1,
+    fontSize: 10,
+    letterSpacing: -0.2,
+    textAlign: "center",
+    paddingHorizontal: 2,
   },
 })

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react"
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react"
 
 import type { Activity } from "@/lib/types"
 
@@ -18,12 +18,15 @@ type PreviewValue = {
   preview: PreviewState
   open: (activity: Activity, origin: CardOrigin) => void
   close: () => void
+  dismiss: () => void
+  registerCloser: (fn: (() => void) | null) => void
 }
 
 const PreviewContext = createContext<PreviewValue | null>(null)
 
 export function ActivityPreviewProvider({ children }: { children: React.ReactNode }) {
   const [preview, setPreview] = useState<PreviewState>(null)
+  const closer = useRef<() => void>(() => setPreview(null))
 
   const open = useCallback((activity: Activity, origin: CardOrigin) => {
     setPreview({ activity, origin })
@@ -31,7 +34,18 @@ export function ActivityPreviewProvider({ children }: { children: React.ReactNod
 
   const close = useCallback(() => setPreview(null), [])
 
-  const value = useMemo(() => ({ preview, open, close }), [preview, open, close])
+  const registerCloser = useCallback((fn: (() => void) | null) => {
+    closer.current = fn ?? (() => setPreview(null))
+  }, [])
+
+  const dismiss = useCallback(() => {
+    closer.current()
+  }, [])
+
+  const value = useMemo(
+    () => ({ preview, open, close, dismiss, registerCloser }),
+    [preview, open, close, dismiss, registerCloser],
+  )
 
   return <PreviewContext.Provider value={value}>{children}</PreviewContext.Provider>
 }

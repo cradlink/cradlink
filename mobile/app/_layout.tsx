@@ -8,12 +8,14 @@ import "react-native-reanimated"
 
 import { ActivityPreview } from "@/components/ActivityPreview"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
+import { ToastHost } from "@/components/ToastHost"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
 import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
 import { MembershipProvider } from "@/hooks/use-memberships"
+import { ToastProvider } from "@/hooks/use-toast"
 
 Appearance.setColorScheme("dark")
 void SystemUI.setBackgroundColorAsync(palette.dark.background)
@@ -84,6 +86,7 @@ function RootNav() {
       </AuthGate>
       <ActivityPreview />
       <ConfirmModalHost />
+      <ToastHost />
       <StatusBar style="light" />
       <NavigationBar style="dark" />
     </ThemeProvider>
@@ -96,7 +99,9 @@ export default function RootLayout() {
       <MembershipProvider>
         <ActivityPreviewProvider>
           <ConfirmProvider>
-            <RootNav />
+            <ToastProvider>
+              <RootNav />
+            </ToastProvider>
           </ConfirmProvider>
         </ActivityPreviewProvider>
       </MembershipProvider>

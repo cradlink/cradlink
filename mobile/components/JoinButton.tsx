@@ -1,12 +1,16 @@
 import { Pressable, StyleSheet } from "react-native"
 
 import { Text, useTheme } from "@/components/Themed"
+import { useActivityPreview } from "@/hooks/use-activity-preview"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useMemberships } from "@/hooks/use-memberships"
+import { useToast } from "@/hooks/use-toast"
 import type { Activity } from "@/lib/types"
 
 export function JoinButton({ activity, wide = false }: { activity: Activity; wide?: boolean }) {
   const { ask } = useConfirm()
+  const { preview, dismiss } = useActivityPreview()
+  const { show } = useToast()
   const { statusOf, isOrganizer, isFull, join, leave } = useMemberships()
   const organizer = isOrganizer(activity)
   const status = statusOf(activity.id)
@@ -73,7 +77,21 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
             ? "The organizer will accept or decline. You’ll see Requested until they do."
             : "You’ll be on the list. The organizer can see your name.",
           confirmLabel: manual ? "Send request" : "Join",
-          onConfirm: () => void join(activity),
+          onConfirm: () => {
+            void join(activity)
+            if (preview?.activity.id === activity.id) dismiss()
+            show(
+                manual
+                  ? {
+                      title: "Request sent",
+                      body: `The organizer will accept or decline ${activity.title}.`,
+                    }
+                  : {
+                      title: "Joined",
+                      body: `You’re on the list for ${activity.title}.`,
+                    },
+              )
+          },
         })
       }
     />
