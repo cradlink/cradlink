@@ -1,12 +1,19 @@
 import { useEffect } from "react"
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from "expo-router"
+import { Appearance } from "react-native"
+import { DarkTheme, Stack, ThemeProvider, useRouter, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
+import { NavigationBar } from "expo-navigation-bar"
+import * as SystemUI from "expo-system-ui"
 import "react-native-reanimated"
 
 import { View } from "@/components/Themed"
-import { useColorScheme } from "@/components/useColorScheme"
 import { palette } from "@/constants/Colors"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
+import { MembershipProvider } from "@/hooks/use-memberships"
+
+Appearance.setColorScheme("dark")
+void SystemUI.setBackgroundColorAsync(palette.dark.background)
+NavigationBar.setStyle("dark")
 
 export { ErrorBoundary } from "expo-router"
 
@@ -27,18 +34,7 @@ const cradlinkDark = {
   },
 }
 
-const cradlinkLight = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: palette.light.primary,
-    background: palette.light.background,
-    card: palette.light.background,
-    text: palette.light.foreground,
-    border: palette.light.border,
-    notification: palette.light.primary,
-  },
-}
+
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth()
@@ -63,13 +59,18 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function RootNav() {
-  const colorScheme = useColorScheme()
-  const dark = colorScheme === "dark"
-
   return (
-    <ThemeProvider value={dark ? cradlinkDark : cradlinkLight}>
+    <ThemeProvider value={cradlinkDark}>
       <AuthGate>
-        <Stack>
+        <Stack
+          screenOptions={{
+            contentStyle: { backgroundColor: palette.dark.background },
+            headerStyle: { backgroundColor: palette.dark.background },
+            headerTintColor: palette.dark.foreground,
+            headerShadowVisible: false,
+            animation: "fade",
+          }}
+        >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="activities/new" options={{ title: "New activity", presentation: "modal" }} />
@@ -77,7 +78,8 @@ function RootNav() {
           <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
         </Stack>
       </AuthGate>
-      <StatusBar style={dark ? "light" : "dark"} />
+      <StatusBar style="light" />
+      <NavigationBar style="dark" />
     </ThemeProvider>
   )
 }
@@ -85,7 +87,9 @@ function RootNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootNav />
+      <MembershipProvider>
+        <RootNav />
+      </MembershipProvider>
     </AuthProvider>
   )
 }

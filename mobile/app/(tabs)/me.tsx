@@ -5,13 +5,19 @@ import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useAuth } from "@/hooks/use-auth"
+import { useMemberships } from "@/hooks/use-memberships"
 import { MOCK_ACTIVITIES } from "@/lib/mock"
 
 export default function MyActivitiesScreen() {
   const theme = useTheme()
+  const { user } = useAuth()
+  const { joinedIds } = useMemberships()
   const [tab, setTab] = useState<"created" | "joined">("created")
-  const created = MOCK_ACTIVITIES.filter((activity) => activity.creatorId === "user_marko")
-  const joined = MOCK_ACTIVITIES.filter((activity) => activity.creatorId !== "user_marko")
+  const created = MOCK_ACTIVITIES.filter((activity) => activity.creatorId === user?.id)
+  const joined = MOCK_ACTIVITIES.filter(
+    (activity) => activity.creatorId !== user?.id && joinedIds.includes(activity.id),
+  )
   const list = tab === "created" ? created : joined
 
   return (

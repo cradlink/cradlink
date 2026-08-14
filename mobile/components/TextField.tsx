@@ -12,6 +12,7 @@ export function TextField({
     <View style={styles.wrap} lightColor="transparent" darkColor="transparent">
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        keyboardAppearance="dark"
         placeholderTextColor={theme.mutedForeground}
         selectionColor={theme.primary}
         style={[

@@ -38,6 +38,7 @@ export function TopBar({
           <Logo compact iconSize={28} />
           <View style={[styles.field, { backgroundColor: theme.muted }]}>
             <TextInput
+              keyboardAppearance="dark"
               value={searchValue}
               onChangeText={onSearchChange}
               placeholder="Search"

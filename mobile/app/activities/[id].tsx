@@ -4,17 +4,21 @@ import { useLocalSearchParams } from "expo-router"
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
 import { EmptyState } from "@/components/EmptyState"
+import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
+import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 import { getActivity } from "@/lib/mock"
 
 export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { decorate } = useMemberships()
   const activity = id ? getActivity(id) : null
+  const viewed = activity ? decorate(activity) : null
 
-  if (!activity) {
+  if (!activity || !viewed) {
     return (
       <View style={styles.screen}>
         <EmptyState title="Activity not found." body="It may have been removed, or this is a stale link." />
@@ -41,9 +45,12 @@ export default function ActivityDetailScreen() {
         {formatActivityWhen(activity)}
       </Text>
       <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-        {formatHeadcount(activity)} · {formatJoinPolicy(activity.joinPolicy)}
+        {formatHeadcount(viewed)} · {formatJoinPolicy(activity.joinPolicy)}
       </Text>
       <ActivityCover activity={activity} compact={false} />
+      <View style={styles.action}>
+        <JoinButton activity={activity} />
+      </View>
     </ScrollView>
   )
 }
@@ -85,5 +92,10 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 14,
     lineHeight: 18,
+  },
+  action: {
+    marginTop: 8,
+    alignItems: "flex-end",
+    backgroundColor: "transparent",
   },
 })

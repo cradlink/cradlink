@@ -1,21 +1,28 @@
-import { Pressable, StyleSheet } from "react-native"
+import { Keyboard, Pressable, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useMemberships } from "@/hooks/use-memberships"
 import { formatCardMeta } from "@/lib/format"
 import type { Activity } from "@/lib/types"
 
 export function ActivityCard({ activity }: { activity: Activity }) {
   const router = useRouter()
   const theme = useTheme()
+  const { decorate } = useMemberships()
+  const viewed = decorate(activity)
 
   return (
     <Pressable
-      onPress={() => router.push(`/activities/${activity.id}`)}
+      onPress={() => {
+        Keyboard.dismiss()
+        router.push(`/activities/${activity.id}`)
+      }}
       style={({ pressed }) => [
         styles.card,
         { borderBottomColor: theme.border, backgroundColor: pressed ? theme.hover : "transparent" },
@@ -49,9 +56,9 @@ export function ActivityCard({ activity }: { activity: Activity }) {
 
         <View style={styles.footer}>
           <Text style={styles.detail} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-            {formatCardMeta(activity)}
+            {formatCardMeta(viewed)}
           </Text>
-          <Text style={[styles.join, { color: theme.primary }]}>Join</Text>
+          <JoinButton activity={activity} />
         </View>
       </View>
     </Pressable>
@@ -112,16 +119,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 10,
     backgroundColor: "transparent",
   },
   detail: {
     flex: 1,
     fontSize: 13,
     lineHeight: 16,
-  },
-  join: {
-    fontSize: 13,
-    fontWeight: "700",
   },
 })
