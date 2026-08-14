@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     maxHeight: 220,
   },
   image: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
   },

@@ -43,6 +43,7 @@ export function ConfirmModalHost() {
   }))
 
   if (!prompt) return null
+  const current = prompt
 
   function finish(next: () => void) {
     progress.value = withTiming(0, CLOSE, (done) => {
@@ -51,7 +52,7 @@ export function ConfirmModalHost() {
   }
 
   function confirm() {
-    const action = prompt.onConfirm
+    const action = current.onConfirm
     finish(() => {
       action()
       dismiss()
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
     left: 0,
   },
   dim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.78)",
   },
   card: {

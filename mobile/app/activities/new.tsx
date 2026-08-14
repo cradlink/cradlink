@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import {
   Image,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Avatar } from "@/components/Avatar"
 import { Text, useTheme } from "@/components/Themed"
+import { WhenSheet } from "@/components/WhenSheet"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
@@ -33,6 +33,42 @@ import {
 
 const PLACES: LocationType[] = ["in-person", "online", "hybrid"]
 
+function laterToday(hours = 18) {
+  const d = new Date()
+  d.setSeconds(0, 0)
+  d.setMinutes(0)
+  d.setHours(hours)
+  if (d.getTime() <= Date.now()) d.setHours(d.getHours() + 1)
+  return d
+}
+
+function tomorrowAt(hours = 18) {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  d.setHours(hours, 0, 0, 0)
+  return d
+}
+
+function formatPicked(d: Date) {
+  return d.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function isSameDay(d: Date, offset: number) {
+  const target = new Date()
+  target.setDate(target.getDate() + offset)
+  return (
+    d.getFullYear() === target.getFullYear() &&
+    d.getMonth() === target.getMonth() &&
+    d.getDate() === target.getDate()
+  )
+}
+
 export default function NewActivityScreen() {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -44,7 +80,6 @@ export default function NewActivityScreen() {
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [lookingFor, setLookingFor] = useState("")
   const [type, setType] = useState<ActivityType>("social")
   const [place, setPlace] = useState<LocationType>("in-person")
   const [city, setCity] = useState(user?.location ?? "")
@@ -52,20 +87,38 @@ export default function NewActivityScreen() {
   const [image, setImage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [flexible, setFlexible] = useState(true)
+  const [startAt, setStartAt] = useState<Date | null>(null)
+  const [whenOpen, setWhenOpen] = useState(false)
 
-  const dirty = title.trim().length > 0 || description.trim().length > 0 || image != null
+  const dirty = title.trim().length > 0 || description.trim().length > 0 || image != null || startAt != null
   const canPost = title.trim().length >= 3 && description.trim().length >= 10 && !busy
   const presets = presetsForType(type)
   const banner = resolveBannerKey(image ?? undefined)
 
-  const looking = useMemo(
-    () =>
-      lookingFor
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    [lookingFor],
-  )
+  function setFlexibleOn() {
+    setFlexible(true)
+    setStartAt(null)
+    setWhenOpen(false)
+  }
+
+  function setToday() {
+    setFlexible(false)
+    setStartAt(laterToday())
+    setWhenOpen(true)
+  }
+
+  function setTomorrow() {
+    setFlexible(false)
+    setStartAt(tomorrowAt())
+    setWhenOpen(true)
+  }
+
+  function setPick() {
+    setFlexible(false)
+    if (!startAt) setStartAt(laterToday())
+    setWhenOpen(true)
+  }
 
   function setTypeAndMaybeClear(next: ActivityType) {
     setType(next)
@@ -89,14 +142,6 @@ export default function NewActivityScreen() {
     })
   }
 
-  function openMaps() {
-    const q = city.trim()
-    const url = q
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
-      : "https://www.google.com/maps"
-    void Linking.openURL(url)
-  }
-
   async function pickOwn() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) return
@@ -118,14 +163,14 @@ export default function NewActivityScreen() {
         title: title.trim(),
         description: description.trim(),
         type,
-        lookingFor: looking,
+        lookingFor: [],
         location: {
           type: place,
           city: place === "online" ? undefined : city.trim() || undefined,
         },
-        startAt: null,
+        startAt: !flexible && startAt ? startAt.toISOString() : null,
         endAt: null,
-        isFlexible: true,
+        isFlexible: flexible || !startAt,
         capacity: null,
         joinPolicy,
         images: image ? [image] : [],
@@ -179,15 +224,6 @@ export default function NewActivityScreen() {
                 selectionColor={theme.primary}
                 multiline
                 style={[styles.copy, { color: theme.foreground }]}
-              />
-              <TextInput
-                value={lookingFor}
-                onChangeText={setLookingFor}
-                placeholder="Looking for — hikers, a driver…"
-                placeholderTextColor={theme.mutedForeground}
-                keyboardAppearance="dark"
-                selectionColor={theme.primary}
-                style={[styles.looking, { color: theme.foreground }]}
               />
             </View>
           </View>
@@ -278,26 +314,51 @@ export default function NewActivityScreen() {
             })}
           </View>
           {place !== "online" ? (
-            <View style={styles.addressRow}>
-              <TextInput
-                value={city}
-                onChangeText={setCity}
-                placeholder="Exact address"
-                placeholderTextColor={theme.mutedForeground}
-                keyboardAppearance="dark"
-                selectionColor={theme.primary}
-                autoCorrect={false}
-                style={[styles.city, { color: theme.foreground, borderBottomColor: theme.border }]}
-              />
-              <Pressable onPress={openMaps} hitSlop={8} style={styles.mapBtn} accessibilityLabel="Open Google Maps">
-                <SymbolView
-                  name={{ ios: "map", android: "map", web: "map" }}
-                  tintColor={theme.primary}
-                  size={20}
-                />
-                <Text style={[styles.mapLabel, { color: theme.primary }]}>Maps</Text>
+            <TextInput
+              value={city}
+              onChangeText={setCity}
+              placeholder="Place name"
+              placeholderTextColor={theme.mutedForeground}
+              keyboardAppearance="dark"
+              selectionColor={theme.primary}
+              autoCorrect={false}
+              style={[styles.city, { color: theme.foreground, borderBottomColor: theme.border }]}
+            />
+          ) : null}
+
+          <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
+            When
+          </Text>
+          <View style={styles.row}>
+            {(
+              [
+                { id: "flex", label: "Flexible", on: setFlexibleOn, active: flexible },
+                { id: "today", label: "Today", on: setToday, active: !flexible && !!startAt && isSameDay(startAt, 0) },
+                { id: "tmrw", label: "Tomorrow", on: setTomorrow, active: !flexible && !!startAt && isSameDay(startAt, 1) },
+                { id: "pick", label: "Pick date", on: setPick, active: !flexible && !!startAt && !isSameDay(startAt, 0) && !isSameDay(startAt, 1) },
+              ] as const
+            ).map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={item.on}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: item.active ? theme.foreground : theme.border,
+                    backgroundColor: item.active ? theme.foreground : "transparent",
+                  },
+                ]}
+              >
+                <Text style={[styles.chipLabel, { color: item.active ? theme.background : theme.mutedForeground }]}>
+                  {item.label}
+                </Text>
               </Pressable>
-            </View>
+            ))}
+          </View>
+          {!flexible && startAt ? (
+            <Pressable onPress={setPick} style={styles.whenLine}>
+              <Text style={styles.whenText}>{formatPicked(startAt)}</Text>
+            </Pressable>
           ) : null}
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
@@ -350,6 +411,17 @@ export default function NewActivityScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <WhenSheet
+        visible={whenOpen}
+        value={startAt}
+        onClose={() => setWhenOpen(false)}
+        onDone={(next) => {
+          setFlexible(false)
+          setStartAt(next)
+          setWhenOpen(false)
+        }}
+      />
 
       <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
         <View style={styles.sheetRoot}>
@@ -441,10 +513,6 @@ const styles = StyleSheet.create({
     padding: 0,
     textAlignVertical: "top",
   },
-  looking: {
-    fontSize: 15,
-    padding: 0,
-  },
   section: {
     marginTop: 18,
     marginBottom: 8,
@@ -454,43 +522,35 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
+    gap: 8,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 34,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
   chipLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  addressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    fontSize: 14,
+    fontWeight: "700",
   },
   city: {
-    flex: 1,
     marginTop: 8,
     fontSize: 15,
     paddingVertical: 6,
     paddingHorizontal: 0,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  mapBtn: {
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 6,
+  whenLine: {
+    marginTop: 10,
+    alignSelf: "flex-start",
   },
-  mapLabel: {
-    fontSize: 14,
-    fontWeight: "700",
+  whenText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
   bannerSlot: {
     alignSelf: "stretch",
@@ -551,7 +611,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheetDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.55)",
   },
   sheet: {
