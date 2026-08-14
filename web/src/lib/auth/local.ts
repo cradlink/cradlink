@@ -65,7 +65,6 @@ export const localAuth: AuthRepo = {
       avatarUrl: null,
       bannerUrl: null,
       location: "",
-      visibility: "public",
       createdAt: timestamp,
       updatedAt: timestamp,
       profileVisibility: "public",

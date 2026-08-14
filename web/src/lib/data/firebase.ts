@@ -47,10 +47,10 @@ function mapUser(id: string, data: DocumentData): User {
     avatarUrl: (data.avatarUrl as string | null) ?? null,
     bannerUrl: (data.bannerUrl as string | null) ?? null,
     location: asString(data.location),
-    visibility: data.visibility === "private" ? "private" : "public",
     createdAt: asString(data.createdAt, nowIso()),
     updatedAt: asString(data.updatedAt, nowIso()),
-    profileVisibility: data.profileVisibility === "private" ? "private" : "public",
+    profileVisibility:
+      data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
   };
