@@ -98,6 +98,8 @@ export type CreateActivityInput = {
   images?: string[];
 };
 
+export type UpdateActivityInput = CreateActivityInput;
+
 export type UpdateProfileInput = {
   displayName?: string;
   bio?: string;

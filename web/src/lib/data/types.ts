@@ -4,6 +4,7 @@ import type {
   CreateActivityInput,
   MemberWithUser,
   Paginated,
+  UpdateActivityInput,
   UpdateProfileInput,
   User,
 } from "@/lib/types";
@@ -19,6 +20,7 @@ export type ActivitiesRepo = {
   list(filters: ActivityFilters): Promise<Paginated<Activity>>;
   getById(id: string): Promise<Activity | null>;
   create(creator: User, input: CreateActivityInput): Promise<Activity>;
+  update(id: string, actorId: string, input: UpdateActivityInput): Promise<Activity>;
   listCreatedBy(userId: string): Promise<Activity[]>;
   listJoinedBy(userId: string): Promise<Activity[]>;
 };

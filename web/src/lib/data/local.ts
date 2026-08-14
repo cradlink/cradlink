@@ -10,7 +10,7 @@ import type {
   MemberWithUser,
   User,
 } from "@/lib/types";
-import { defaultHeadcount, hardCap, isActivityFull } from "@/lib/headcount";
+import { defaultHeadcount, hardCap, isActivityFull, statusForCapacity } from "@/lib/headcount";
 import { createId, memberId, nowIso } from "@/lib/utils";
 
 function withUser(member: ActivityMember, user: User | undefined): MemberWithUser | null {
@@ -133,6 +133,36 @@ export const localActivities: ActivitiesRepo = {
     };
     saveDb(db);
     return activity;
+  },
+
+  async update(id, actorId, input) {
+    await ensureSeed();
+    const db = loadDb();
+    const existing = db.activities[id];
+    if (!existing) throw new AppError("Activity not found.");
+    if (existing.creatorId !== actorId) throw new AppError("Only the organizer can edit this.");
+    const next = {
+      ...existing,
+      title: input.title.trim(),
+      description: input.description.trim(),
+      type: input.type,
+      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
+      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      location: input.location,
+      startAt: input.isFlexible ? null : input.startAt,
+      endAt: input.isFlexible ? null : input.endAt,
+      isFlexible: input.isFlexible,
+      capacity: input.capacity,
+      joinPolicy: input.joinPolicy ?? existing.joinPolicy,
+      headcount: input.headcount ?? defaultHeadcount(input.capacity),
+      visibility: input.visibility ?? existing.visibility,
+      images: input.images ?? existing.images,
+      status: statusForCapacity(existing, input.capacity),
+      updatedAt: nowIso(),
+    };
+    db.activities[id] = next;
+    saveDb(db);
+    return next;
   },
 
   async listCreatedBy(userId) {

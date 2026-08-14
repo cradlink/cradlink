@@ -1,20 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ActivityCard } from "@/components/activity/activity-card";
-import { ImagePicker } from "@/components/activity/image-picker";
+import {
+  ImagePicker,
+  imagesFromUrls,
+  revokeDraftImage,
+  type DraftImage,
+} from "@/components/activity/image-picker";
 import { TagInput } from "@/components/activity/tag-input";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateActivity } from "@/hooks/use-activities";
+import { useCreateActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
 import { useUploadActivityImages } from "@/hooks/use-profile";
 import { ACTIVITY_META } from "@/lib/activity-meta";
 import { errorMessage } from "@/lib/errors";
-import { datetimeLocalToIso } from "@/lib/format";
+import { datetimeLocalToIso, isoToDatetimeLocal } from "@/lib/format";
 import { ACTIVITY_TYPES, type Activity, type ActivityType, type LocationType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -33,8 +38,26 @@ type FormState = {
   startAt: string;
   endAt: string;
   capacity: string;
-  images: File[];
+  images: DraftImage[];
 };
+
+function formFromActivity(activity: Activity): FormState {
+  return {
+    title: activity.title,
+    type: activity.type,
+    description: activity.description,
+    lookingFor: activity.lookingFor,
+    tags: activity.tags ?? [],
+    locationType: activity.location.type,
+    city: activity.location.city ?? "",
+    venue: activity.location.venue ?? "",
+    isFlexible: activity.isFlexible,
+    startAt: isoToDatetimeLocal(activity.startAt),
+    endAt: isoToDatetimeLocal(activity.endAt),
+    capacity: activity.capacity != null ? String(activity.capacity) : "",
+    images: imagesFromUrls(activity.images ?? []),
+  };
+}
 
 const empty: FormState = {
   title: "",
@@ -52,31 +75,30 @@ const empty: FormState = {
   images: [],
 };
 
-function useFilePreviews(files: File[]) {
-  const [urls, setUrls] = useState<string[]>([]);
-  useEffect(() => {
-    const next = files.map((file) => URL.createObjectURL(file));
-    setUrls(next);
-    return () => next.forEach((url) => URL.revokeObjectURL(url));
-  }, [files]);
-  return urls;
+export function CreateActivityForm() {
+  return <ActivityForm />;
 }
 
-export function CreateActivityForm() {
+export function EditActivityForm({ activity }: { activity: Activity }) {
+  return <ActivityForm activity={activity} />;
+}
+
+function ActivityForm({ activity }: { activity?: Activity }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const create = useCreateActivity();
+  const update = useUpdateActivity();
   const upload = useUploadActivityImages();
-  const [form, setForm] = useState<FormState>(empty);
+  const [form, setForm] = useState<FormState>(() => (activity ? formFromActivity(activity) : empty));
   const [error, setError] = useState<string | null>(null);
-  const imageUrls = useFilePreviews(form.images);
-  const posting = create.isPending || upload.isPending;
+  const editing = Boolean(activity);
+  const posting = create.isPending || update.isPending || upload.isPending;
 
   const preview = useMemo<Activity | null>(() => {
     if (!user) return null;
     const capacity = form.capacity ? Number(form.capacity) : null;
     return {
-      id: "preview",
+      id: activity?.id ?? "preview",
       title: form.title.trim() || "Untitled activity",
       description: form.description,
       type: form.type,
@@ -91,23 +113,35 @@ export function CreateActivityForm() {
       endAt: form.isFlexible ? null : datetimeLocalToIso(form.endAt),
       isFlexible: form.isFlexible,
       capacity: Number.isFinite(capacity) ? capacity : null,
-      creatorId: user.id,
-      creatorName: user.displayName,
-      creatorAvatar: user.avatarUrl,
-      memberCount: 1,
-      status: "open",
-      createdAt: new Date().toISOString(),
+      creatorId: activity?.creatorId ?? user.id,
+      creatorName: activity?.creatorName ?? user.displayName,
+      creatorAvatar: activity?.creatorAvatar ?? user.avatarUrl,
+      memberCount: activity?.memberCount ?? 1,
+      status: activity?.status ?? "open",
+      createdAt: activity?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      visibility: "public",
-      images: imageUrls,
-      joinPolicy: "auto",
-      headcount: { mode: "open" },
+      visibility: activity?.visibility ?? "public",
+      images: form.images.map((image) => image.src),
+      joinPolicy: activity?.joinPolicy ?? "auto",
+      headcount: activity?.headcount ?? { mode: "open" },
     };
-  }, [form, imageUrls, user]);
+  }, [activity, form, user]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  function setImages(next: DraftImage[]) {
+    set("images", next);
+  }
+
+  async function resolveImages() {
+    if (!user) return [];
+    const files = form.images.filter((image) => image.file).map((image) => image.file!);
+    const uploaded = files.length ? await upload.mutateAsync({ userId: user.id, files }) : [];
+    let uploadIndex = 0;
+    return form.images.map((image) => (image.file ? uploaded[uploadIndex++] : image.src));
+  }
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -128,31 +162,30 @@ export function CreateActivityForm() {
 
     setError(null);
     try {
-      const images = form.images.length
-        ? await upload.mutateAsync({ userId: user.id, files: form.images })
-        : [];
-      const activity = await create.mutateAsync({
-        creator: user,
-        input: {
-          title,
-          description,
-          type: form.type,
-          lookingFor: form.lookingFor,
-          tags: form.tags,
-          location: {
-            type: form.locationType,
-            city: form.city.trim() || undefined,
-            venue: form.venue.trim() || undefined,
-          },
-          startAt: form.isFlexible ? null : datetimeLocalToIso(form.startAt),
-          endAt: form.isFlexible ? null : datetimeLocalToIso(form.endAt),
-          isFlexible: form.isFlexible,
-          capacity,
-          images,
+      const images = await resolveImages();
+      const input = {
+        title,
+        description,
+        type: form.type,
+        lookingFor: form.lookingFor,
+        tags: form.tags,
+        location: {
+          type: form.locationType,
+          city: form.city.trim() || undefined,
+          venue: form.venue.trim() || undefined,
         },
-      });
-      toast.success("Activity posted.");
-      navigate(`/activities/${activity.id}`);
+        startAt: form.isFlexible ? null : datetimeLocalToIso(form.startAt),
+        endAt: form.isFlexible ? null : datetimeLocalToIso(form.endAt),
+        isFlexible: form.isFlexible,
+        capacity,
+        images,
+      };
+      const saved = editing
+        ? await update.mutateAsync({ id: activity!.id, actorId: user.id, input })
+        : await create.mutateAsync({ creator: user, input });
+      form.images.forEach(revokeDraftImage);
+      toast.success(editing ? "Activity updated." : "Activity posted.");
+      navigate(`/activities/${saved.id}`);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -274,11 +307,7 @@ export function CreateActivityForm() {
         ) : null}
 
         <Field label="Photos" hint="Optional. Up to 6. Empty uses the type default.">
-          <ImagePicker
-            value={form.images}
-            previews={imageUrls}
-            onChange={(next) => set("images", next)}
-          />
+          <ImagePicker value={form.images} onChange={setImages} />
         </Field>
 
         <Field label="Capacity" hint="Leave blank for no limit.">
@@ -293,9 +322,24 @@ export function CreateActivityForm() {
 
         {error ? <p className="text-sm text-[#f4212e]">{error}</p> : null}
 
-        <Button type="submit" variant="terracotta" size="lg" disabled={posting}>
-          {upload.isPending ? "Uploading photos…" : create.isPending ? "Posting…" : "Post activity"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" variant="terracotta" size="lg" disabled={posting}>
+            {upload.isPending
+              ? "Uploading photos…"
+              : update.isPending
+                ? "Saving…"
+                : create.isPending
+                  ? "Posting…"
+                  : editing
+                    ? "Save changes"
+                    : "Post activity"}
+          </Button>
+          {editing ? (
+            <Button type="button" variant="ghost" size="lg" onClick={() => navigate(`/activities/${activity!.id}`)}>
+              Cancel
+            </Button>
+          ) : null}
+        </div>
       </form>
 
       <div className="border-t border-border">

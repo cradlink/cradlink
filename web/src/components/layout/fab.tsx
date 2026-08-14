@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 
 export function Fab() {
   const pathname = useLocation().pathname;
-  if (pathname.startsWith("/activities/new")) return null;
+  if (pathname.startsWith("/activities/new") || pathname.endsWith("/edit")) return null;
 
   return (
     <Link

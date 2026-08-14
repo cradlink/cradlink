@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/layouts/app-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
 import { ActivityDetailPage } from "@/pages/activity-detail-page";
+import { EditActivityPage } from "@/pages/edit-activity-page";
 import { EditProfilePage } from "@/pages/edit-profile-page";
 import { FeedPage } from "@/pages/feed-page";
 import { LoginPage } from "@/pages/login-page";
@@ -54,6 +55,8 @@ export function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />
           <Route path="/activities/new" element={<NewActivityPage />} />
+          <Route path="/activities/edit/:id" element={<EditActivityPage />} />
+          <Route path="/activities/:id/edit" element={<EditActivityPage />} />
           <Route path="/activities/:id" element={<ActivityDetailPage />} />
           <Route path="/u/:userId" element={<PublicProfilePage />} />
           <Route path="*" element={<NotFoundPage />} />

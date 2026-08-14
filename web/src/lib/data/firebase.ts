@@ -15,7 +15,7 @@ import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
 import { AppError } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
-import { defaultHeadcount, hardCap, isActivityFull } from "@/lib/headcount";
+import { defaultHeadcount, hardCap, isActivityFull, statusForCapacity } from "@/lib/headcount";
 import type {
   Activity,
   ActivityMember,
@@ -212,6 +212,58 @@ export const firebaseActivities: ActivitiesRepo = {
       }),
     );
     return activity;
+  },
+
+  async update(id, actorId, input) {
+    const existing = await firebaseActivities.getById(id);
+    if (!existing) throw new AppError("Activity not found.");
+    if (existing.creatorId !== actorId) throw new AppError("Only the organizer can edit this.");
+    if ((input.images ?? []).some((src) => src.startsWith("data:"))) {
+      throw new AppError("Photos are too large to save in the activity. They need to be uploaded first.");
+    }
+
+    const next = {
+      ...existing,
+      title: input.title.trim(),
+      description: input.description.trim(),
+      type: input.type,
+      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
+      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      location: input.location,
+      startAt: input.isFlexible ? null : input.startAt,
+      endAt: input.isFlexible ? null : input.endAt,
+      isFlexible: input.isFlexible,
+      capacity: input.capacity,
+      joinPolicy: input.joinPolicy ?? existing.joinPolicy,
+      headcount: input.headcount ?? defaultHeadcount(input.capacity),
+      visibility: input.visibility ?? existing.visibility,
+      images: input.images ?? existing.images,
+      status: statusForCapacity(existing, input.capacity),
+      updatedAt: nowIso(),
+    };
+
+    await updateDoc(
+      doc(getFirebaseDb(), "activities", id),
+      stripUndefined({
+        title: next.title,
+        description: next.description,
+        type: next.type,
+        lookingFor: next.lookingFor,
+        tags: next.tags,
+        location: next.location,
+        startAt: next.startAt,
+        endAt: next.endAt,
+        isFlexible: next.isFlexible,
+        capacity: next.capacity,
+        joinPolicy: next.joinPolicy,
+        headcount: next.headcount,
+        visibility: next.visibility,
+        images: next.images,
+        status: next.status,
+        updatedAt: next.updatedAt,
+      }),
+    );
+    return next;
   },
 
   async listCreatedBy(userId) {

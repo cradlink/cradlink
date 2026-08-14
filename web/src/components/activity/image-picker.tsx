@@ -1,30 +1,51 @@
 import { X } from "lucide-react";
 import { AppError, errorMessage } from "@/lib/errors";
+import { createId } from "@/lib/utils";
 import { toast } from "sonner";
 
 const MAX_BYTES = 1.5 * 1024 * 1024;
 const MAX_IMAGES = 6;
+
+export type DraftImage = {
+  id: string;
+  src: string;
+  file?: File;
+};
 
 function assertImage(file: File) {
   if (!file.type.startsWith("image/")) throw new AppError("Please choose image files.");
   if (file.size > MAX_BYTES) throw new AppError("Keep each image under 1.5 MB.");
 }
 
+export function imagesFromFiles(files: File[]): DraftImage[] {
+  return files.map((file) => ({
+    id: createId("img"),
+    src: URL.createObjectURL(file),
+    file,
+  }));
+}
+
+export function imagesFromUrls(urls: string[]): DraftImage[] {
+  return urls.map((src) => ({ id: createId("img"), src }));
+}
+
+export function revokeDraftImage(image: DraftImage) {
+  if (image.file) URL.revokeObjectURL(image.src);
+}
+
 export function ImagePicker({
   value,
-  previews,
   onChange,
 }: {
-  value: File[];
-  previews: string[];
-  onChange: (next: File[]) => void;
+  value: DraftImage[];
+  onChange: (next: DraftImage[]) => void;
 }) {
   function onFiles(files: FileList | null) {
     if (!files?.length) return;
     try {
       const extras = Array.from(files);
       extras.forEach(assertImage);
-      onChange([...value, ...extras].slice(0, MAX_IMAGES));
+      onChange([...value, ...imagesFromFiles(extras)].slice(0, MAX_IMAGES));
     } catch (err) {
       toast.error(errorMessage(err));
     }
@@ -34,17 +55,18 @@ export function ImagePicker({
     <div className="space-y-2">
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {value.map((file, index) => (
+          {value.map((image) => (
             <div
-              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+              key={image.id}
               className="relative h-20 w-28 overflow-hidden rounded-xl border border-border bg-muted"
             >
-              {previews[index] ? (
-                <img src={previews[index]} alt="" className="h-full w-full object-cover" />
-              ) : null}
+              <img src={image.src} alt="" className="h-full w-full object-cover" />
               <button
                 type="button"
-                onClick={() => onChange(value.filter((_, i) => i !== index))}
+                onClick={() => {
+                  revokeDraftImage(image);
+                  onChange(value.filter((item) => item.id !== image.id));
+                }}
                 className="absolute right-1 top-1 rounded-full bg-black/80 p-0.5 text-white"
                 aria-label="Remove image"
               >

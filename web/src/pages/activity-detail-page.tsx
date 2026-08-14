@@ -83,7 +83,14 @@ export function ActivityDetailPage() {
               <p className="font-medium">{activity.creatorName}</p>
             </div>
           </Link>
-          <JoinButton activity={activity} size="lg" />
+          <div className="flex flex-wrap gap-2">
+            {isOrganizer ? (
+              <Button asChild variant="outline" size="lg">
+                <Link to={`/activities/edit/${activity.id}`}>Edit</Link>
+              </Button>
+            ) : null}
+            <JoinButton activity={activity} size="lg" />
+          </div>
         </div>
 
         <div className="max-w-2xl space-y-3">

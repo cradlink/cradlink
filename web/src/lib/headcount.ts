@@ -21,6 +21,15 @@ export function hardCap(activity: Pick<Activity, "capacity" | "headcount">): num
   return activity.capacity;
 }
 
+export function statusForCapacity(
+  activity: Pick<Activity, "status" | "memberCount">,
+  capacity: number | null,
+): Activity["status"] {
+  if (activity.status === "cancelled" || activity.status === "completed") return activity.status;
+  if (capacity != null && activity.memberCount >= capacity) return "full";
+  return "open";
+}
+
 export function isActivityFull(activity: Activity) {
   if (activity.status === "full") return true;
   const cap = hardCap(activity);
