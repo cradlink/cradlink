@@ -6,6 +6,7 @@ import { AgendaSection } from "@/components/AgendaCard"
 import { EmptyState } from "@/components/EmptyState"
 import { HostCard } from "@/components/HostCard"
 import { Refreshable, Stagger } from "@/components/Refreshable"
+import { WaitingInbox } from "@/components/RequestList"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
@@ -18,16 +19,14 @@ export default function MyActivitiesScreen() {
   const theme = useTheme()
   const { user } = useAuth()
   const { activities, ready } = useActivities()
-  const { decorate } = useMemberships()
-
   const { groups, flat } = useMemo(() => {
-    const hosted = activities.filter((activity) => activity.creatorId === user?.id).map(decorate)
+    const hosted = activities.filter((activity) => activity.creatorId === user?.id)
     const next = groupBySchedule(hosted)
     return {
       groups: next,
       flat: next.flatMap((group) => group.items),
     }
-  }, [activities, decorate, user?.id])
+  }, [activities, user?.id])
 
   const sectioned = groups.length > 1
 
@@ -37,6 +36,7 @@ export default function MyActivitiesScreen() {
       <Refreshable contentContainerStyle={styles.list}>
         {!ready ? null : (
           <Stagger>
+            <WaitingInbox key="inbox" />
             {flat.length === 0 ? (
               <EmptyState
                 key="empty"

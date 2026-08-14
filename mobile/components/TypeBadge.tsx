@@ -6,23 +6,27 @@ import type { ActivityType } from "@/lib/types"
 
 export function TypeBadge({ type }: { type: ActivityType }) {
   const meta = ACTIVITY_META[type]
+  return <MetaPill label={meta.label} color={meta.color} />
+}
+
+export function MetaPill({ label, color }: { label: string; color: string }) {
   return (
-    <View style={[styles.badge, { backgroundColor: `${meta.color}1a` }]}>
-      <Text style={[styles.label, { color: meta.color }]}>{meta.label}</Text>
+    <View style={[styles.badge, { backgroundColor: `${color}1a` }]}>
+      <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   badge: {
-    alignSelf: "flex-start",
+    height: 20,
     borderRadius: 999,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: "transparent",
+    justifyContent: "center",
   },
   label: {
     fontSize: 12,
     fontWeight: "600",
+    lineHeight: 16,
   },
 })

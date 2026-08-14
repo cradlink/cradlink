@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
   },
   creator: {
     flexShrink: 1,
+    lineHeight: 20,
     fontSize: 15,
     fontWeight: "700",
   },

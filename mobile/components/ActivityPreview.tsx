@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View as RNView } from "react-native"
+import { usePathname } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import Animated, {
@@ -14,9 +15,9 @@ import Animated, {
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
 import { CreatorPress } from "@/components/CreatorPress"
-import { EditPencil } from "@/components/EditPencil"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
+import { RequestList } from "@/components/RequestList"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
@@ -35,13 +36,15 @@ const FADE_H = 72
 
 export function ActivityPreview() {
   const theme = useTheme()
+  const pathname = usePathname()
   const { preview, close, registerCloser } = useActivityPreview()
-  const { decorate, isOrganizer } = useMemberships()
+  const onProfile = pathname.startsWith("/u/") || pathname === "/profile" || pathname.startsWith("/profile/")
+  const wasAway = useRef(false)
+  const { decorate } = useMemberships()
   const progress = useSharedValue(0)
   const fromX = useSharedValue(0)
   const fromY = useSharedValue(0)
   const [fadeW, setFadeW] = useState(TARGET_W)
-  const [footerH, setFooterH] = useState(70)
 
   function dismiss() {
     progress.value = withTiming(0, CLOSE, (finished) => {
@@ -66,7 +69,18 @@ export function ActivityPreview() {
     }
     progress.value = 0
     progress.value = withTiming(1, OPEN)
-  }, [fromX, fromY, preview, progress])
+  }, [fromX, fromY, preview?.activity.id, preview?.origin.x, preview?.origin.y, progress])
+
+  useEffect(() => {
+    if (onProfile) {
+      wasAway.current = true
+      return
+    }
+    if (wasAway.current && preview) {
+      progress.value = 1
+      wasAway.current = false
+    }
+  }, [onProfile, preview, progress])
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, 1]),
@@ -87,7 +101,7 @@ export function ActivityPreview() {
   const viewed = decorate(activity)
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={dismiss}>
+    <Modal transparent visible={!onProfile} animationType="none" statusBarTranslucent onRequestClose={dismiss}>
       <RNView style={styles.layer}>
         <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={styles.fill} onPress={dismiss}>
@@ -102,11 +116,6 @@ export function ActivityPreview() {
             cardStyle,
           ]}
         >
-          {isOrganizer(activity) ? (
-            <RNView style={styles.edit}>
-              <EditPencil activityId={activity.id} light />
-            </RNView>
-          ) : null}
           <Pressable onPress={dismiss} style={styles.close} hitSlop={12} accessibilityLabel="Close">
             <SymbolView
               name={{ ios: "xmark", android: "close", web: "close" }}
@@ -151,26 +160,24 @@ export function ActivityPreview() {
           <RNView
             style={styles.footer}
             onLayout={(event) => {
-              const { width, height } = event.nativeEvent.layout
-              const nextW = Math.round(width)
-              const nextH = Math.round(height)
+              const nextW = Math.round(event.nativeEvent.layout.width)
               if (nextW > 0 && nextW !== fadeW) setFadeW(nextW)
-              if (nextH > 0 && nextH !== footerH) setFooterH(nextH)
             }}
           >
+            <RNView pointerEvents="none" style={styles.fade}>
+              <Svg width={fadeW} height={FADE_H}>
+                <Defs>
+                  <LinearGradient id="sheetFade" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={SHEET_BG} stopOpacity="0" />
+                    <Stop offset="0.55" stopColor={SHEET_BG} stopOpacity="0.75" />
+                    <Stop offset="1" stopColor={SHEET_BG} stopOpacity="1" />
+                  </LinearGradient>
+                </Defs>
+                <Rect x="0" y="0" width={fadeW} height={FADE_H} fill="url(#sheetFade)" />
+              </Svg>
+            </RNView>
+            <RequestList activity={activity} compact />
             <JoinButton activity={activity} wide />
-          </RNView>
-          <RNView pointerEvents="none" style={[styles.fade, { bottom: footerH - 1 }]}>
-            <Svg width={fadeW} height={FADE_H}>
-              <Defs>
-                <LinearGradient id="sheetFade" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={SHEET_BG} stopOpacity="0" />
-                  <Stop offset="0.55" stopColor={SHEET_BG} stopOpacity="0.75" />
-                  <Stop offset="1" stopColor={SHEET_BG} stopOpacity="1" />
-                </LinearGradient>
-              </Defs>
-              <Rect x="0" y="0" width={fadeW} height={FADE_H} fill="url(#sheetFade)" />
-            </Svg>
           </RNView>
         </Animated.View>
       </RNView>
@@ -209,12 +216,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
   },
-  edit: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    zIndex: 2,
-  },
   close: {
     position: "absolute",
     top: 12,
@@ -243,6 +244,7 @@ const styles = StyleSheet.create({
   },
   fade: {
     position: "absolute",
+    top: -FADE_H,
     left: 0,
     right: 0,
     height: FADE_H,
@@ -254,8 +256,10 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   bylineText: {
+    flexShrink: 1,
     gap: 6,
     backgroundColor: "transparent",
+    alignItems: "flex-start",
   },
   creator: {
     fontSize: 16,
@@ -277,9 +281,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     zIndex: 2,
+    overflow: "visible",
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 16,
+    gap: 12,
     backgroundColor: SHEET_BG,
   },
 })

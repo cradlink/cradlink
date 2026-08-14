@@ -3,14 +3,18 @@ import { StyleSheet } from "react-native"
 import { ActivityCover } from "@/components/ActivityCover"
 import { ActivityPressable, listHairline } from "@/components/ActivityPressable"
 import { EditPencil } from "@/components/EditPencil"
-import { TypeBadge } from "@/components/TypeBadge"
+import { MetaPill, TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useMemberships } from "@/hooks/use-memberships"
 import { formatHeadcount, formatJoinPolicy } from "@/lib/format"
 import { formatPlace, formatShortWhen } from "@/lib/schedule"
 import type { Activity } from "@/lib/types"
 
 export function HostCard({ activity }: { activity: Activity }) {
   const theme = useTheme()
+  const { pendingCount, decorate } = useMemberships()
+  const viewed = decorate(activity)
+  const waiting = pendingCount(activity.id)
   const status =
     activity.status === "full" ? "Full" : activity.status === "cancelled" ? "Cancelled" : activity.status === "completed" ? "Done" : null
 
@@ -18,12 +22,14 @@ export function HostCard({ activity }: { activity: Activity }) {
     <ActivityPressable activity={activity} style={[styles.card, { borderBottomColor: theme.border }]}>
       <ActivityCover activity={activity} />
       <View style={styles.meta} lightColor="transparent" darkColor="transparent">
-        <TypeBadge type={activity.type} />
-        {status ? (
-          <Text style={styles.status} lightColor="#536471" darkColor="#71767b">
-            {status}
-          </Text>
-        ) : null}
+        <View style={styles.chips} lightColor="transparent" darkColor="transparent">
+          <TypeBadge type={activity.type} />
+          {waiting > 0 ? (
+            <MetaPill label={waiting === 1 ? "1 waiting" : `${waiting} waiting`} color={theme.primary} />
+          ) : status ? (
+            <MetaPill label={status} color={theme.mutedForeground} />
+          ) : null}
+        </View>
         <View style={styles.grow} lightColor="transparent" darkColor="transparent" />
         <EditPencil activityId={activity.id} />
       </View>
@@ -33,7 +39,7 @@ export function HostCard({ activity }: { activity: Activity }) {
         {formatPlace(activity)}
       </Text>
       <Text style={styles.line} lightColor="#536471" darkColor="#71767b">
-        {formatHeadcount(activity)} · {formatJoinPolicy(activity.joinPolicy)}
+        {formatHeadcount(viewed)} · {formatJoinPolicy(activity.joinPolicy)}
       </Text>
     </ActivityPressable>
   )
@@ -51,14 +57,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
+    minHeight: 32,
+  },
+  chips: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
   },
   grow: {
     flex: 1,
-  },
-  status: {
-    fontSize: 13,
-    fontWeight: "600",
   },
   title: {
     fontSize: 22,

@@ -109,6 +109,19 @@ async function ensureSeed() {
     )
     dirty = true
   }
+  const extras: [string, string, string, string, string[]][] = [
+    ["user_ana", "Ana Kovač", "ana@cradlink.com", "I like small crews and finishing things.", ["Film", "Writing"]],
+    ["user_luka", "Luka Ilić", "luka@cradlink.com", "Editor, night owl, usually carrying a hard drive.", ["Film", "Editing"]],
+    ["user_nina", "Nina Petrić", "nina@cradlink.com", "Taste first. I show up with notes, not a pitch deck.", ["Design", "Film"]],
+    ["user_teo", "Teo Marković", "teo@cradlink.com", "Camera, coffee, and one more take.", ["Camera", "Sports"]],
+    ["user_iva", "Iva Radić", "iva@cradlink.com", "I join if the people are kind and the plan is real.", ["Community"]],
+  ]
+  for (const [id, name, email, bio, skills] of extras) {
+    if (!users[id]) {
+      users[id] = stub(id, name, email, bio, skills, "Belgrade", "not-a-login", timestamp)
+      dirty = true
+    }
+  }
   if (dirty) await saveUsers(users)
   return users
 }

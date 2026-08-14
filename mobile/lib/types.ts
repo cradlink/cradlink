@@ -100,7 +100,18 @@ export type CreateActivityInput = {
 
 export type UpdateActivityInput = CreateActivityInput
 
-export type NotificationType = "joined" | "request" | "accepted" | "updated" | "reminder"
+export type JoinRequest = {
+  id: string
+  activityId: string
+  hostId: string
+  userId: string
+  userName: string
+  userAvatar: string | null
+  status: "pending" | "accepted" | "declined"
+  createdAt: string
+}
+
+export type NotificationType = "joined" | "request" | "accepted" | "declined" | "updated" | "reminder"
 
 export type AppNotification = {
   id: string

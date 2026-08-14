@@ -1,6 +1,6 @@
-import { Image, StyleSheet } from "react-native"
+import { Image, StyleSheet, View } from "react-native"
 
-import { Text, View, useTheme } from "@/components/Themed"
+import { Text, useTheme } from "@/components/Themed"
 import { initials } from "@/lib/initials"
 
 export function Avatar({

@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { Refreshable, Stagger } from "@/components/Refreshable"
+import { RequestList } from "@/components/RequestList"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
@@ -64,6 +65,7 @@ export default function ActivityDetailScreen() {
               {formatHeadcount(viewed)} · {formatJoinPolicy(activity.joinPolicy)}
             </Text>,
             <ActivityCover key="cover" activity={activity} compact={false} />,
+            <RequestList key="requests" activity={activity} />,
             <View key="action" style={styles.action}>
               <JoinButton activity={activity} />
             </View>,
@@ -90,6 +92,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
     backgroundColor: "transparent",
+    alignItems: "flex-start",
   },
   title: {
     fontSize: 26,

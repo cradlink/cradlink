@@ -45,7 +45,7 @@ export function ToastHost() {
             ? { ios: "xmark", android: "close", web: "close" }
             : { ios: "checkmark", android: "check", web: "check" }
         }
-        tintColor={failed ? "#f4212e" : "#00ba7c"}
+        tintColor="#e7e9ea"
         size={18}
       />
     </Animated.View>

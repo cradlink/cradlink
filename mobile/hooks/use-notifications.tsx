@@ -17,6 +17,17 @@ type NotificationsValue = {
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
   notifyHost: (activity: Activity, type: Extract<NotificationType, "joined" | "request">) => Promise<void>
+  notifyUser: (
+    userId: string,
+    input: {
+      type: NotificationType
+      activityId: string | null
+      actorName: string
+      actorAvatar: string | null
+      title: string
+      body: string
+    },
+  ) => Promise<void>
   reload: () => Promise<void>
 }
 
@@ -131,6 +142,16 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           ...store,
           [user.id]: (store[user.id] ?? []).map((item) => ({ ...item, read: true })),
         })
+      },
+      notifyUser: async (userId, input) => {
+        const next: AppNotification = {
+          id: createId(),
+          userId,
+          createdAt: new Date().toISOString(),
+          read: false,
+          ...input,
+        }
+        await persist({ ...store, [userId]: [next, ...(store[userId] ?? [])] })
       },
       notifyHost: async (activity, type) => {
         if (!user || user.id === activity.creatorId) return

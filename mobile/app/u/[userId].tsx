@@ -13,7 +13,7 @@ export default function PublicProfileScreen() {
   const navigation = useNavigation()
   const router = useRouter()
   const { userId } = useLocalSearchParams<{ userId: string }>()
-  const { user, getUser } = useAuth()
+  const { user, getUser, reload } = useAuth()
   const { activities } = useActivities()
   const person = userId ? getUser(userId) : null
   const hosted = person ? activities.filter((activity) => activity.creatorId === person.id) : []
@@ -22,6 +22,10 @@ export default function PublicProfileScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({ title: person?.displayName ?? "Profile" })
   }, [navigation, person?.displayName])
+
+  useEffect(() => {
+    if (userId && !getUser(userId)) void reload()
+  }, [getUser, reload, userId])
 
   useEffect(() => {
     if (isSelf) router.replace("/profile")
