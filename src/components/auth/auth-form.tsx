@@ -1,8 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
@@ -15,8 +12,8 @@ import { errorMessage } from "@/lib/errors";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const { user, ready, signIn, signUp, signInWithGoogle } = useAuth();
-  const router = useRouter();
-  const search = useSearchParams();
+  const navigate = useNavigate();
+  const [search] = useSearchParams();
   const next = search.get("next") || "/";
   const [displayName, setDisplayName] = useState("");
   const local = getBackendName() === "local";
@@ -25,7 +22,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const go = () => router.replace(next.startsWith("/") ? next : "/");
+  const go = () => navigate(next.startsWith("/") ? next : "/", { replace: true });
 
   useEffect(() => {
     if (ready && user) go();
@@ -131,14 +128,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {mode === "login" ? (
           <>
             New here?{" "}
-            <Link href="/signup" className="text-foreground underline">
+            <Link to="/signup" className="text-foreground underline">
               Create an account
             </Link>
           </>
         ) : (
           <>
             Already have one?{" "}
-            <Link href="/login" className="text-foreground underline">
+            <Link to="/login" className="text-foreground underline">
               Sign in
             </Link>
           </>

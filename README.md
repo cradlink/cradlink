@@ -2,11 +2,11 @@
 
 Find people. Do the thing.
 
-Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is this Next.js app. Phase 2 (later) is Expo, same Firebase project.
+Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is this React (Vite) app. Phase 2 (later) is Expo, same Firebase project.
 
 ## Run it
 
-Needs **Node 18+**.
+Needs **Node 20.19+**.
 
 ```bash
 npm install
@@ -42,13 +42,13 @@ Data lives in this browser until you switch to Firebase.
 3. Copy `.env.example` to `.env.local` and fill in the keys:
 
 ```
-NEXT_PUBLIC_BACKEND=firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
+VITE_BACKEND=firebase
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
 ```
 
 4. Paste `firestore.rules` and `storage.rules` in the Firebase console (or deploy with the Firebase CLI).
@@ -59,8 +59,8 @@ The UI does not change. Auth, activities, members, and avatars go through the sa
 
 ## Deploy (web)
 
-Push to GitHub, import the repo on Vercel, add the same env vars, and add the Vercel domain under Firebase Auth → Authorized domains.
+Push to GitHub, import the repo on Vercel, add the same env vars, and add the Vercel domain under Firebase Auth → Authorized domains. `vercel.json` rewrites unknown paths to `index.html` so client-side routes work.
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Tailwind · TanStack Query · Firebase JS SDK (optional)
+React · Vite · React Router · TypeScript · Tailwind · TanStack Query · Firebase JS SDK (optional)

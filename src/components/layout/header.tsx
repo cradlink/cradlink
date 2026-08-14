@@ -1,8 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
@@ -16,8 +13,8 @@ const NAV = [
 
 export function Header() {
   const { user, signOut } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = useLocation().pathname;
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +34,7 @@ export function Header() {
           {NAV.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={cn(
                 "rounded-full px-3 py-1.5 text-sm",
                 pathname === item.href
@@ -79,7 +76,7 @@ export function Header() {
                   onClick={async () => {
                     setOpen(false);
                     await signOut();
-                    router.push("/login");
+                    navigate("/login");
                   }}
                 >
                   Sign out
@@ -88,7 +85,7 @@ export function Header() {
             ) : null}
           </div>
         ) : (
-          <Link href="/login" className="text-sm text-muted-foreground">
+          <Link to="/login" className="text-sm text-muted-foreground">
             Sign in
           </Link>
         )}
@@ -108,7 +105,7 @@ function MenuLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} onClick={onClick} className="block px-3 py-2 text-sm hover:bg-muted">
+    <Link to={href} onClick={onClick} className="block px-3 py-2 text-sm hover:bg-muted">
       {children}
     </Link>
   );

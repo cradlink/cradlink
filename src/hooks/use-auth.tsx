@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { getBackend } from "@/lib/backend";
 import type { SignInInput, SignUpInput } from "@/lib/auth/types";

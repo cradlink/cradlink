@@ -1,7 +1,5 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { TagInput } from "@/components/activity/tag-input";
 import { Avatar } from "@/components/ui/avatar";
@@ -15,7 +13,7 @@ import { errorMessage } from "@/lib/errors";
 import type { User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { refresh } = useAuth();
   const update = useUpdateProfile(user.id);
   const upload = useUploadAvatar();
@@ -53,7 +51,7 @@ export function ProfileForm({ user }: { user: User }) {
       });
       await refresh();
       toast.success("Profile saved.");
-      router.push("/profile");
+      navigate("/profile");
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -100,7 +98,7 @@ export function ProfileForm({ user }: { user: User }) {
         <Button type="submit" variant="terracotta" disabled={update.isPending || upload.isPending}>
           {update.isPending ? "Saving…" : "Save"}
         </Button>
-        <Button type="button" variant="ghost" onClick={() => router.push("/profile")}>
+        <Button type="button" variant="ghost" onClick={() => navigate("/profile")}>
           Cancel
         </Button>
       </div>

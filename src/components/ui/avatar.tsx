@@ -22,8 +22,6 @@ export function Avatar({
       aria-hidden={!src}
     >
       {src ? (
-        // data URLs and Google photos — skip next/image
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" className="h-full w-full object-cover" />
       ) : (
         initials(name)

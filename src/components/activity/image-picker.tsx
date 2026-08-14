@@ -1,5 +1,3 @@
-"use client";
-
 import { X } from "lucide-react";
 import { AppError, errorMessage } from "@/lib/errors";
 import { toast } from "sonner";
@@ -44,7 +42,6 @@ export function ImagePicker({
         <div className="flex flex-wrap gap-2">
           {value.map((src, index) => (
             <div key={`${src.slice(0, 24)}-${index}`} className="relative h-20 w-28 overflow-hidden rounded-xl border border-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={src} alt="" className="h-full w-full object-cover" />
               <button
                 type="button"

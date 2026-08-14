@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ImagePicker } from "@/components/activity/image-picker";
@@ -55,7 +53,7 @@ const empty: FormState = {
 
 export function CreateActivityForm() {
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const create = useCreateActivity();
   const [form, setForm] = useState<FormState>(empty);
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +135,7 @@ export function CreateActivityForm() {
         },
       });
       toast.success("Activity posted.");
-      router.push(`/activities/${activity.id}`);
+      navigate(`/activities/${activity.id}`);
     } catch (err) {
       setError(errorMessage(err));
     }

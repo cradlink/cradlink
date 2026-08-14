@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { ActivityCover } from "@/components/activity/activity-gallery";
 import { JoinButton } from "@/components/activity/join-button";
@@ -20,13 +20,13 @@ export function ActivityCard({
   return (
     <article className="border-b border-border px-4 py-3 transition-colors hover:bg-hover">
       <div className="flex gap-3">
-        <Link href={`/u/${activity.creatorId}`} className="shrink-0 pt-0.5">
+        <Link to={`/u/${activity.creatorId}`} className="shrink-0 pt-0.5">
           <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
         </Link>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] leading-5">
-            <Link href={`/u/${activity.creatorId}`} className="font-bold hover:underline">
+            <Link to={`/u/${activity.creatorId}`} className="font-bold hover:underline">
               {activity.creatorName}
             </Link>
             <span className="text-muted-foreground">·</span>
@@ -37,7 +37,7 @@ export function ActivityCard({
             </span>
           </div>
 
-          <Link href={`/activities/${activity.id}`} className="mt-1 block">
+          <Link to={`/activities/${activity.id}`} className="mt-1 block">
             <h3 className="text-[17px] font-bold leading-6 text-foreground">{activity.title}</h3>
             <p className="mt-1 line-clamp-4 text-[15px] leading-5 text-foreground">
               {activity.description}
@@ -68,7 +68,7 @@ export function ActivityCard({
             </p>
           </div>
 
-          <Link href={`/activities/${activity.id}`} className="mt-3 block">
+          <Link to={`/activities/${activity.id}`} className="mt-3 block">
             <ActivityCover
               activity={activity}
               className="aspect-[16/9] rounded-2xl border border-border"

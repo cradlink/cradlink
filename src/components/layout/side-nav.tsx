@@ -1,8 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import { Home, CalendarDays, UserRound, PenSquare } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
@@ -16,8 +13,8 @@ const ITEMS = [
 ];
 
 export function SideNav() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = useLocation().pathname;
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
   return (
@@ -33,7 +30,7 @@ export function SideNav() {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 className={cn(
                   "flex items-center gap-5 rounded-full px-3 py-3 text-xl hover:bg-hover",
                   active ? "font-bold" : "font-normal",
@@ -46,7 +43,7 @@ export function SideNav() {
           })}
         </nav>
         <Link
-          href="/activities/new"
+          to="/activities/new"
           className="mt-4 flex items-center justify-center rounded-full bg-primary px-3 py-3 text-[17px] font-bold text-primary-foreground hover:bg-[#1a8cd8] xl:mx-2"
         >
           <PenSquare className="size-6 xl:hidden" />
@@ -63,7 +60,7 @@ export function SideNav() {
             type="button"
             onClick={async () => {
               await signOut();
-              router.push("/login");
+              navigate("/login");
             }}
             className="flex w-full items-center gap-3 rounded-full px-3 py-3 text-left hover:bg-hover"
           >

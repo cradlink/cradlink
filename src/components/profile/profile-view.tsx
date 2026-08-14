@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { LookingForChips } from "@/components/activity/looking-for-chips";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export function ProfileView({
         </div>
         {isSelf ? (
           <Button asChild variant="outline">
-            <Link href="/profile/edit">Edit profile</Link>
+            <Link to="/profile/edit">Edit profile</Link>
           </Button>
         ) : null}
       </div>

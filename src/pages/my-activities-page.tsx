@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
@@ -8,7 +6,7 @@ import { useCreatedActivities, useJoinedActivities } from "@/hooks/use-activitie
 import { useAuth } from "@/hooks/use-auth";
 import { FEED_GRID } from "@/lib/activity-meta";
 
-export default function MyActivitiesPage() {
+export function MyActivitiesPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState("created");
   const created = useCreatedActivities(user?.id);

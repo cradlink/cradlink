@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 export type Theme = "light" | "dark";

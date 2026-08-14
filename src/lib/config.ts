@@ -1,3 +1,5 @@
+import { appEnv } from "@/lib/env";
+
 export const APP_NAME = "Cradlink";
 export const APP_TAGLINE = "Find people. Do the thing.";
 
@@ -9,7 +11,5 @@ export const PAGE_SIZE = 8;
 export type BackendName = "local" | "firebase";
 
 export function getBackendName(): BackendName {
-  return process.env.NEXT_PUBLIC_BACKEND === "firebase"
-    ? "firebase"
-    : "local";
+  return appEnv.backend === "firebase" ? "firebase" : "local";
 }

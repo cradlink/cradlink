@@ -1,17 +1,11 @@
-"use client";
-
-import { use } from "react";
+import { useParams } from "react-router-dom";
 import { ProfileView } from "@/components/profile/profile-view";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/hooks/use-profile";
 
-export default function PublicProfilePage({
-  params,
-}: {
-  params: Promise<{ userId: string }>;
-}) {
-  const { userId } = use(params);
+export function PublicProfilePage() {
+  const { userId } = useParams<{ userId: string }>();
   const { user: me } = useAuth();
   const { data, isLoading } = useUser(userId);
 

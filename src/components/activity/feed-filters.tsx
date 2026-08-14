@@ -1,5 +1,3 @@
-"use client";
-
 import { ACTIVITY_META } from "@/lib/activity-meta";
 import { ACTIVITY_TYPES, type ActivityType, type LocationType } from "@/lib/types";
 import { cn } from "@/lib/utils";
