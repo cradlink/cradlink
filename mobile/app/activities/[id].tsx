@@ -8,14 +8,15 @@ import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
+import { useActivities } from "@/hooks/use-activities"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
-import { getActivity } from "@/lib/mock"
 
 export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { get } = useActivities()
   const { decorate } = useMemberships()
-  const activity = id ? getActivity(id) : null
+  const activity = id ? get(id) : null
   const viewed = activity ? decorate(activity) : null
 
   if (!activity || !viewed) {

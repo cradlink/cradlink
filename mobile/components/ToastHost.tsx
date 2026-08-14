@@ -6,8 +6,9 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "
 import { Text } from "@/components/Themed"
 import { useToast, type ToastMessage } from "@/hooks/use-toast"
 
-const IN = { duration: 280, easing: Easing.bezier(0.16, 1, 0.3, 1) }
-const OUT = { duration: 220, easing: Easing.bezier(0.4, 0, 0.2, 1) }
+const IN = { duration: 240, easing: Easing.bezier(0.16, 1, 0.3, 1) }
+const OUT = { duration: 200, easing: Easing.bezier(0.4, 0, 0.2, 1) }
+const TAB = 56
 
 export function ToastHost() {
   const { toast } = useToast()
@@ -22,7 +23,7 @@ export function ToastHost() {
 
   const style = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * -18 }],
+    transform: [{ translateY: (1 - progress.value) * 12 }],
   }))
 
   if (!shown) return null
@@ -30,43 +31,32 @@ export function ToastHost() {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.wrap, { top: insets.top + 18 }, style]}
+      style={[styles.bar, { bottom: insets.bottom + TAB }, style]}
     >
-      <Text style={styles.title}>{shown.title}</Text>
-      {shown.body ? (
-        <Text style={styles.body} numberOfLines={2}>
-          {shown.body}
-        </Text>
-      ) : null}
+      <Text style={styles.label} numberOfLines={1}>
+        {shown.title}
+      </Text>
     </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  bar: {
     position: "absolute",
-    left: 16,
-    right: 16,
+    left: 12,
+    right: 12,
     zIndex: 80,
     elevation: 80,
-    backgroundColor: "#202327",
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    gap: 4,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 6,
+    backgroundColor: "#1d1f23",
   },
-  title: {
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-  },
-  body: {
-    fontSize: 14,
-    lineHeight: 18,
-    color: "#8b9198",
+  label: {
+    color: "#e7e9ea",
+    fontSize: 15,
+    fontWeight: "500",
   },
 })

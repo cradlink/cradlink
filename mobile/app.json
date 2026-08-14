@@ -35,6 +35,12 @@
       "expo-router",
       "expo-navigation-bar",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Cradlink to attach a photo to your activity."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",

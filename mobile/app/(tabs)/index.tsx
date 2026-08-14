@@ -7,18 +7,19 @@ import { EmptyState } from "@/components/EmptyState"
 import { FeedFilters } from "@/components/FeedFilters"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
-import { MOCK_ACTIVITIES } from "@/lib/mock"
+import { useActivities } from "@/hooks/use-activities"
 import type { ActivityType, LocationType } from "@/lib/types"
 
 export default function FeedScreen() {
   const router = useRouter()
   const theme = useTheme()
+  const { activities: all } = useActivities()
   const [query, setQuery] = useState("")
   const [type, setType] = useState<ActivityType | "all">("all")
   const [locationType, setLocationType] = useState<LocationType | "all">("all")
   const activities = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return MOCK_ACTIVITIES.filter((activity) => {
+    return all.filter((activity) => {
       if (type !== "all" && activity.type !== type) return false
       if (locationType !== "all" && activity.location.type !== locationType) return false
       if (!q) return true
@@ -33,7 +34,7 @@ export default function FeedScreen() {
         .toLowerCase()
       return hay.includes(q)
     })
-  }, [query, type, locationType])
+  }, [all, query, type, locationType])
 
   return (
     <View style={styles.screen}>

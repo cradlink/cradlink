@@ -11,6 +11,7 @@ import { ConfirmModalHost } from "@/components/ConfirmDialog"
 import { ToastHost } from "@/components/ToastHost"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
+import { ActivitiesProvider } from "@/hooks/use-activities"
 import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
@@ -79,7 +80,14 @@ function RootNav() {
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="activities/new" options={{ title: "New activity", presentation: "modal" }} />
+          <Stack.Screen
+            name="activities/new"
+            options={{
+              headerShown: false,
+              presentation: "modal",
+              animation: "slide_from_bottom",
+            }}
+          />
           <Stack.Screen name="activities/[id]" options={{ title: "Activity" }} />
           <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
         </Stack>
@@ -96,15 +104,17 @@ function RootNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <MembershipProvider>
-        <ActivityPreviewProvider>
-          <ConfirmProvider>
-            <ToastProvider>
-              <RootNav />
-            </ToastProvider>
-          </ConfirmProvider>
-        </ActivityPreviewProvider>
-      </MembershipProvider>
+      <ActivitiesProvider>
+        <MembershipProvider>
+          <ActivityPreviewProvider>
+            <ConfirmProvider>
+              <ToastProvider>
+                <RootNav />
+              </ToastProvider>
+            </ConfirmProvider>
+          </ActivityPreviewProvider>
+        </MembershipProvider>
+      </ActivitiesProvider>
     </AuthProvider>
   )
 }

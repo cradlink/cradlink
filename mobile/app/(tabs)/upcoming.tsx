@@ -4,14 +4,15 @@ import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
 import { TopBar } from "@/components/TopBar"
 import { View } from "@/components/Themed"
+import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useMemberships } from "@/hooks/use-memberships"
-import { MOCK_ACTIVITIES } from "@/lib/mock"
 
 export default function UpcomingScreen() {
   const { user } = useAuth()
   const { joinedIds } = useMemberships()
-  const list = MOCK_ACTIVITIES.filter(
+  const { activities } = useActivities()
+  const list = activities.filter(
     (activity) => activity.creatorId !== user?.id && joinedIds.includes(activity.id),
   )
 

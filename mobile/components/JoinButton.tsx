@@ -80,17 +80,7 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
           onConfirm: () => {
             void join(activity)
             if (preview?.activity.id === activity.id) dismiss()
-            show(
-                manual
-                  ? {
-                      title: "Request sent",
-                      body: `The organizer will accept or decline ${activity.title}.`,
-                    }
-                  : {
-                      title: "Joined",
-                      body: `You’re on the list for ${activity.title}.`,
-                    },
-              )
+            show({ title: manual ? "Request sent" : "Joined" })
           },
         })
       }

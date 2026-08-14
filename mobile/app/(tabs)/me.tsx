@@ -4,12 +4,13 @@ import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
 import { TopBar } from "@/components/TopBar"
 import { View } from "@/components/Themed"
+import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { MOCK_ACTIVITIES } from "@/lib/mock"
 
 export default function MyActivitiesScreen() {
   const { user } = useAuth()
-  const list = MOCK_ACTIVITIES.filter((activity) => activity.creatorId === user?.id)
+  const { activities } = useActivities()
+  const list = activities.filter((activity) => activity.creatorId === user?.id)
 
   return (
     <View style={styles.screen}>
