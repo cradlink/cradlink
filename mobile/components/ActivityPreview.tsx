@@ -13,6 +13,7 @@ import Animated, {
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { EditPencil } from "@/components/EditPencil"
 import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
@@ -34,7 +35,7 @@ const FADE_H = 72
 export function ActivityPreview() {
   const theme = useTheme()
   const { preview, close, registerCloser } = useActivityPreview()
-  const { decorate } = useMemberships()
+  const { decorate, isOrganizer } = useMemberships()
   const progress = useSharedValue(0)
   const fromX = useSharedValue(0)
   const fromY = useSharedValue(0)
@@ -100,6 +101,11 @@ export function ActivityPreview() {
             cardStyle,
           ]}
         >
+          {isOrganizer(activity) ? (
+            <RNView style={styles.edit}>
+              <EditPencil activityId={activity.id} light />
+            </RNView>
+          ) : null}
           <Pressable onPress={dismiss} style={styles.close} hitSlop={12} accessibilityLabel="Close">
             <SymbolView
               name={{ ios: "xmark", android: "close", web: "close" }}
@@ -197,6 +203,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
+  },
+  edit: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    zIndex: 2,
   },
   close: {
     position: "absolute",

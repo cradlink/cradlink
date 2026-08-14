@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native"
 
 import { Button } from "@/components/Button"
+import { Refreshable, Stagger } from "@/components/Refreshable"
 import { Text, View } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -8,26 +9,31 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth()
 
   return (
-    <View style={styles.screen}>
-      <Text style={styles.kicker} lightColor="#536471" darkColor="#71767b">
-        Signed in as
-      </Text>
-      <Text style={styles.name}>{user?.displayName}</Text>
-      <Text style={styles.email} lightColor="#536471" darkColor="#71767b">
-        {user?.email}
-      </Text>
-      <View style={styles.action}>
-        <Button label="Sign out" variant="outline" onPress={() => void signOut()} />
-      </View>
-    </View>
+    <Refreshable contentContainerStyle={styles.list}>
+      <Stagger>
+        <Text key="kicker" style={styles.kicker} lightColor="#536471" darkColor="#71767b">
+          Signed in as
+        </Text>
+        <Text key="name" style={styles.name}>
+          {user?.displayName}
+        </Text>
+        <Text key="email" style={styles.email} lightColor="#536471" darkColor="#71767b">
+          {user?.email}
+        </Text>
+        <View key="action" style={styles.action}>
+          <Button label="Sign out" variant="outline" onPress={() => void signOut()} />
+        </View>
+      </Stagger>
+    </Refreshable>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
+  list: {
+    flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 24,
+    paddingBottom: 40,
   },
   kicker: {
     fontSize: 13,

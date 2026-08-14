@@ -39,6 +39,19 @@ export function formatJoinPolicy(policy: JoinPolicy) {
   return policy === "manual" ? "Organizer accepts" : "Instant join"
 }
 
+export function formatRelative(iso: string) {
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return ""
+  const minutes = Math.round((Date.now() - then) / 60000)
+  if (minutes < 1) return "Now"
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.round(hours / 24)
+  if (days < 7) return `${days}d`
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+}
+
 export function formatCardMeta(activity: Pick<Activity, "location" | "isFlexible" | "startAt" | "memberCount">) {
   const place = activity.location.city || LOCATION_LABELS[activity.location.type]
   let when = "Flexible"

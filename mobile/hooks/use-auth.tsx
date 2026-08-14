@@ -11,6 +11,7 @@ type AuthContextValue = {
   signUp: (input: SignUpInput) => Promise<User>
   signInAsDemo: () => Promise<User>
   signOut: () => Promise<void>
+  reload: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -34,6 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp: (input) => localAuth.signUp(input),
       signInAsDemo: () => localAuth.signInAsDemo(),
       signOut: () => localAuth.signOut(),
+      reload: async () => {
+        const next = await localAuth.getCurrentUser()
+        setUser(next)
+      },
     }),
     [user, ready],
   )

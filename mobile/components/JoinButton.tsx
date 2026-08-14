@@ -1,16 +1,20 @@
 import { Pressable, StyleSheet } from "react-native"
+import { useRouter } from "expo-router"
 
 import { Text, useTheme } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useMemberships } from "@/hooks/use-memberships"
+import { useNotifications } from "@/hooks/use-notifications"
 import { useToast } from "@/hooks/use-toast"
 import type { Activity } from "@/lib/types"
 
 export function JoinButton({ activity, wide = false }: { activity: Activity; wide?: boolean }) {
+  const router = useRouter()
   const { ask } = useConfirm()
   const { preview, dismiss } = useActivityPreview()
   const { show } = useToast()
+  const { notifyHost } = useNotifications()
   const { statusOf, isOrganizer, isFull, join, leave } = useMemberships()
   const organizer = isOrganizer(activity)
   const status = statusOf(activity.id)
@@ -18,7 +22,17 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
   const manual = activity.joinPolicy === "manual"
 
   if (organizer) {
-    return <Action label="Your activity" muted wide={wide} />
+    return (
+      <Action
+        label="Edit"
+        outline
+        wide={wide}
+        onPress={() => {
+          if (preview?.activity.id === activity.id) dismiss()
+          router.push(`/activities/edit/${activity.id}`)
+        }}
+      />
+    )
   }
 
   if (full && status !== "joined" && status !== "pending") {
@@ -78,9 +92,16 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
             : "You’ll be on the list. The organizer can see your name.",
           confirmLabel: manual ? "Send request" : "Join",
           onConfirm: () => {
-            void join(activity)
-            if (preview?.activity.id === activity.id) dismiss()
-            show({ title: manual ? "Request sent" : "Joined" })
+            void (async () => {
+              try {
+                await join(activity)
+                await notifyHost(activity, manual ? "request" : "joined")
+                if (preview?.activity.id === activity.id) dismiss()
+                show({ title: manual ? "Request sent" : "Joined" })
+              } catch {
+                show({ title: manual ? "Couldn’t send request" : "Couldn’t join", tone: "error" })
+              }
+            })()
           },
         })
       }

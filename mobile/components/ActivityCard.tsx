@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View as RNView } from "react-native"
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
+import { EditPencil } from "@/components/EditPencil"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
@@ -13,9 +14,10 @@ import type { Activity } from "@/lib/types"
 
 export function ActivityCard({ activity }: { activity: Activity }) {
   const theme = useTheme()
-  const { decorate } = useMemberships()
+  const { decorate, isOrganizer } = useMemberships()
   const { open } = useActivityPreview()
   const viewed = decorate(activity)
+  const mine = isOrganizer(activity)
   const ref = useRef<RNView>(null)
 
   return (
@@ -38,6 +40,12 @@ export function ActivityCard({ activity }: { activity: Activity }) {
               {activity.creatorName}
             </Text>
             <TypeBadge type={activity.type} />
+            {mine ? (
+              <>
+                <View style={styles.grow} />
+                <EditPencil activityId={activity.id} />
+              </>
+            ) : null}
           </View>
 
           <Text style={styles.title} numberOfLines={2}>
@@ -87,6 +95,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    backgroundColor: "transparent",
+  },
+  grow: {
+    flex: 1,
     backgroundColor: "transparent",
   },
   creator: {

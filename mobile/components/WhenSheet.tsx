@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Pressable, ScrollView, StyleSheet, View } from "react-native"
+import { Dimensions, Pressable, ScrollView, StyleSheet, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Animated, {
@@ -20,9 +20,9 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 15, 30, 45]
 const ROW = 58
 const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
-const SLIDE = 640
-const OPEN = { duration: 320, easing: Easing.bezier(0.16, 1, 0.3, 1) }
-const CLOSE = { duration: 260, easing: Easing.bezier(0.4, 0, 0.2, 1) }
+const SLIDE = Dimensions.get("window").height
+const OPEN = { duration: 380, easing: Easing.out(Easing.cubic) }
+const CLOSE = { duration: 320, easing: Easing.in(Easing.cubic) }
 
 function startOfDay(d: Date) {
   const next = new Date(d)
@@ -164,9 +164,9 @@ export function WhenSheet({
   const [minute, setMinute] = useState(0)
   const { today, cells } = useMemo(() => buildMonth(cursor), [cursor])
   const startY = useRef(0)
+  const closing = useRef(false)
   const [shown, setShown] = useState(visible)
   const progress = useSharedValue(0)
-  const dragY = useSharedValue(0)
 
   function syncFrom(next: Date | null) {
     const base = next ?? new Date()
@@ -176,48 +176,49 @@ export function WhenSheet({
     setMinute(nearestMinute(base.getMinutes()))
   }
 
-  function hide() {
+  function finishClose() {
+    closing.current = false
     setShown(false)
-    dragY.value = 0
+  }
+
+  function animateOut(after?: () => void) {
+    if (closing.current) return
+    closing.current = true
+    progress.value = withTiming(0, CLOSE, (done) => {
+      if (!done) return
+      if (after) runOnJS(after)()
+      runOnJS(finishClose)()
+    })
   }
 
   function dismiss() {
-    dragY.value = withTiming(0, { duration: 80 })
-    progress.value = withTiming(0, CLOSE, (done) => {
-      if (done) runOnJS(hide)()
-    })
-    onClose()
+    animateOut(onClose)
   }
 
   function confirm() {
     const next = new Date(selected)
     next.setHours(hour, minute, 0, 0)
-    progress.value = withTiming(0, CLOSE, (done) => {
-      if (done) runOnJS(hide)()
-    })
-    onDone(next)
+    animateOut(() => onDone(next))
   }
 
   useEffect(() => {
     if (visible) {
+      closing.current = false
       setShown(true)
       syncFrom(value)
-      dragY.value = 0
       progress.value = 0
       progress.value = withTiming(1, OPEN)
-    } else if (shown) {
-      progress.value = withTiming(0, CLOSE, (done) => {
-        if (done) runOnJS(hide)()
-      })
+      return
     }
+    if (shown && !closing.current) animateOut()
   }, [visible])
 
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, 1]) * interpolate(dragY.value, [0, 240], [1, 0.35], Extrapolation.CLAMP),
+    opacity: interpolate(progress.value, [0, 1], [0, 1]),
   }))
 
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(progress.value, [0, 1], [SLIDE, 0]) + Math.max(0, dragY.value) }],
+    transform: [{ translateY: interpolate(progress.value, [0, 1], [SLIDE, 0]) }],
   }))
 
   const title = cursor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
@@ -243,14 +244,8 @@ export function WhenSheet({
           onResponderGrant={(e) => {
             startY.current = e.nativeEvent.pageY
           }}
-          onResponderMove={(e) => {
-            const dy = e.nativeEvent.pageY - startY.current
-            dragY.value = dy > 0 ? dy : 0
-          }}
           onResponderRelease={(e) => {
-            const dy = e.nativeEvent.pageY - startY.current
-            if (dy > 56) dismiss()
-            else dragY.value = withTiming(0, { duration: 180 })
+            if (e.nativeEvent.pageY - startY.current > 36) dismiss()
           }}
         >
           <View style={styles.grabBar} />

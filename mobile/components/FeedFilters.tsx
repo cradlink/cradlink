@@ -1,4 +1,6 @@
+import { type ReactNode } from "react"
 import { Pressable, ScrollView, StyleSheet, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 
 import { Text, useTheme } from "@/components/Themed"
 import { ACTIVITY_META } from "@/lib/activity-meta"
@@ -26,7 +28,7 @@ export function FeedFilters({
 
   return (
     <View style={[styles.wrap, { borderBottomColor: theme.border }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <FadeScroller>
         <Chip label="All" active={type === "all"} onPress={() => onType("all")} />
         {ACTIVITY_TYPES.map((value) => (
           <Chip
@@ -37,8 +39,8 @@ export function FeedFilters({
             onPress={() => onType(value)}
           />
         ))}
-      </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      </FadeScroller>
+      <FadeScroller>
         {PLACES.map((item) => (
           <Chip
             key={item.value}
@@ -47,7 +49,31 @@ export function FeedFilters({
             onPress={() => onLocation(item.value)}
           />
         ))}
+      </FadeScroller>
+    </View>
+  )
+}
+
+function FadeScroller({ children }: { children: ReactNode }) {
+  return (
+    <View style={styles.scroller}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        {children}
       </ScrollView>
+      <LinearGradient
+        pointerEvents="none"
+        colors={["#000000", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.fade, styles.fadeLeft]}
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={["transparent", "#000000"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.fade, styles.fadeRight]}
+      />
     </View>
   )
 }
@@ -90,10 +116,25 @@ const styles = StyleSheet.create({
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  scroller: {
+    position: "relative",
+  },
   row: {
     paddingHorizontal: 16,
     gap: 8,
     alignItems: "center",
+  },
+  fade: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 32,
+  },
+  fadeLeft: {
+    left: 0,
+  },
+  fadeRight: {
+    right: 0,
   },
   chip: {
     flexDirection: "row",

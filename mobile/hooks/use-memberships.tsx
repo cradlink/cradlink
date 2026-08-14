@@ -18,6 +18,7 @@ type MembershipsValue = {
   isOrganizer: (activity: Activity) => boolean
   isFull: (activity: Activity) => boolean
   joinedIds: string[]
+  reload: () => Promise<void>
 }
 
 const MembershipsContext = createContext<MembershipsValue | null>(null)
@@ -46,6 +47,19 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
       }
       setReady(true)
     })
+  }, [])
+
+  const reload = useCallback(async () => {
+    const raw = await AsyncStorage.getItem(KEY)
+    if (!raw) {
+      setStore({})
+      return
+    }
+    try {
+      setStore(JSON.parse(raw) as Store)
+    } catch {
+      setStore({})
+    }
   }, [])
 
   const persist = useCallback(async (next: Store) => {
@@ -90,8 +104,9 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
         delete nextMine[activityId]
         await persist({ ...store, [user.id]: nextMine })
       },
+      reload,
     }
-  }, [mine, persist, ready, store, user])
+  }, [mine, persist, ready, reload, store, user])
 
   return <MembershipsContext.Provider value={value}>{children}</MembershipsContext.Provider>
 }

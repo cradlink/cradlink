@@ -1,21 +1,24 @@
 import { StyleSheet } from "react-native"
 
 import { EmptyState } from "@/components/EmptyState"
-import { View } from "@/components/Themed"
+import { Refreshable, Stagger } from "@/components/Refreshable"
 
 export default function EditProfileScreen() {
   return (
-    <View style={styles.screen}>
-      <EmptyState
-        title="Edit profile"
-        body="Form comes next. Same fields as the web app: name, bio, skills, location, avatar."
-      />
-    </View>
+    <Refreshable contentContainerStyle={styles.list}>
+      <Stagger>
+        <EmptyState
+          key="empty"
+          title="Edit profile"
+          body="Form comes next. Same fields as the web app: name, bio, skills, location, avatar."
+        />
+      </Stagger>
+    </Refreshable>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
+  list: {
+    flexGrow: 1,
   },
 })

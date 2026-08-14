@@ -16,6 +16,7 @@ import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
 import { MembershipProvider } from "@/hooks/use-memberships"
+import { NotificationsProvider } from "@/hooks/use-notifications"
 import { ToastProvider } from "@/hooks/use-toast"
 
 Appearance.setColorScheme("dark")
@@ -88,6 +89,15 @@ function RootNav() {
               animation: "slide_from_bottom",
             }}
           />
+          <Stack.Screen
+            name="activities/edit/[id]"
+            options={{
+              headerShown: false,
+              presentation: "modal",
+              animation: "slide_from_bottom",
+            }}
+          />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="activities/[id]" options={{ title: "Activity" }} />
           <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
         </Stack>
@@ -106,13 +116,15 @@ export default function RootLayout() {
     <AuthProvider>
       <ActivitiesProvider>
         <MembershipProvider>
-          <ActivityPreviewProvider>
-            <ConfirmProvider>
-              <ToastProvider>
-                <RootNav />
-              </ToastProvider>
-            </ConfirmProvider>
-          </ActivityPreviewProvider>
+          <NotificationsProvider>
+            <ActivityPreviewProvider>
+              <ConfirmProvider>
+                <ToastProvider>
+                  <RootNav />
+                </ToastProvider>
+              </ConfirmProvider>
+            </ActivityPreviewProvider>
+          </NotificationsProvider>
         </MembershipProvider>
       </ActivitiesProvider>
     </AuthProvider>

@@ -98,6 +98,23 @@ export type CreateActivityInput = {
   images?: string[];
 };
 
+export type UpdateActivityInput = CreateActivityInput;
+
+export type NotificationType = "joined" | "request" | "accepted" | "updated" | "reminder";
+
+export type AppNotification = {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  activityId: string | null;
+  actorName: string;
+  actorAvatar: string | null;
+  title: string;
+  body: string;
+  createdAt: string;
+  read: boolean;
+};
+
 export type UpdateProfileInput = {
   displayName?: string;
   bio?: string;

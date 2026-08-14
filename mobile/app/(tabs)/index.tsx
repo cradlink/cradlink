@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react"
-import { Pressable, ScrollView, StyleSheet } from "react-native"
+import { Pressable, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 
 import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
 import { FeedFilters } from "@/components/FeedFilters"
+import { Refreshable, Stagger } from "@/components/Refreshable"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
@@ -40,13 +41,15 @@ export default function FeedScreen() {
     <View style={styles.screen}>
       <TopBar search searchValue={query} onSearchChange={setQuery} />
       <FeedFilters type={type} locationType={locationType} onType={setType} onLocation={setLocationType} />
-      <ScrollView contentContainerStyle={styles.list} keyboardDismissMode="on-drag">
-        {activities.length === 0 ? (
-          <EmptyState title="No matches." body="Try another search." />
-        ) : (
-          activities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
-        )}
-      </ScrollView>
+      <Refreshable contentContainerStyle={styles.list} keyboardDismissMode="on-drag">
+        <Stagger>
+          {activities.length === 0 ? (
+            <EmptyState key="empty" title="No matches." body="Try another search." />
+          ) : (
+            activities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
+          )}
+        </Stagger>
+      </Refreshable>
       <Pressable
         onPress={() => router.push("/activities/new")}
         style={({ pressed }) => [
@@ -66,6 +69,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 96,
+    flexGrow: 1,
   },
   fab: {
     position: "absolute",
