@@ -16,10 +16,41 @@ service cloud.firestore {
           == request.auth.uid;
     }
 
+    function isJoinedMember(activityId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid))
+        && get(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid)).data.status
+          == "joined";
+    }
+
+    function canDiscuss(activityId) {
+      return isActivityOrganizer(activityId) || isJoinedMember(activityId);
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if isSelf(userId);
       allow delete: if false;
+    }
+
+    function discussionSize(data) {
+      return data.keys().hasAny(["discussion"]) && data.discussion is list
+        ? data.discussion.size()
+        : 0;
+    }
+
+    function isDiscussionAppend(activityId) {
+      return signedIn()
+        && canDiscuss(activityId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["discussion", "updatedAt"])
+        && request.resource.data.discussion is list
+        && request.resource.data.discussion.size() == discussionSize(resource.data) + 1
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].authorId
+          == request.auth.uid
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body is string
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body.size() > 0
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body.size() <= 840;
     }
 
     match /activities/{activityId} {
@@ -33,6 +64,7 @@ service cloud.firestore {
         resource.data.creatorId == request.auth.uid
         || request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(["memberCount", "status", "updatedAt"])
+        || isDiscussionAppend(activityId)
       );
       allow delete: if signedIn() && resource.data.creatorId == request.auth.uid;
     }
@@ -42,6 +74,32 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if signedIn() && (
         resource.data.userId == request.auth.uid
+        || isActivityOrganizer(resource.data.activityId)
+      );
+    }
+
+    match /activityComments/{commentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.id == commentId
+        && request.resource.data.activityId is string
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && request.resource.data.body.size() <= 280
+        && canDiscuss(request.resource.data.activityId)
+        && (
+          request.resource.data.parentId == null
+          || (
+            request.resource.data.parentId is string
+            && exists(/databases/$(database)/documents/activityComments/$(request.resource.data.parentId))
+            && get(/databases/$(database)/documents/activityComments/$(request.resource.data.parentId)).data.activityId
+              == request.resource.data.activityId
+          )
+        );
+      allow update: if false;
+      allow delete: if signedIn() && (
+        resource.data.authorId == request.auth.uid
         || isActivityOrganizer(resource.data.activityId)
       );
     }

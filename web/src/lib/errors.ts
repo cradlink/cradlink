@@ -10,3 +10,10 @@ export function errorMessage(err: unknown, fallback = "Something went wrong") {
   if (err instanceof Error && err.message) return err.message;
   return fallback;
 }
+
+export function isPermissionDenied(err: unknown) {
+  if (typeof err === "object" && err && "code" in err) {
+    return String((err as { code: string }).code).includes("permission-denied");
+  }
+  return String(err).toLowerCase().includes("permission");
+}

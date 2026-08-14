@@ -1,5 +1,5 @@
 import type { NotificationsRepo } from "@/lib/data/types";
-import type { Activity, AppNotification, NotificationKind, User } from "@/lib/types";
+import type { Activity, ActivityComment, AppNotification, NotificationKind, User } from "@/lib/types";
 import { createId, nowIso } from "@/lib/utils";
 
 export function reminderId(kind: "reminder_day" | "reminder_hour", activityId: string, userId: string) {
@@ -81,4 +81,25 @@ export async function notifyActivityEdited(
         }),
       ),
   );
+}
+
+export async function notifyDiscussion(
+  repo: NotificationsRepo,
+  activity: Activity,
+  comment: ActivityComment,
+  parent: ActivityComment | null,
+) {
+  const recipientId = parent ? parent.authorId : activity.creatorId;
+  if (!recipientId || recipientId === comment.authorId) return;
+  return notify(repo, {
+    id: `${parent ? "reply" : "comment"}_${comment.id}`,
+    recipientId,
+    kind: parent ? "reply" : "comment",
+    activityId: activity.id,
+    activityTitle: activity.title,
+    actorId: comment.authorId,
+    actorName: comment.authorName,
+    actorAvatar: comment.authorAvatar,
+    commentId: comment.id,
+  });
 }

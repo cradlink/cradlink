@@ -14,6 +14,7 @@ function mapNotification(id: string, data: Record<string, unknown>): AppNotifica
     actorId: data.actorId ? String(data.actorId) : undefined,
     actorName: data.actorName ? String(data.actorName) : undefined,
     actorAvatar: (data.actorAvatar as string | null | undefined) ?? null,
+    commentId: data.commentId ? String(data.commentId) : undefined,
     createdAt: String(data.createdAt ?? ""),
     read: Boolean(data.read),
   };

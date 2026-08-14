@@ -16,7 +16,13 @@ export function NotificationRow({
   const copy = notificationCopy(item);
   return (
     <Link
-      to={`/activities/${item.activityId}`}
+      to={
+        item.kind === "comment" || item.kind === "reply"
+          ? item.commentId
+            ? `/activities/${item.activityId}#c-${item.commentId}`
+            : `/activities/${item.activityId}#discussion`
+          : `/activities/${item.activityId}`
+      }
       onClick={() => onOpen(item)}
       className={cn(
         "flex gap-3 border-b border-border px-4 py-3 hover:bg-hover",

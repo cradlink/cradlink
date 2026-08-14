@@ -125,12 +125,28 @@ export type Paginated<T> = {
   nextCursor: string | null;
 };
 
+export const COMMENT_MAX_LENGTH = 280;
+
+export type ActivityComment = {
+  id: string;
+  activityId: string;
+  parentId: string | null;
+  rootId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string | null;
+  body: string;
+  createdAt: string;
+};
+
 export type NotificationKind =
   | "joined"
   | "join_request"
   | "accepted"
   | "declined"
   | "edited"
+  | "comment"
+  | "reply"
   | "reminder_day"
   | "reminder_hour";
 
@@ -143,6 +159,7 @@ export type AppNotification = {
   actorId?: string;
   actorName?: string;
   actorAvatar?: string | null;
+  commentId?: string;
   createdAt: string;
   read: boolean;
 };

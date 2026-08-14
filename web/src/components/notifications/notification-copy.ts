@@ -13,6 +13,10 @@ export function notificationCopy(item: AppNotification) {
       return { lead: "Request declined", rest: ` for ${item.activityTitle}` };
     case "edited":
       return { lead: name, rest: ` updated ${item.activityTitle}` };
+    case "comment":
+      return { lead: name, rest: ` commented on ${item.activityTitle}` };
+    case "reply":
+      return { lead: name, rest: ` replied to you on ${item.activityTitle}` };
     case "reminder_day":
       return { lead: "Tomorrow", rest: ` · ${item.activityTitle}` };
     case "reminder_hour":

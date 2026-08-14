@@ -37,6 +37,11 @@ export function isoToDatetimeLocal(iso: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+export function handleFromName(name: string) {
+  const slug = name.trim().replace(/\s+/g, "").toLowerCase();
+  return slug || "member";
+}
+
 export function formatCompactTime(iso: string) {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "";

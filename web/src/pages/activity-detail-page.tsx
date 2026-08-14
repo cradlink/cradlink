@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { Calendar, MapPin, Users } from "lucide-react";
+import { ActivityDiscussion } from "@/components/activity/activity-discussion";
 import { ActivityGallery } from "@/components/activity/activity-gallery";
 import { JoinButton } from "@/components/activity/join-button";
 import { LookingForChips } from "@/components/activity/looking-for-chips";
@@ -7,7 +8,7 @@ import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActivity, useActivityMembers } from "@/hooks/use-activity";
+import { useActivity, useActivityMembers, useMembership } from "@/hooks/use-activity";
 import { useAuth } from "@/hooks/use-auth";
 import { useJoinLeave } from "@/hooks/use-membership";
 import { errorMessage } from "@/lib/errors";
@@ -20,11 +21,16 @@ export function ActivityDetailPage() {
   const { user } = useAuth();
   const activityQuery = useActivity(id);
   const membersQuery = useActivityMembers(id);
+  const membershipQuery = useMembership(id, user?.id);
   const { accept, decline } = useJoinLeave();
   const activity = activityQuery.data;
   const joined = (membersQuery.data ?? []).filter((m) => m.status === "joined");
   const pending = (membersQuery.data ?? []).filter((m) => m.status === "pending");
   const isOrganizer = Boolean(user && activity && user.id === activity.creatorId);
+  const membershipStatus = membershipQuery.data?.status === "joined" || membershipQuery.data?.status === "pending"
+    ? membershipQuery.data.status
+    : null;
+  const canDiscuss = Boolean(user && activity && (isOrganizer || membershipStatus === "joined"));
 
   if (activityQuery.isLoading) {
     return (
@@ -194,6 +200,13 @@ export function ActivityDetailPage() {
           </ul>
         </div>
       </div>
+
+      <ActivityDiscussion
+        activity={activity}
+        user={user}
+        canDiscuss={canDiscuss}
+        membershipStatus={membershipStatus}
+      />
     </article>
   );
 }

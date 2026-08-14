@@ -1,5 +1,6 @@
 import type {
   Activity,
+  ActivityComment,
   ActivityFilters,
   AppNotification,
   CreateActivityInput,
@@ -45,4 +46,17 @@ export type NotificationsRepo = {
   ensure(notification: AppNotification): Promise<{ created: boolean; notification: AppNotification }>;
   markRead(id: string, userId: string): Promise<void>;
   markAllRead(userId: string): Promise<void>;
+};
+
+export type CreateCommentInput = {
+  activityId: string;
+  authorId: string;
+  body: string;
+  parentId?: string | null;
+};
+
+export type CommentsRepo = {
+  listByActivity(activityId: string): Promise<ActivityComment[]>;
+  getById(id: string): Promise<ActivityComment | null>;
+  create(input: CreateCommentInput): Promise<ActivityComment>;
 };

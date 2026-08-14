@@ -77,7 +77,7 @@ export function NotificationsPage() {
         <div className="px-8 py-16 text-center">
           <h2 className="text-3xl font-bold">Nothing yet.</h2>
           <p className="mt-2 text-[15px] text-muted-foreground">
-            Joins, requests, and reminders for your activities will show up here.
+            Joins, replies, and reminders for your activities will show up here.
           </p>
         </div>
       ) : null}
