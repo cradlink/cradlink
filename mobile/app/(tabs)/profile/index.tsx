@@ -3,26 +3,35 @@ import { useRouter } from "expo-router"
 
 import { Button } from "@/components/Button"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useAuth } from "@/hooks/use-auth"
+import { initials } from "@/lib/initials"
 
 export default function ProfileScreen() {
   const router = useRouter()
   const theme = useTheme()
+  const { user, signOut } = useAuth()
+
+  if (!user) return null
 
   return (
     <View style={styles.screen}>
       <View style={[styles.avatar, { backgroundColor: theme.muted, borderColor: theme.border }]}>
-        <Text style={styles.initials}>MN</Text>
+        <Text style={styles.initials}>{initials(user.displayName)}</Text>
       </View>
-      <Text style={styles.name}>Marko Njegomir</Text>
+      <Text style={styles.name}>{user.displayName}</Text>
       <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-        Belgrade
+        {user.location || user.email}
       </Text>
-      <Text style={styles.bio}>
-        Doctoral student. I start things so other people have a place to show up.
-      </Text>
+      {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
       <View style={styles.actions} lightColor="transparent" darkColor="transparent">
-        <Button label="Edit profile" onPress={() => router.push("/profile/edit")} />
-        <Button label="Sign in" variant="ghost" onPress={() => router.push("/login")} />
+        <Button label="Edit profile" variant="outline" onPress={() => router.push("/profile/edit")} />
+        <Button
+          label="Sign out"
+          variant="ghost"
+          onPress={() => {
+            void signOut()
+          }}
+        />
       </View>
     </View>
   )

@@ -10,13 +10,35 @@ export function Button({
   ...props
 }: {
   label: string
-  variant?: "primary" | "ghost"
+  variant?: "primary" | "ink" | "outline" | "ghost"
   style?: StyleProp<ViewStyle>
   disabled?: boolean
   onPress?: () => void
 }) {
   const theme = useTheme()
-  const primary = variant === "primary"
+
+  const palette = {
+    primary: {
+      backgroundColor: theme.primary,
+      color: theme.primaryForeground,
+      borderColor: theme.primary,
+    },
+    ink: {
+      backgroundColor: theme.foreground,
+      color: theme.background,
+      borderColor: theme.foreground,
+    },
+    outline: {
+      backgroundColor: "transparent",
+      color: theme.foreground,
+      borderColor: theme.border,
+    },
+    ghost: {
+      backgroundColor: "transparent",
+      color: theme.foreground,
+      borderColor: "transparent",
+    },
+  }[variant]
 
   return (
     <Pressable
@@ -24,18 +46,15 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         {
-          backgroundColor: primary ? theme.primary : "transparent",
+          backgroundColor: palette.backgroundColor,
+          borderColor: palette.borderColor,
           opacity: pressed || disabled ? 0.7 : 1,
         },
         style,
       ]}
       {...props}
     >
-      <Text
-        style={[styles.label, { color: primary ? theme.primaryForeground : theme.foreground }]}
-      >
-        {label}
-      </Text>
+      <Text style={[styles.label, { color: palette.color }]}>{label}</Text>
     </Pressable>
   )
 }
@@ -45,8 +64,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 999,
+    borderWidth: 1,
     paddingVertical: 14,
     paddingHorizontal: 20,
+    minHeight: 52,
   },
   label: {
     fontSize: 17,

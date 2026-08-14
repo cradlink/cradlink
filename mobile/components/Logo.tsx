@@ -1,19 +1,31 @@
-import { StyleSheet } from "react-native"
+import { StyleSheet, View } from "react-native"
+import { SvgXml } from "react-native-svg"
 
-import { Text, View, useTheme } from "@/components/Themed"
-import { APP_NAME } from "@/constants/config"
+import { useTheme } from "@/components/Themed"
+import { LOGO_ICON_SVG, LOGO_WORDMARK_SVG } from "@/components/logo-svg"
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+export function Logo({
+  compact = false,
+  iconSize = 36,
+}: {
+  compact?: boolean
+  iconSize?: number
+}) {
   const theme = useTheme()
+  const wordmarkHeight = Math.round(iconSize * 0.58)
+  const wordmarkWidth = Math.round(wordmarkHeight * (218.823 / 46.141))
 
   return (
-    <View style={styles.row} lightColor="transparent" darkColor="transparent">
-      <View style={[styles.mark, { backgroundColor: theme.foreground }]}>
-        <View style={[styles.node, { borderColor: theme.background }]} />
-        <View style={[styles.link, { backgroundColor: theme.background }]} />
-        <View style={[styles.node, { borderColor: theme.background }]} />
-      </View>
-      {compact ? null : <Text style={styles.wordmark}>{APP_NAME}</Text>}
+    <View style={styles.row} accessibilityRole="image" accessibilityLabel="Cradlink">
+      <SvgXml xml={LOGO_ICON_SVG} width={iconSize} height={iconSize} color={theme.foreground} />
+      {compact ? null : (
+        <SvgXml
+          xml={LOGO_WORDMARK_SVG}
+          width={wordmarkWidth}
+          height={wordmarkHeight}
+          color={theme.foreground}
+        />
+      )}
     </View>
   )
 }
@@ -22,33 +34,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "transparent",
-  },
-  mark: {
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 2,
-  },
-  node: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.6,
-    backgroundColor: "transparent",
-  },
-  link: {
-    width: 4,
-    height: 1.6,
-    borderRadius: 1,
-  },
-  wordmark: {
-    fontSize: 20,
-    fontWeight: "700",
-    letterSpacing: -0.4,
+    gap: 10,
   },
 })
