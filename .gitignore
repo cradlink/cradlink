@@ -1,6 +1,6 @@
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -9,17 +9,17 @@
 !.yarn/versions
 
 # vite
-/.vite/
+.vite/
 
 # leftover next.js
-/.next/
-/out/
+.next/
+out/
 .turbo
 .swc
 
 # production
-/build
-/dist
+build/
+dist/
 
 # testing
 /coverage
