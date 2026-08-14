@@ -19,14 +19,14 @@ const CARD = "#16181c"
 const { width: SCREEN_W } = Dimensions.get("window")
 const CARD_W = Math.min(SCREEN_W - 56, 340)
 
-export function ConfirmModalHost() {
+export function ConfirmModalHost({ active = true }: { active?: boolean }) {
   const { prompt, dismiss } = useConfirm()
   const theme = useTheme()
   const { messages } = useI18n()
   const progress = useSharedValue(0)
 
   useEffect(() => {
-    if (!prompt) {
+    if (!active || !prompt) {
       progress.value = 0
       return
     }
@@ -37,7 +37,7 @@ export function ConfirmModalHost() {
       return true
     })
     return () => sub.remove()
-  }, [dismiss, progress, prompt])
+  }, [active, dismiss, progress, prompt])
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, 1]),
@@ -48,7 +48,7 @@ export function ConfirmModalHost() {
     transform: [{ scale: interpolate(progress.value, [0, 1], [0.94, 1]) }],
   }))
 
-  if (!prompt) return null
+  if (!active || !prompt) return null
   const current = prompt
 
   function finish(next: () => void) {

@@ -27,6 +27,7 @@ import Animated, {
 } from "react-native-reanimated"
 
 import { useTheme } from "@/components/Themed"
+import { usePreviewLocksUi } from "@/hooks/use-activity-preview"
 import { usePullRefresh, useReloadAll } from "@/hooks/use-refresh"
 
 const { width: SCREEN_W } = Dimensions.get("window")
@@ -45,6 +46,7 @@ export function Refreshable({
   ...props
 }: Omit<ScrollViewProps, "refreshControl" | "children"> & { children: ReactNode }) {
   const theme = useTheme()
+  const locked = usePreviewLocksUi()
   const load = useReloadAll()
   const { refreshing, generation, refresh } = usePullRefresh(load)
   const conceal = useSharedValue(1)
@@ -64,6 +66,7 @@ export function Refreshable({
         <ScrollView
           overScrollMode="always"
           {...props}
+          scrollEnabled={!locked && props.scrollEnabled !== false}
           contentContainerStyle={contentContainerStyle}
           refreshControl={
             <RefreshControl

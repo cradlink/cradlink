@@ -6,7 +6,7 @@ import { AgendaHero, AgendaRow, AgendaSection } from "@/components/AgendaCard"
 import { EmptyState } from "@/components/EmptyState"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { TopBar } from "@/components/TopBar"
-import { View } from "@/components/Themed"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useI18n } from "@/hooks/use-i18n"
@@ -40,7 +40,7 @@ export default function UpcomingScreen() {
   const empty = !next && groups.length === 0 && requested.length === 0
 
   return (
-    <View style={styles.screen}>
+    <ScreenBlurTarget style={styles.screen}>
       <TopBar title={messages.upcoming.title} />
       <Refreshable contentContainerStyle={styles.list}>
         {!ready || !memReady ? null : (
@@ -75,7 +75,7 @@ export default function UpcomingScreen() {
           </Stagger>
         )}
       </Refreshable>
-    </View>
+    </ScreenBlurTarget>
   )
 }
 

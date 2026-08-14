@@ -1,13 +1,15 @@
+import { useRef } from "react"
 import { useRouter } from "expo-router"
-import { Pressable, StyleSheet } from "react-native"
+import { Pressable, StyleSheet, View as RNView } from "react-native"
 
 import { Avatar } from "@/components/Avatar"
 import { EmptyState } from "@/components/EmptyState"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { TopBar } from "@/components/TopBar"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
-import { useActivityPreview } from "@/hooks/use-activity-preview"
+import { useActivityPreview, type CardOrigin } from "@/hooks/use-activity-preview"
 import { useAuth } from "@/hooks/use-auth"
 import { useI18n } from "@/hooks/use-i18n"
 import { useNotifications } from "@/hooks/use-notifications"
@@ -40,17 +42,17 @@ export default function NotificationsScreen() {
     else router.push(`/u/${id}`)
   }
 
-  function openActivity(item: AppNotification) {
+  function openActivity(item: AppNotification, origin: CardOrigin) {
     void markRead(item.id)
     if (!item.activityId) return
     const activity = get(item.activityId)
     if (!activity) return
-    open(activity, { x: 0, y: 80, width: 1, height: 1 })
+    open(activity, origin)
   }
 
   return (
-    <View style={styles.screen}>
-      <TopBar title={messages.notifications.title} />
+    <ScreenBlurTarget style={styles.screen}>
+      <TopBar title={messages.notifications.title} back />
       <Refreshable contentContainerStyle={styles.list}>
         <Stagger>
           {items.length === 0 ? (
@@ -67,8 +69,8 @@ export default function NotificationsScreen() {
                 item={item}
                 copy={notificationCopy(item, messages, item.activityId ? get(item.activityId) : null)}
                 onPerson={() => openProfile(item)}
-                onOpen={() => {
-                  if (item.type === "reminder") openActivity(item)
+                onOpen={(origin) => {
+                  if (item.type === "reminder") openActivity(item, origin)
                   else openProfile(item)
                 }}
                 unreadColor={theme.primary}
@@ -78,7 +80,7 @@ export default function NotificationsScreen() {
           )}
         </Stagger>
       </Refreshable>
-    </View>
+    </ScreenBlurTarget>
   )
 }
 
@@ -128,13 +130,19 @@ function NotificationRow({
   item: AppNotification
   copy: { title: string; body: string }
   onPerson: () => void
-  onOpen: () => void
+  onOpen: (origin: CardOrigin) => void
   unreadColor: string
   border: string
 }) {
+  const ref = useRef<RNView>(null)
   return (
+    <RNView ref={ref} collapsable={false}>
     <Pressable
-      onPress={onOpen}
+      onPress={() => {
+        ref.current?.measureInWindow((x, y, width, height) => {
+          onOpen({ x, y, width, height })
+        })
+      }}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: border, backgroundColor: pressed ? "rgba(231,233,234,0.03)" : "transparent" },
@@ -154,6 +162,7 @@ function NotificationRow({
       </View>
       {!item.read ? <View style={[styles.dot, { backgroundColor: unreadColor }]} /> : null}
     </Pressable>
+    </RNView>
   )
 }
 

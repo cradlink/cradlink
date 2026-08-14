@@ -8,7 +8,8 @@ import { HostCard } from "@/components/HostCard"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { WaitingInbox } from "@/components/RequestList"
 import { TopBar } from "@/components/TopBar"
-import { Text, View, useTheme } from "@/components/Themed"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { Text, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useI18n } from "@/hooks/use-i18n"
@@ -32,7 +33,7 @@ export default function MyActivitiesScreen() {
   const sectioned = groups.length > 1
 
   return (
-    <View style={styles.screen}>
+    <ScreenBlurTarget style={styles.screen}>
       <TopBar title={messages.me.title} />
       <Refreshable contentContainerStyle={styles.list}>
         {!ready ? null : (
@@ -70,7 +71,7 @@ export default function MyActivitiesScreen() {
       >
         <Text style={[styles.fabLabel, { color: theme.primaryForeground }]}>+</Text>
       </Pressable>
-    </View>
+    </ScreenBlurTarget>
   )
 }
 

@@ -2,8 +2,11 @@ import { Pressable, StyleSheet } from "react-native"
 
 import { Button } from "@/components/Button"
 import { Refreshable, Stagger } from "@/components/Refreshable"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
+import { useFireflies } from "@/hooks/use-fireflies"
 import { useI18n } from "@/hooks/use-i18n"
 import { LOCALES, type Locale } from "@/lib/i18n"
 
@@ -11,9 +14,12 @@ export default function SettingsScreen() {
   const theme = useTheme()
   const { user, signOut, updateProfile } = useAuth()
   const { locale, setLocale, messages } = useI18n()
+  const { on: fireflies, setEnabled } = useFireflies()
 
   return (
-    <Refreshable contentContainerStyle={styles.list}>
+    <ScreenBlurTarget style={styles.screen}>
+      <TopBar title={messages.settings.title} back hideBell />
+      <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
         <Text key="kicker" style={styles.kicker} lightColor="#536471" darkColor="#71767b">
           {messages.settings.account}
@@ -52,6 +58,27 @@ export default function SettingsScreen() {
         <Text key="vis-hint" style={styles.hint} lightColor="#536471" darkColor="#71767b">
           {messages.settings.visibilityHint}
         </Text>
+        <Text key="flies" style={[styles.kicker, styles.langKicker]} lightColor="#536471" darkColor="#71767b">
+          {messages.settings.fireflies}
+        </Text>
+        <View key="flies-opts" style={styles.langs} lightColor="transparent" darkColor="transparent">
+          <LanguageRow
+            label={messages.settings.firefliesOn}
+            selected={fireflies}
+            onPress={() => setEnabled(true)}
+            border={theme.border}
+            foreground={theme.foreground}
+            muted={theme.mutedForeground}
+          />
+          <LanguageRow
+            label={messages.settings.firefliesOff}
+            selected={!fireflies}
+            onPress={() => setEnabled(false)}
+            border={theme.border}
+            foreground={theme.foreground}
+            muted={theme.mutedForeground}
+          />
+        </View>
         <Text key="lang" style={[styles.kicker, styles.langKicker]} lightColor="#536471" darkColor="#71767b">
           {messages.settings.language}
         </Text>
@@ -72,7 +99,8 @@ export default function SettingsScreen() {
           <Button label={messages.settings.signOut} variant="outline" onPress={() => void signOut()} />
         </View>
       </Stagger>
-    </Refreshable>
+      </Refreshable>
+    </ScreenBlurTarget>
   )
 }
 
@@ -105,6 +133,9 @@ function LanguageRow({
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   list: {
     flexGrow: 1,
     paddingHorizontal: 20,

@@ -19,6 +19,8 @@ export function TopBar({
   action,
   onSettings,
   back,
+  onBack,
+  hideBell,
 }: {
   title?: string
   search?: boolean
@@ -27,9 +29,11 @@ export function TopBar({
   onSearchPress?: () => void
   searchActive?: boolean
   onSearchCancel?: () => void
-  action?: { label: string; onPress: () => void }
+  action?: { label: string; onPress: () => void; disabled?: boolean }
   onSettings?: () => void
   back?: boolean
+  onBack?: () => void
+  hideBell?: boolean
 }) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
@@ -63,7 +67,7 @@ export function TopBar({
         styles.wrap,
         {
           paddingTop: insets.top,
-          backgroundColor: theme.background,
+          backgroundColor: "transparent",
           borderBottomColor: theme.border,
         },
       ]}
@@ -73,7 +77,7 @@ export function TopBar({
           <View style={styles.left}>
             {back ? (
               <Pressable
-                onPress={() => router.back()}
+                onPress={() => (onBack ? onBack() : router.back())}
                 hitSlop={8}
                 accessibilityLabel={messages.common.close}
                 style={styles.bellBtn}
@@ -88,7 +92,7 @@ export function TopBar({
             <Text style={styles.title}>{title}</Text>
           </View>
           <View style={styles.right}>
-            {bell}
+            {hideBell ? null : bell}
             {onSettings ? (
               <Pressable onPress={onSettings} hitSlop={8} accessibilityLabel={messages.common.settings} style={styles.bellBtn}>
                 <SymbolView
@@ -99,8 +103,15 @@ export function TopBar({
               </Pressable>
             ) : null}
             {action ? (
-              <Pressable onPress={action.onPress} hitSlop={10} accessibilityLabel={action.label}>
-                <Text style={[styles.action, { color: theme.primary }]}>{action.label}</Text>
+              <Pressable
+                onPress={action.onPress}
+                disabled={action.disabled}
+                hitSlop={10}
+                accessibilityLabel={action.label}
+              >
+                <Text style={[styles.action, { color: theme.primary, opacity: action.disabled ? 0.35 : 1 }]}>
+                  {action.label}
+                </Text>
               </Pressable>
             ) : null}
           </View>

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View as RNView } from "react-native"
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
 import { Avatar } from "@/components/Avatar"
+import { GLASS_FROST, GlassFade } from "@/components/GlassFade"
 import { CreatorPress } from "@/components/CreatorPress"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
@@ -89,7 +90,8 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
   const many = pending.length > 1
   const [open, setOpen] = useState(reviewOpen)
   const [panelH, setPanelH] = useState(0)
-  const extra = pending.length - 1
+  const visible = pending.slice(0, LIST_CAP)
+  const extra = pending.length - visible.length
   const height = useSharedValue(0)
   const opacity = useSharedValue(0)
   const restore = useRef(reviewOpen)
@@ -110,7 +112,7 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
     height: height.value,
     opacity: opacity.value,
     overflow: "hidden" as const,
-    backgroundColor: "#16181c",
+    backgroundColor: "transparent",
   }))
 
   if (!many) return <RequestRow row={pending[0]} activity={activity} />
@@ -126,7 +128,7 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
           }}
           style={styles.summary}
         >
-          <AvatarStack people={pending} ring="#16181c" />
+          <AvatarStack people={pending} ring="rgba(16,18,22,0.92)" />
           <Text style={styles.summaryLabel}>
             {pending.length === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: pending.length })}
           </Text>
@@ -144,7 +146,9 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
         }}
       >
         <View style={styles.panelInner}>
-          <RequestRow row={pending[0]} activity={activity} />
+          {visible.map((row) => (
+            <RequestRow key={row.id} row={row} activity={activity} />
+          ))}
           {extra > 0 ? (
             <Text style={[styles.more, styles.morePad]} lightColor="#536471" darkColor="#71767b">
               {tx(messages.requests.moreOnMine, { count: extra })}
@@ -153,8 +157,13 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
         </View>
       </View>
       <Animated.View style={panel}>
+        <View style={styles.reviewFade}>
+          <GlassFade height={28} inset={false} />
+        </View>
         <View style={styles.panelInner}>
-          <RequestRow row={pending[0]} activity={activity} />
+          {visible.map((row) => (
+            <RequestRow key={row.id} row={row} activity={activity} />
+          ))}
           {extra > 0 ? (
             <Text style={[styles.more, styles.morePad]} lightColor="#536471" darkColor="#71767b">
               {tx(messages.requests.moreOnMine, { count: extra })}
@@ -337,9 +346,13 @@ const styles = StyleSheet.create({
     opacity: 0,
     zIndex: -1,
   },
+  reviewFade: {
+    height: 28,
+  },
   panelInner: {
-    paddingTop: 10,
-    backgroundColor: "#16181c",
+    paddingTop: 4,
+    gap: 12,
+    backgroundColor: "transparent",
   },
   kicker: {
     fontSize: 13,

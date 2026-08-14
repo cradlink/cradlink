@@ -45,6 +45,9 @@ export const srCyrl: Messages = {
     visibilityPrivate: "Приватан",
     visibilityHint:
       "Јаван: свако може да те прати и види активности. Приватан: шаљу захтев, а објаве остају скривене док не прихватиш.",
+    fireflies: "Светуљке",
+    firefliesOn: "Укључено",
+    firefliesOff: "Искључено",
     signOut: "Одјави се",
   },
   locales: {

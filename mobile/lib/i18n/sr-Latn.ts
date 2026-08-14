@@ -45,6 +45,9 @@ export const srLatn: Messages = {
     visibilityPrivate: "Privatan",
     visibilityHint:
       "Javan: svako može da te prati i vidi aktivnosti. Privatan: šalju zahtev, a objave ostaju skrivene dok ne prihvatiš.",
+    fireflies: "Svetuljke",
+    firefliesOn: "Uključeno",
+    firefliesOff: "Isključeno",
     signOut: "Odjavi se",
   },
   locales: {

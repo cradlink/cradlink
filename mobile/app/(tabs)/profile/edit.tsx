@@ -1,20 +1,19 @@
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import {
+  BackHandler,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
-  View,
 } from "react-native"
 import { useRouter } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Avatar } from "@/components/Avatar"
-import { Button } from "@/components/Button"
-import { Text, useTheme } from "@/components/Themed"
+import { TopBar } from "@/components/TopBar"
+import { Text, View, useTheme } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useI18n } from "@/hooks/use-i18n"
@@ -22,7 +21,6 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function EditProfileScreen() {
   const theme = useTheme()
-  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { user, updateProfile } = useAuth()
   const { ask } = useConfirm()
@@ -37,16 +35,40 @@ export default function EditProfileScreen() {
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
 
+  const dirty = Boolean(
+    user &&
+      (displayName !== user.displayName ||
+        bio !== user.bio ||
+        location !== user.location ||
+        avatarUrl !== user.avatarUrl ||
+        skills.join("\0") !== user.skills.join("\0")),
+  )
+  const canSave = Boolean(user) && displayName.trim().length >= 2 && dirty && !busy
+
+  function close() {
+    if (!dirty) {
+      router.back()
+      return
+    }
+    ask({
+      title: messages.compose.discardEditTitle,
+      body: messages.compose.discardEditBody,
+      confirmLabel: messages.common.discard,
+      cancelLabel: messages.compose.keepEditing,
+      destructive: true,
+      onConfirm: () => router.back(),
+    })
+  }
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      close()
+      return true
+    })
+    return () => sub.remove()
+  })
+
   if (!user) return null
-
-  const dirty =
-    displayName !== user.displayName ||
-    bio !== user.bio ||
-    location !== user.location ||
-    avatarUrl !== user.avatarUrl ||
-    skills.join("\0") !== user.skills.join("\0")
-
-  const canSave = displayName.trim().length >= 2 && dirty && !busy
 
   function addSkill() {
     const next = draft.trim()
@@ -70,21 +92,6 @@ export default function EditProfileScreen() {
     }
   }
 
-  function close() {
-    if (!dirty) {
-      router.back()
-      return
-    }
-    ask({
-      title: messages.compose.discardEditTitle,
-      body: messages.compose.discardEditBody,
-      confirmLabel: messages.common.discard,
-      cancelLabel: messages.compose.keepEditing,
-      destructive: true,
-      onConfirm: () => router.back(),
-    })
-  }
-
   async function save() {
     if (!canSave) return
     setBusy(true)
@@ -106,7 +113,18 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
+    <View style={styles.screen}>
+      <TopBar
+        title={messages.profile.editTitle}
+        back
+        onBack={close}
+        hideBell
+        action={{
+          label: busy ? messages.common.saving : messages.common.save,
+          onPress: () => void save(),
+          disabled: !canSave,
+        }}
+      />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -181,18 +199,6 @@ export default function EditProfileScreen() {
             />
           </Field>
         </ScrollView>
-
-        <View style={styles.footer}>
-          <Button label={messages.common.cancel} variant="ghost" size="compact" onPress={close} style={styles.half} />
-          <Button
-            label={busy ? messages.common.saving : messages.common.save}
-            variant="ink"
-            size="compact"
-            disabled={!canSave}
-            onPress={() => void save()}
-            style={styles.half}
-          />
-        </View>
       </KeyboardAvoidingView>
     </View>
   )
@@ -269,15 +275,5 @@ const styles = StyleSheet.create({
   skillX: {
     fontSize: 14,
     color: "#1d9bf0",
-  },
-  footer: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 12,
-  },
-  half: {
-    flex: 1,
   },
 })

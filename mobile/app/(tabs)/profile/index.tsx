@@ -5,7 +5,7 @@ import { ActivityCard } from "@/components/ActivityCard"
 import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { TopBar } from "@/components/TopBar"
-import { View } from "@/components/Themed"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useI18n } from "@/hooks/use-i18n"
@@ -21,7 +21,7 @@ export default function ProfileScreen() {
   const hosted = activities.filter((activity) => activity.creatorId === user.id)
 
   return (
-    <View style={styles.screen}>
+    <ScreenBlurTarget style={styles.screen}>
       <TopBar title={messages.profile.title} onSettings={() => router.push("/settings")} />
       <Refreshable contentContainerStyle={styles.list}>
         <Stagger>
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
           ))}
         </Stagger>
       </Refreshable>
-    </View>
+    </ScreenBlurTarget>
   )
 }
 

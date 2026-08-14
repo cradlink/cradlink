@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
+import { loadFireflies } from "@/lib/fireflies"
 import {
   detectLocale,
   getDateLocale,
@@ -34,7 +35,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => subscribeLocale(() => setLocaleValue(getLocale())), [])
 
   useEffect(() => {
-    void AsyncStorage.getItem(KEY).then((raw) => {
+    void Promise.all([AsyncStorage.getItem(KEY), loadFireflies()]).then(([raw]) => {
       setLocaleState(isLocale(raw) ? raw : detectLocale())
       setReady(true)
     })

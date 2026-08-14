@@ -8,7 +8,7 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: "transparent" } }}
     >
       <Tabs.Screen name="index" options={{ title: messages.tabs.home }} />
       <Tabs.Screen name="upcoming" options={{ title: messages.tabs.upcoming }} />

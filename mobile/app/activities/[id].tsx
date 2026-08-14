@@ -10,6 +10,8 @@ import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { RequestList } from "@/components/RequestList"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { TopBar } from "@/components/TopBar"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
@@ -31,7 +33,9 @@ export default function ActivityDetailScreen() {
   const locked = Boolean(activity && !canSeeActivities(getUser(activity.creatorId)))
 
   return (
-    <Refreshable contentContainerStyle={styles.content}>
+    <ScreenBlurTarget style={styles.screen}>
+      <TopBar title={messages.common.activity} back hideBell />
+      <Refreshable contentContainerStyle={styles.content}>
       <Stagger>
         {locked ? (
           <EmptyState
@@ -86,11 +90,15 @@ export default function ActivityDetailScreen() {
           ]
         )}
       </Stagger>
-    </Refreshable>
+      </Refreshable>
+    </ScreenBlurTarget>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   content: {
     flexGrow: 1,
     paddingHorizontal: 16,

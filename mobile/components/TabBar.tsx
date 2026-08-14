@@ -3,6 +3,7 @@ import { SymbolView } from "expo-symbols"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Text, useTheme } from "@/components/Themed"
+import { usePreviewLocksUi } from "@/hooks/use-activity-preview"
 import { useI18n } from "@/hooks/use-i18n"
 
 const ICONS = {
@@ -28,6 +29,7 @@ export function TabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
   const { messages } = useI18n()
+  const locked = usePreviewLocksUi()
   const labels = {
     index: messages.tabs.home,
     upcoming: messages.tabs.upcoming,
@@ -63,6 +65,7 @@ export function TabBar({ state, descriptors, navigation }: any) {
             accessibilityRole="button"
             accessibilityState={focused ? { selected: true } : {}}
             onPress={() => {
+              if (locked) return
               const event = navigation.emit({
                 type: "tabPress",
                 target: route.key,

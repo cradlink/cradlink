@@ -3,6 +3,8 @@ import { StyleSheet } from "react-native"
 import { EmptyState } from "@/components/EmptyState"
 import { FollowRow } from "@/components/FollowInbox"
 import { Refreshable, Stagger } from "@/components/Refreshable"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { TopBar } from "@/components/TopBar"
 import { Text, View } from "@/components/Themed"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
@@ -13,7 +15,8 @@ export default function FollowRequestsScreen() {
   const items = inbox()
 
   return (
-    <View style={styles.screen}>
+    <ScreenBlurTarget style={styles.screen}>
+      <TopBar title={messages.profile.requestsTitle} back hideBell />
       <Refreshable contentContainerStyle={styles.list}>
         <Stagger>
           {items.length === 0 ? (
@@ -38,7 +41,7 @@ export default function FollowRequestsScreen() {
           )}
         </Stagger>
       </Refreshable>
-    </View>
+    </ScreenBlurTarget>
   )
 }
 

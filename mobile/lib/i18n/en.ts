@@ -42,6 +42,9 @@ export const en = {
     visibilityPublic: "Public",
     visibilityPrivate: "Private",
     visibilityHint: "Public: anyone can follow and see your activities. Private: they send a request, and posts stay hidden until you accept.",
+    fireflies: "Fireflies",
+    firefliesOn: "On",
+    firefliesOff: "Off",
     signOut: "Sign out",
   },
   locales: {

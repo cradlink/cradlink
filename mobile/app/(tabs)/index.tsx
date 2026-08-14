@@ -8,11 +8,13 @@ import { FeedFilters } from "@/components/FeedFilters"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { SearchResults } from "@/components/SearchResults"
 import { TopBar } from "@/components/TopBar"
-import { Text, View, useTheme } from "@/components/Themed"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
+import { Text, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
+import { replayBoot } from "@/lib/boot-preview"
 import type { ActivityType, LocationType } from "@/lib/types"
 
 export default function FeedScreen() {
@@ -50,7 +52,7 @@ export default function FeedScreen() {
   }, [searching])
 
   return (
-    <View style={styles.screen}>
+    <ScreenBlurTarget style={styles.screen}>
       <TopBar
         search
         searchActive={searching}
@@ -73,6 +75,16 @@ export default function FeedScreen() {
             </Stagger>
           </Refreshable>
           <Pressable
+            onPress={() => replayBoot()}
+            style={({ pressed }) => [
+              styles.fab,
+              styles.previewFab,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={styles.previewLabel}>A</Text>
+          </Pressable>
+          <Pressable
             onPress={() => router.push("/activities/new")}
             style={({ pressed }) => [
               styles.fab,
@@ -83,7 +95,7 @@ export default function FeedScreen() {
           </Pressable>
         </>
       )}
-    </View>
+    </ScreenBlurTarget>
   )
 }
 
@@ -104,6 +116,18 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+  },
+  previewFab: {
+    right: 84,
+    backgroundColor: "#16181c",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#2f3336",
+  },
+  previewLabel: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#e7e9ea",
+    marginTop: -1,
   },
   fabLabel: {
     fontSize: 32,

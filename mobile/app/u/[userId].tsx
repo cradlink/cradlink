@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/EmptyState"
 import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { TopBar } from "@/components/TopBar"
-import { View } from "@/components/Themed"
+import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
@@ -36,7 +36,7 @@ export default function PublicProfileScreen() {
   if (isSelf) return null
 
   return (
-    <View style={styles.screen}>
+    <ScreenBlurTarget style={styles.screen}>
       <TopBar title={messages.profile.title} back />
       <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
@@ -63,7 +63,7 @@ export default function PublicProfileScreen() {
         )}
       </Stagger>
       </Refreshable>
-    </View>
+    </ScreenBlurTarget>
   )
 }
 
