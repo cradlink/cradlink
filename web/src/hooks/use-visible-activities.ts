@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useSearchDirectory } from "@/hooks/use-search";
 import { useOutgoingFollows } from "@/hooks/use-follows";
+import { isDeactivated } from "@/lib/account";
 import { canSeeProfileActivities } from "@/lib/follow";
 import type { Activity } from "@/lib/types";
 
@@ -17,6 +18,7 @@ export function useVisibleActivities(viewerId: string | undefined, activities: A
       if (activity.creatorId === viewerId) return true;
       const creator = users.get(activity.creatorId);
       if (!creator) return !directory.people.isLoading;
+      if (isDeactivated(creator)) return false;
       return canSeeProfileActivities(viewerId, creator, accepted.has(activity.creatorId) ? "accepted" : null);
     });
   }, [activities, directory.people.data, directory.people.isLoading, outgoing.data, viewerId]);

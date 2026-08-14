@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getBackend } from "@/lib/backend";
+import { isDeactivated } from "@/lib/account";
 import { matchesActivity, matchesUser, normalizeQuery } from "@/lib/search";
 
 export function useSearchDirectory() {
@@ -27,7 +28,9 @@ export function useSearchResults(query: string) {
 
   const people = useMemo(() => {
     if (!q) return [];
-    return (directory.people.data ?? []).filter((user) => matchesUser(user, q)).slice(0, 30);
+    return (directory.people.data ?? [])
+      .filter((user) => !isDeactivated(user) && matchesUser(user, q))
+      .slice(0, 30);
   }, [directory.people.data, q]);
 
   const activities = useMemo(() => {

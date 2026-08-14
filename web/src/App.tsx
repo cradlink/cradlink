@@ -20,9 +20,12 @@ import { SettingsAccountPage } from "@/pages/settings-account-page";
 import { SettingsDisplayPage } from "@/pages/settings-display-page";
 import { SettingsLanguagePage } from "@/pages/settings-language-page";
 import { SettingsNotificationsPage } from "@/pages/settings-notifications-page";
+import { ReactivatePage } from "@/pages/reactivate-page";
+import { SettingsDeactivatePage } from "@/pages/settings-deactivate-page";
 import { SettingsPage } from "@/pages/settings-page";
 import { SignupPage } from "@/pages/signup-page";
 import { VerifyEmailPage } from "@/pages/verify-email-page";
+import { isDeactivated } from "@/lib/account";
 import { needsEmailVerification } from "@/lib/types";
 
 function RequireAuth() {
@@ -36,6 +39,7 @@ function RequireAuth() {
     return <Navigate to={to} replace />;
   }
   if (needsEmailVerification(user)) return <Navigate to="/verify-email" replace />;
+  if (isDeactivated(user)) return <Navigate to="/reactivate" replace />;
   return <Outlet />;
 }
 
@@ -44,6 +48,7 @@ function GuestOnly() {
   const location = useLocation();
   if (!ready) return <BootScreen />;
   if (needsEmailVerification(user)) return <Navigate to="/verify-email" replace />;
+  if (user && isDeactivated(user)) return <Navigate to="/reactivate" replace />;
   if (user) {
     const next = new URLSearchParams(location.search).get("next");
     return <Navigate to={next && next.startsWith("/") ? next : "/"} replace />;
@@ -67,6 +72,7 @@ export function App() {
 
       <Route element={<AuthLayout />}>
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/reactivate" element={<ReactivatePage />} />
       </Route>
 
       <Route element={<RequireAuth />}>
@@ -83,6 +89,7 @@ export function App() {
           <Route path="/profile/following" element={<ConnectionsPage tab="following" />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/account" element={<SettingsAccountPage />} />
+          <Route path="/settings/deactivate" element={<SettingsDeactivatePage />} />
           <Route path="/settings/display" element={<SettingsDisplayPage />} />
           <Route path="/settings/language" element={<SettingsLanguagePage />} />
           <Route path="/settings/notifications" element={<SettingsNotificationsPage />} />

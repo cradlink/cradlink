@@ -7,6 +7,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useFollow, useFollowers, useFollowing } from "@/hooks/use-follows";
 import { useUser } from "@/hooks/use-profile";
+import { isDeactivated } from "@/lib/account";
 import { connectionsPath, profilePath, type ConnectionsTab } from "@/lib/connections";
 import { handleFromName } from "@/lib/format";
 
@@ -25,7 +26,7 @@ export function ConnectionsPage({ tab }: { tab: ConnectionsTab }) {
   const myFollow = useFollow(me?.id, id);
   const list = tab === "followers" ? followers : following;
   const people = useMemo(() => {
-    const rows = list.data ?? [];
+    const rows = (list.data ?? []).filter((row) => !isDeactivated(row.user));
     if (
       tab === "followers" &&
       me &&

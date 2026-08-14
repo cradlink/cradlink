@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useFollow } from "@/hooks/use-follows";
 import { useJoinLeave } from "@/hooks/use-membership";
 import { useUser } from "@/hooks/use-profile";
+import { isDeactivated } from "@/lib/account";
 import { canSeeProfileActivities } from "@/lib/follow";
 import { errorMessage } from "@/lib/errors";
 import { formatHeadcount, formatJoinPolicy } from "@/lib/headcount";
@@ -59,7 +60,7 @@ export function ActivityDetailPage() {
     );
   }
 
-  if (!activity) {
+  if (!activity || (creatorQuery.data && isDeactivated(creatorQuery.data))) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-16 text-center">
         <h1 className="font-display text-3xl">{t("activity.missingTitle")}</h1>

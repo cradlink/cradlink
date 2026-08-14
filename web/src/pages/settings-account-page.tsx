@@ -28,6 +28,13 @@ export function SettingsAccountPage() {
           <span className="min-w-0 flex-1 text-[15px]">{t("settings.editProfile")}</span>
           <ChevronRight className="size-5 text-muted-foreground" />
         </Link>
+        <Link to="/settings/deactivate" className="flex items-center gap-3 px-4 py-4 hover:bg-hover">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px]">{t("settings.deactivate")}</span>
+            <span className="mt-0.5 block text-[13px] text-muted-foreground">{t("settings.deactivateHint")}</span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+        </Link>
       </div>
     </div>
   );

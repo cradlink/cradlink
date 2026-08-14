@@ -51,6 +51,7 @@ function mapUser(id: string, data: DocumentData): User {
     updatedAt: asString(data.updatedAt, nowIso()),
     profileVisibility: data.profileVisibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
+    deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
   };
 }
 

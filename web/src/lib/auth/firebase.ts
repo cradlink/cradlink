@@ -15,6 +15,7 @@ import { appError } from "@/lib/errors";
 import { appEnv } from "@/lib/env";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
+import { nameFilterReason, sanitizeDisplayName } from "@/lib/name-filter";
 import type { User } from "@/lib/types";
 import { nowIso } from "@/lib/utils";
 
@@ -58,6 +59,7 @@ function toUser(fbUser: FirebaseUser, data?: Partial<User>): User {
     emailVerified: fbUser.emailVerified,
     profileVisibility: data?.profileVisibility === "private" ? "private" : "public",
     locale: data?.locale ?? null,
+    deactivatedAt: data?.deactivatedAt ?? null,
   };
 }
 
@@ -94,7 +96,10 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
   const db = getFirebaseDb();
   const ref = doc(db, "users", fbUser.uid);
   const snap = await getDoc(ref);
-  const name = displayName?.trim() || fbUser.displayName || fbUser.email?.split("@")[0] || "Member";
+  const name = sanitizeDisplayName(
+    displayName?.trim() || fbUser.displayName || "",
+    fbUser.email?.split("@")[0] || "Member",
+  );
   const email = fbUser.email ?? "";
 
   if (!snap.exists()) {
@@ -124,6 +129,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : nowIso(),
     profileVisibility: data.profileVisibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
+    deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
   });
 }
 
@@ -144,6 +150,10 @@ export const firebaseAuth: AuthRepo = {
   },
 
   async signUp({ email, password, displayName }) {
+    const nameIssue = nameFilterReason(displayName);
+    if (nameIssue === "reserved") throw appError("errors.nameReserved");
+    if (nameIssue === "blocked") throw appError("errors.nameBlocked");
+    if (nameIssue === "tooShort") throw appError("errors.addName");
     try {
       const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
       await updateProfile(cred.user, { displayName: displayName.trim() });

@@ -8,6 +8,7 @@ import {
   type StoredUser,
 } from "@/lib/data/store";
 import { appError } from "@/lib/errors";
+import { nameFilterReason } from "@/lib/name-filter";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
 import type { User } from "@/lib/types";
 import { createId, hashPassword, nowIso } from "@/lib/utils";
@@ -40,6 +41,10 @@ export const localAuth: AuthRepo = {
     const trimmedEmail = email.trim().toLowerCase();
     const name = displayName.trim();
     if (!name) throw appError("errors.addName");
+    const nameIssue = nameFilterReason(name);
+    if (nameIssue === "reserved") throw appError("errors.nameReserved");
+    if (nameIssue === "blocked") throw appError("errors.nameBlocked");
+    if (nameIssue === "tooShort") throw appError("errors.addName");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       throw appError("errors.invalidEmail");
     }
