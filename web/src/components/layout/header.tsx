@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Feed", short: "Feed" },
+  { href: "/search", label: "Explore", short: "Search" },
   { href: "/notifications", label: "Alerts", short: "Alerts" },
   { href: "/me", label: "My activities", short: "Mine" },
 ];
@@ -41,7 +42,7 @@ export function Header() {
               to={item.href}
               className={cn(
                 "rounded-full px-3 py-1.5 text-sm",
-                pathname === item.href
+                pathname === item.href || (item.href === "/search" && pathname === "/explore")
                   ? "font-bold text-foreground"
                   : "text-muted-foreground hover:bg-hover hover:text-foreground",
               )}
@@ -52,6 +53,13 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-1">
+          <Link
+            to="/search"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
+            aria-label="Search"
+          >
+            <Search className="size-5" />
+          </Link>
           <Link
             to="/notifications"
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-muted"

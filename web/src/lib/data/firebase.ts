@@ -106,6 +106,13 @@ export const firebaseUsers: UsersRepo = {
     return users.filter((u): u is User => Boolean(u));
   },
 
+  async list(max = 200) {
+    const snap = await getDocs(query(collection(getFirebaseDb(), "users"), limit(max)));
+    return snap.docs
+      .map((row) => mapUser(row.id, row.data()))
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  },
+
   async upsert(user) {
     await setDoc(doc(getFirebaseDb(), "users", user.id), stripUndefined(user), { merge: true });
     return user;

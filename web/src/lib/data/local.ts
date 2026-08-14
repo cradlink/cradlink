@@ -33,6 +33,14 @@ export const localUsers: UsersRepo = {
     return ids.map((id) => users[id]).filter(Boolean).map(publicUser);
   },
 
+  async list(max = 200) {
+    await ensureSeed();
+    return Object.values(loadDb().users)
+      .map(publicUser)
+      .sort((a, b) => a.displayName.localeCompare(b.displayName))
+      .slice(0, max);
+  },
+
   async upsert(user) {
     await ensureSeed();
     const db = loadDb();

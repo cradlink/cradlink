@@ -1,4 +1,4 @@
-import { Home, Bell, CalendarDays, UserRound, PenSquare } from "lucide-react";
+import { Home, Search, Bell, CalendarDays, UserRound, PenSquare } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/search", label: "Explore", icon: Search },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/me", label: "My activities", icon: CalendarDays },
   { href: "/profile", label: "Profile", icon: UserRound },
@@ -28,7 +29,12 @@ export function SideNav() {
         </div>
         <nav className="mt-1 space-y-1">
           {ITEMS.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              item.href === "/search"
+                ? pathname === "/search" || pathname === "/explore"
+                : item.href === "/profile"
+                  ? pathname === "/profile" || pathname.startsWith("/u/")
+                  : pathname === item.href;
             const Icon = item.icon;
             return (
               <Link

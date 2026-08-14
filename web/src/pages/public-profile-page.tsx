@@ -18,14 +18,5 @@ export function PublicProfilePage() {
     );
   }
 
-  return (
-    <div>
-      <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
-        <h1 className="truncate text-xl font-bold">{data.displayName}</h1>
-      </div>
-      <div className="px-4 py-4">
-        <ProfileView user={data} isSelf={me?.id === data.id} />
-      </div>
-    </div>
-  );
+  return <ProfileView user={data} isSelf={me?.id === data.id} />;
 }

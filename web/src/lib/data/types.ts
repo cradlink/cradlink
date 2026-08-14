@@ -14,6 +14,7 @@ import type {
 export type UsersRepo = {
   getById(id: string): Promise<User | null>;
   getByIds(ids: string[]): Promise<User[]>;
+  list(limit?: number): Promise<User[]>;
   upsert(user: User): Promise<User>;
   update(id: string, patch: UpdateProfileInput): Promise<User>;
 };

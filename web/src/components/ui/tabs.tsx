@@ -17,7 +17,7 @@ export function Tabs({
           type="button"
           onClick={() => onChange(item.value)}
           className={cn(
-            "relative px-5 py-3 text-sm font-medium transition-colors hover:bg-hover",
+            "relative flex-1 px-3 py-3 text-center text-sm font-medium transition-colors hover:bg-hover",
             value === item.value ? "font-bold text-foreground" : "text-muted-foreground",
           )}
         >

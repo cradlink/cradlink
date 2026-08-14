@@ -13,6 +13,7 @@ import { NotificationsPage } from "@/pages/notifications-page";
 import { NotFoundPage } from "@/pages/not-found-page";
 import { ProfilePage } from "@/pages/profile-page";
 import { PublicProfilePage } from "@/pages/public-profile-page";
+import { SearchPage } from "@/pages/search-page";
 import { SignupPage } from "@/pages/signup-page";
 import { VerifyEmailPage } from "@/pages/verify-email-page";
 import { needsEmailVerification } from "@/lib/types";
@@ -64,6 +65,8 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<FeedPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/explore" element={<SearchPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/me" element={<MyActivitiesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
