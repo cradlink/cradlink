@@ -4,7 +4,7 @@ import { Text, useTheme } from "@/components/Themed"
 import { useMemberships } from "@/hooks/use-memberships"
 import type { Activity } from "@/lib/types"
 
-export function JoinButton({ activity }: { activity: Activity }) {
+export function JoinButton({ activity, wide = false }: { activity: Activity; wide?: boolean }) {
   const theme = useTheme()
   const { statusOf, isOrganizer, isFull, join, leave } = useMemberships()
   const organizer = isOrganizer(activity)
@@ -13,14 +13,19 @@ export function JoinButton({ activity }: { activity: Activity }) {
   const manual = activity.joinPolicy === "manual"
 
   if (organizer) {
-    return <Pill label="Yours" muted />
+    return <Action label="Your activity" muted wide={wide} />
+  }
+
+  if (full && status !== "joined" && status !== "pending") {
+    return <Action label="Full" muted wide={wide} />
   }
 
   if (status === "pending") {
     return (
-      <Pill
+      <Action
         label="Requested"
         outline
+        wide={wide}
         onPress={() => {
           Alert.alert("Withdraw request?", "The organizer won’t see this request anymore.", [
             { text: "Keep it", style: "cancel" },
@@ -33,9 +38,10 @@ export function JoinButton({ activity }: { activity: Activity }) {
 
   if (status === "joined") {
     return (
-      <Pill
+      <Action
         label="Leave"
         outline
+        wide={wide}
         onPress={() => {
           Alert.alert("Leave this activity?", "You can join again later if there’s still a spot.", [
             { text: "Stay", style: "cancel" },
@@ -46,14 +52,11 @@ export function JoinButton({ activity }: { activity: Activity }) {
     )
   }
 
-  if (full) {
-    return <Pill label="Full" muted />
-  }
-
   return (
-    <Pill
-      label={manual ? "Request" : "Join"}
+    <Action
+      label={manual ? "Request to join" : "Join"}
       filled
+      wide={wide}
       onPress={() => {
         Alert.alert(
           manual ? `Request to join ${activity.title}?` : `Join ${activity.title}?`,
@@ -73,22 +76,24 @@ export function JoinButton({ activity }: { activity: Activity }) {
   )
 }
 
-function Pill({
+function Action({
   label,
   filled,
   outline,
   muted,
+  wide,
   onPress,
 }: {
   label: string
   filled?: boolean
   outline?: boolean
   muted?: boolean
+  wide?: boolean
   onPress?: () => void
 }) {
   const theme = useTheme()
   const backgroundColor = filled ? theme.foreground : "transparent"
-  const borderColor = filled ? theme.foreground : muted ? "transparent" : theme.border
+  const borderColor = filled ? theme.foreground : outline || wide ? theme.border : "transparent"
   const color = filled ? theme.background : muted ? theme.mutedForeground : theme.foreground
 
   return (
@@ -96,31 +101,38 @@ function Pill({
       disabled={!onPress}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.pill,
+        wide ? styles.wide : styles.inline,
         {
           backgroundColor,
           borderColor,
-          opacity: pressed ? 0.72 : 1,
+          opacity: pressed ? 0.75 : 1,
         },
       ]}
     >
-      <Text style={[styles.label, { color }]}>{label}</Text>
+      <Text style={[wide ? styles.wideLabel : styles.inlineLabel, { color }]}>{label}</Text>
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  pill: {
-    alignSelf: "flex-end",
+  inline: {
+    paddingVertical: 2,
+    paddingLeft: 8,
+  },
+  inlineLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  wide: {
+    alignSelf: "stretch",
     alignItems: "center",
     justifyContent: "center",
-    height: 32,
-    paddingHorizontal: 16,
+    minHeight: 50,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
+  wideLabel: {
+    fontSize: 17,
+    fontWeight: "800",
   },
 })

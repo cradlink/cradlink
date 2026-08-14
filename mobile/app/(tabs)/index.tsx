@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Keyboard, Pressable, ScrollView, StyleSheet } from "react-native"
+import { Pressable, ScrollView, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 
 import { ActivityCard } from "@/components/ActivityCard"
@@ -39,12 +39,7 @@ export default function FeedScreen() {
     <View style={styles.screen}>
       <TopBar search searchValue={query} onSearchChange={setQuery} />
       <FeedFilters type={type} locationType={locationType} onType={setType} onLocation={setLocationType} />
-      <ScrollView
-        contentContainerStyle={styles.list}
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="on-drag"
-        onScrollBeginDrag={Keyboard.dismiss}
-      >
+      <ScrollView contentContainerStyle={styles.list} keyboardDismissMode="on-drag">
         {activities.length === 0 ? (
           <EmptyState title="No matches." body="Try another search." />
         ) : (

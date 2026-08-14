@@ -6,8 +6,10 @@ import { NavigationBar } from "expo-navigation-bar"
 import * as SystemUI from "expo-system-ui"
 import "react-native-reanimated"
 
+import { ActivityPreview } from "@/components/ActivityPreview"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
+import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { MembershipProvider } from "@/hooks/use-memberships"
 
@@ -78,6 +80,7 @@ function RootNav() {
           <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
         </Stack>
       </AuthGate>
+      <ActivityPreview />
       <StatusBar style="light" />
       <NavigationBar style="dark" />
     </ThemeProvider>
@@ -88,7 +91,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <MembershipProvider>
-        <RootNav />
+        <ActivityPreviewProvider>
+          <RootNav />
+        </ActivityPreviewProvider>
       </MembershipProvider>
     </AuthProvider>
   )

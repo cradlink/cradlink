@@ -10,10 +10,15 @@ const ICONS = {
     idle: { ios: "house", android: "home", web: "home" },
     active: { ios: "house.fill", android: "home", web: "home" },
   },
-  me: {
-    label: "Mine",
+  upcoming: {
+    label: "Upcoming",
     idle: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
     active: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
+  },
+  me: {
+    label: "Mine",
+    idle: { ios: "square.and.pencil", android: "edit", web: "edit" },
+    active: { ios: "square.and.pencil", android: "edit", web: "edit" },
   },
   profile: {
     label: "Profile",

@@ -1,67 +1,68 @@
-import { Keyboard, Pressable, StyleSheet } from "react-native"
-import { useRouter } from "expo-router"
+import { useRef } from "react"
+import { Pressable, StyleSheet, View as RNView } from "react-native"
 
 import { ActivityCover } from "@/components/ActivityCover"
 import { Avatar } from "@/components/Avatar"
-import { JoinButton } from "@/components/JoinButton"
 import { LookingForChips } from "@/components/LookingForChips"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useActivityPreview } from "@/hooks/use-activity-preview"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatCardMeta } from "@/lib/format"
 import type { Activity } from "@/lib/types"
 
 export function ActivityCard({ activity }: { activity: Activity }) {
-  const router = useRouter()
   const theme = useTheme()
   const { decorate } = useMemberships()
+  const { open } = useActivityPreview()
   const viewed = decorate(activity)
+  const ref = useRef<RNView>(null)
 
   return (
-    <Pressable
-      onPress={() => {
-        Keyboard.dismiss()
-        router.push(`/activities/${activity.id}`)
-      }}
-      style={({ pressed }) => [
-        styles.card,
-        { borderBottomColor: theme.border, backgroundColor: pressed ? theme.hover : "transparent" },
-      ]}
-    >
-      <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={36} />
-      <View style={styles.body}>
-        <View style={styles.meta}>
-          <Text style={styles.creator} numberOfLines={1}>
-            {activity.creatorName}
-          </Text>
-          <TypeBadge type={activity.type} />
-        </View>
-
-        <Text style={styles.title} numberOfLines={2}>
-          {activity.title}
-        </Text>
-        <Text style={styles.copy} numberOfLines={2}>
-          {activity.description}
-        </Text>
-
-        {activity.lookingFor.length > 0 ? (
-          <View style={styles.chips}>
-            <LookingForChips items={activity.lookingFor} limit={3} />
+    <RNView ref={ref} collapsable={false}>
+      <Pressable
+        onPress={() => {
+          ref.current?.measureInWindow((x, y, width, height) => {
+            open(activity, { x, y, width, height })
+          })
+        }}
+        style={({ pressed }) => [
+          styles.card,
+          { borderBottomColor: theme.border, backgroundColor: pressed ? theme.hover : "transparent" },
+        ]}
+      >
+        <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={36} />
+        <View style={styles.body}>
+          <View style={styles.meta}>
+            <Text style={styles.creator} numberOfLines={1}>
+              {activity.creatorName}
+            </Text>
+            <TypeBadge type={activity.type} />
           </View>
-        ) : null}
 
-        <View style={styles.cover}>
-          <ActivityCover activity={activity} />
-        </View>
+          <Text style={styles.title} numberOfLines={2}>
+            {activity.title}
+          </Text>
+          <Text style={styles.copy} numberOfLines={2}>
+            {activity.description}
+          </Text>
 
-        <View style={styles.footer}>
+          {activity.lookingFor.length > 0 ? (
+            <View style={styles.chips}>
+              <LookingForChips items={activity.lookingFor} limit={3} />
+            </View>
+          ) : null}
+
+          <View style={styles.cover}>
+            <ActivityCover activity={activity} />
+          </View>
+
           <Text style={styles.detail} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
             {formatCardMeta(viewed)}
           </Text>
-          <JoinButton activity={activity} />
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </RNView>
   )
 }
 
@@ -114,16 +115,8 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     backgroundColor: "transparent",
   },
-  footer: {
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    backgroundColor: "transparent",
-  },
   detail: {
-    flex: 1,
+    marginTop: 10,
     fontSize: 13,
     lineHeight: 16,
   },
