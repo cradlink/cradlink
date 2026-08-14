@@ -15,7 +15,7 @@ import { appError } from "@/lib/errors";
 import { appEnv } from "@/lib/env";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
-import { nameFilterReason, sanitizeDisplayName } from "@/lib/name-filter";
+import { ensureNameFilter, nameFilterReason, sanitizeDisplayName } from "@/lib/name-filter";
 import type { User } from "@/lib/types";
 import { nowIso } from "@/lib/utils";
 
@@ -96,6 +96,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
   const db = getFirebaseDb();
   const ref = doc(db, "users", fbUser.uid);
   const snap = await getDoc(ref);
+  await ensureNameFilter();
   const name = sanitizeDisplayName(
     displayName?.trim() || fbUser.displayName || "",
     fbUser.email?.split("@")[0] || "Member",
@@ -150,6 +151,7 @@ export const firebaseAuth: AuthRepo = {
   },
 
   async signUp({ email, password, displayName }) {
+    await ensureNameFilter();
     const nameIssue = nameFilterReason(displayName);
     if (nameIssue === "reserved") throw appError("errors.nameReserved");
     if (nameIssue === "blocked") throw appError("errors.nameBlocked");

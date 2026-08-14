@@ -1,51 +1,23 @@
+import { doc, getDoc } from "firebase/firestore";
+import { isFirebaseConfigured, getFirebaseDb } from "@/lib/firebase";
 import { handleFromName } from "@/lib/format";
 
-const RESERVED = new Set([
-  "admin",
-  "administrator",
-  "cradlink",
-  "official",
-  "support",
-  "moderator",
-  "mod",
-  "staff",
-  "security",
-  "system",
-  "root",
-  "owner",
-  "helpdesk",
-  "settings",
-]);
-
-const BLOCKED = [
-  "fuck",
-  "shit",
-  "cunt",
-  "bitch",
-  "nigger",
-  "nigga",
-  "faggot",
-  "retard",
-  "whore",
-  "slut",
-  "asshole",
-  "dick",
-  "pussy",
-  "cock",
-  "bastard",
-  "rape",
-  "jebi",
-  "jebem",
-  "picka",
-  "picku",
-  "kurac",
-  "kurcu",
-  "sranje",
-  "govno",
-  "peder",
-];
-
 export type NameFilterReason = "tooShort" | "reserved" | "blocked";
+
+type NameLists = {
+  reserved: Set<string>;
+  blocked: Set<string>;
+};
+
+let lists: NameLists = { reserved: new Set(), blocked: new Set() };
+let loadOnce: Promise<void> | null = null;
+
+function asWords(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => fold(String(item)).replace(/[^a-z]+/g, ""))
+    .filter(Boolean);
+}
 
 function fold(value: string) {
   return value
@@ -72,14 +44,35 @@ function tokens(value: string) {
 function looksBlocked(name: string) {
   const words = tokens(name);
   const compact = words.join("");
-  return BLOCKED.some((bad) => words.includes(bad) || compact.includes(bad));
+  return [...lists.blocked].some((bad) => words.includes(bad) || compact.includes(bad));
+}
+
+export async function ensureNameFilter() {
+  if (loadOnce) return loadOnce;
+  loadOnce = (async () => {
+    if (!isFirebaseConfigured()) return;
+    try {
+      const snap = await getDoc(doc(getFirebaseDb(), "config", "nameFilter"));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      lists = {
+        reserved: new Set(asWords(data.reserved)),
+        blocked: new Set([...asWords(data.blocked), ...asWords(data.swears)]),
+      };
+    } catch {
+      lists = { reserved: new Set(), blocked: new Set() };
+    }
+  })();
+  return loadOnce;
 }
 
 export function nameFilterReason(name: string): NameFilterReason | null {
   const trimmed = name.trim();
   if (trimmed.length < 2) return "tooShort";
   const handle = fold(handleFromName(trimmed)).replace(/[^a-z]/g, "");
-  if (RESERVED.has(handle) || tokens(trimmed).some((word) => RESERVED.has(word))) return "reserved";
+  if (lists.reserved.has(handle) || tokens(trimmed).some((word) => lists.reserved.has(word))) {
+    return "reserved";
+  }
   if (looksBlocked(trimmed) || looksBlocked(handle)) return "blocked";
   return null;
 }

@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile, useUploadAvatar, useUploadBanner } from "@/hooks/use-profile";
 import { getBackend } from "@/lib/backend";
 import { errorMessage } from "@/lib/errors";
-import { nameFilterReason } from "@/lib/name-filter";
+import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
@@ -76,6 +76,7 @@ export function ProfileForm({ user }: { user: User }) {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    await ensureNameFilter();
     const nameIssue = nameFilterReason(displayName);
     if (nameIssue === "tooShort") {
       setError(t("profile.nameTooShort"));

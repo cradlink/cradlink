@@ -33,6 +33,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     function discussionSize(data) {
       return data.keys().hasAny(["discussion"]) && data.discussion is list
         ? data.discussion.size()
