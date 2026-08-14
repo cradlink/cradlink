@@ -1,6 +1,7 @@
 import type {
   Activity,
   ActivityFilters,
+  AppNotification,
   CreateActivityInput,
   MemberWithUser,
   Paginated,
@@ -37,4 +38,11 @@ export type MembersRepo = {
 export type StorageRepo = {
   uploadAvatar(userId: string, file: File): Promise<string>;
   uploadActivityImage(userId: string, file: File): Promise<string>;
+};
+
+export type NotificationsRepo = {
+  list(userId: string): Promise<AppNotification[]>;
+  ensure(notification: AppNotification): Promise<{ created: boolean; notification: AppNotification }>;
+  markRead(id: string, userId: string): Promise<void>;
+  markAllRead(userId: string): Promise<void>;
 };

@@ -124,3 +124,25 @@ export type Paginated<T> = {
   items: T[];
   nextCursor: string | null;
 };
+
+export type NotificationKind =
+  | "joined"
+  | "join_request"
+  | "accepted"
+  | "declined"
+  | "edited"
+  | "reminder_day"
+  | "reminder_hour";
+
+export type AppNotification = {
+  id: string;
+  recipientId: string;
+  kind: NotificationKind;
+  activityId: string;
+  activityTitle: string;
+  actorId?: string;
+  actorName?: string;
+  actorAvatar?: string | null;
+  createdAt: string;
+  read: boolean;
+};

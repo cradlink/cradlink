@@ -11,6 +11,7 @@ export function useJoinLeave() {
       queryClient.invalidateQueries({ queryKey: ["members", activityId] }),
       queryClient.invalidateQueries({ queryKey: ["membership", activityId] }),
       queryClient.invalidateQueries({ queryKey: ["activities"] }),
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
     ]);
   };
 

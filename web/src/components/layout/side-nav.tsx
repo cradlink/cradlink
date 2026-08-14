@@ -1,13 +1,15 @@
-import { Home, CalendarDays, UserRound, PenSquare } from "lucide-react";
+import { Home, Bell, CalendarDays, UserRound, PenSquare } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useUnreadCount } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/me", label: "My activities", icon: CalendarDays },
   { href: "/profile", label: "Profile", icon: UserRound },
 ];
@@ -16,6 +18,7 @@ export function SideNav() {
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const unread = useUnreadCount(user?.id);
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col justify-between px-2 py-2 xl:w-[275px] lg:flex">
@@ -36,7 +39,14 @@ export function SideNav() {
                   active ? "font-bold" : "font-normal",
                 )}
               >
-                <Icon className="size-7" strokeWidth={active ? 2.4 : 1.8} />
+                <span className="relative">
+                  <Icon className="size-7" strokeWidth={active ? 2.4 : 1.8} />
+                  {item.href === "/notifications" && unread > 0 ? (
+                    <span className="absolute -right-1.5 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
+                      {unread > 20 ? "20+" : unread}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="hidden xl:inline">{item.label}</span>
               </Link>
             );

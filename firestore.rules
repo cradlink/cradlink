@@ -45,5 +45,20 @@ service cloud.firestore {
         || isActivityOrganizer(resource.data.activityId)
       );
     }
+
+    match /notifications/{id} {
+      allow get: if signedIn() && (
+        resource == null || resource.data.recipientId == request.auth.uid
+      );
+      allow list: if signedIn() && resource.data.recipientId == request.auth.uid;
+      allow create: if signedIn() && (
+        request.resource.data.recipientId == request.auth.uid
+        || request.resource.data.actorId == request.auth.uid
+      );
+      allow update: if signedIn()
+        && resource.data.recipientId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["read"]);
+      allow delete: if signedIn() && resource.data.recipientId == request.auth.uid;
+    }
   }
 }

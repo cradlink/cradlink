@@ -10,6 +10,8 @@ import type {
   MemberWithUser,
   User,
 } from "@/lib/types";
+import { localNotifications } from "@/lib/data/notifications-local";
+import { notifyActivityEdited, notifyDecision, notifyJoin } from "@/lib/data/notify";
 import { defaultHeadcount, hardCap, isActivityFull, statusForCapacity } from "@/lib/headcount";
 import { createId, memberId, nowIso } from "@/lib/utils";
 
@@ -162,6 +164,19 @@ export const localActivities: ActivitiesRepo = {
     };
     db.activities[id] = next;
     saveDb(db);
+    const joinedIds = Object.values(db.members)
+      .filter((member) => member.activityId === id && member.status === "joined")
+      .map((member) => member.userId);
+    void notifyActivityEdited(
+      localNotifications,
+      next,
+      {
+        id: actorId,
+        displayName: next.creatorName,
+        avatarUrl: next.creatorAvatar,
+      },
+      joinedIds,
+    );
     return next;
   },
 
@@ -236,6 +251,8 @@ export const localMembers: MembersRepo = {
     }
     activity.updatedAt = timestamp;
     saveDb(db);
+    const actor = db.users[userId];
+    if (actor) void notifyJoin(localNotifications, activity, publicUser(actor));
     return activity;
   },
 
@@ -279,6 +296,7 @@ export const localMembers: MembersRepo = {
     if (cap != null && activity.memberCount >= cap) activity.status = "full";
     activity.updatedAt = nowIso();
     saveDb(db);
+    void notifyDecision(localNotifications, activity, userId, "accepted");
     return activity;
   },
 
@@ -294,6 +312,7 @@ export const localMembers: MembersRepo = {
     delete db.members[mid];
     activity.updatedAt = nowIso();
     saveDb(db);
+    void notifyDecision(localNotifications, activity, userId, "declined");
     return activity;
   },
 };

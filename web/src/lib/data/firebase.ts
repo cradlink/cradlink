@@ -15,6 +15,8 @@ import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
 import { AppError } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
+import { firebaseNotifications } from "@/lib/data/notifications-firebase";
+import { notifyActivityEdited, notifyDecision, notifyJoin } from "@/lib/data/notify";
 import { defaultHeadcount, hardCap, isActivityFull, statusForCapacity } from "@/lib/headcount";
 import type {
   Activity,
@@ -263,6 +265,22 @@ export const firebaseActivities: ActivitiesRepo = {
         updatedAt: next.updatedAt,
       }),
     );
+    const members = await getDocs(
+      query(collection(getFirebaseDb(), "activityMembers"), where("activityId", "==", id)),
+    );
+    const joinedIds = members.docs
+      .filter((row) => row.data().status === "joined")
+      .map((row) => String(row.data().userId ?? ""));
+    void notifyActivityEdited(
+      firebaseNotifications,
+      next,
+      {
+        id: actorId,
+        displayName: next.creatorName,
+        avatarUrl: next.creatorAvatar,
+      },
+      joinedIds,
+    );
     return next;
   },
 
@@ -351,6 +369,10 @@ export const firebaseMembers: MembersRepo = {
       const status = cap != null && memberCount >= cap ? "full" : activity.status;
       tx.update(actRef, { memberCount, status, updatedAt: timestamp });
       return { ...activity, memberCount, status, updatedAt: timestamp };
+    }).then(async (activity) => {
+      const actor = await firebaseUsers.getById(userId);
+      if (actor) void notifyJoin(firebaseNotifications, activity, actor);
+      return activity;
     });
   },
 
@@ -404,6 +426,9 @@ export const firebaseMembers: MembersRepo = {
       tx.update(memRef, { status: "joined" });
       tx.update(actRef, { memberCount, status, updatedAt: timestamp });
       return { ...activity, memberCount, status, updatedAt: timestamp };
+    }).then(async (activity) => {
+      void notifyDecision(firebaseNotifications, activity, userId, "accepted");
+      return activity;
     });
   },
 
@@ -424,6 +449,9 @@ export const firebaseMembers: MembersRepo = {
       tx.delete(memRef);
       tx.update(actRef, { updatedAt: timestamp });
       return { ...activity, updatedAt: timestamp };
+    }).then(async (activity) => {
+      void notifyDecision(firebaseNotifications, activity, userId, "declined");
+      return activity;
     });
   },
 };

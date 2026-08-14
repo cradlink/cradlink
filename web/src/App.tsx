@@ -9,6 +9,7 @@ import { FeedPage } from "@/pages/feed-page";
 import { LoginPage } from "@/pages/login-page";
 import { MyActivitiesPage } from "@/pages/my-activities-page";
 import { NewActivityPage } from "@/pages/new-activity-page";
+import { NotificationsPage } from "@/pages/notifications-page";
 import { NotFoundPage } from "@/pages/not-found-page";
 import { ProfilePage } from "@/pages/profile-page";
 import { PublicProfilePage } from "@/pages/public-profile-page";
@@ -63,6 +64,7 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<FeedPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/me" element={<MyActivitiesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />

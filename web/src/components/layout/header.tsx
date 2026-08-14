@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Bell } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useUnreadCount } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Feed", short: "Feed" },
+  { href: "/notifications", label: "Alerts", short: "Alerts" },
   { href: "/me", label: "My activities", short: "Mine" },
 ];
 
 export function Header() {
   const { user, signOut } = useAuth();
+  const unread = useUnreadCount(user?.id);
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -48,6 +52,16 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-1">
+          <Link
+            to="/notifications"
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
+            aria-label="Notifications"
+          >
+            <Bell className="size-5" />
+            {unread > 0 ? (
+              <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
+            ) : null}
+          </Link>
           <ThemeToggle />
         {user ? (
           <div className="relative" ref={menuRef}>
@@ -64,6 +78,9 @@ export function Header() {
                   <p className="truncate text-sm font-medium">{user.displayName}</p>
                   <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                 </div>
+                <MenuLink href="/notifications" onClick={() => setOpen(false)}>
+                  Notifications
+                </MenuLink>
                 <MenuLink href="/profile" onClick={() => setOpen(false)}>
                   Profile
                 </MenuLink>

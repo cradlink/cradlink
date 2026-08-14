@@ -63,6 +63,7 @@ export function useUpdateActivity() {
     onSuccess: (activity) => {
       queryClient.setQueryData(["activity", activity.id], activity);
       void queryClient.invalidateQueries({ queryKey: ["activities"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
