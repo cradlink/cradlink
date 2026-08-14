@@ -3,6 +3,7 @@
   "installCommand": "npm install --prefix web",
   "buildCommand": "npm run build --prefix web",
   "outputDirectory": "web/dist",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- web firestore.rules storage.rules vercel.json",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {

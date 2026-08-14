@@ -79,13 +79,50 @@ The UI does not change. Auth, activities, members, and avatars go through the sa
 
 ## Deploy (web)
 
-Import the repo on Vercel. The app is in `web/`.
+Use **two Vercel projects** on the same GitHub repo. Each project has its own production URL.
 
-- Set **Root Directory** to `web`, or leave the repo root — `vercel.json` at the root builds `web/`.
-- Add the same `VITE_*` env vars.
-- Add the Vercel domain under Firebase Auth → Authorized domains.
+| Project name (example) | Production branch | What it is |
+| --- | --- | --- |
+| `cradlink` | `main` | Production |
+| `cradlink-dev` | `development` | Staging / preview of current work |
 
-SPA routes are rewritten to `index.html`.
+`vercel.json` at the repo root builds `web/`. Leave **Root Directory** empty on both projects.
+
+### On Vercel (do this twice)
+
+1. [vercel.com/new](https://vercel.com/new) → import `cradlink/cradlink`.
+2. **Root Directory**: leave blank.
+3. Framework: Vite (detected).
+4. After the first import, open **Project Settings → Environments** (or **Git**) and set **Production Branch**:
+   - first project → `main`
+   - second project → `development`
+5. **Settings → General → Node.js Version** → `22.x`.
+6. **Settings → Git**: turn off automatic preview deploys if you only want the production branch of that project to publish (optional).
+7. **Settings → Environment Variables** — add these to **Production** (and Preview if you keep it):
+
+```
+VITE_BACKEND=firebase
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+Use the same Firebase project on both unless you later split staging data.
+
+8. Deploy. Copy each project’s `*.vercel.app` domain.
+
+### After both URLs exist
+
+1. Firebase Console → **Authentication → Settings → Authorized domains** → add both Vercel hostnames (no `https://`).
+2. If you use Google sign-in: Google Cloud Console → your OAuth client → **Authorized JavaScript origins** → add `https://<prod>.vercel.app` and `https://<dev>.vercel.app`.
+3. Paste the latest `firestore.rules` and `storage.rules` if you have not already.
+
+Pushes to `main` update production. Pushes to `development` update the dev site.
+
+`main` is still the older root-level Vite app. The `development` project is the current `web/` app (search, follows, discussion). Merge `development` into `main` when you want production to match.
 
 ## Stack
 
