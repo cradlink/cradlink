@@ -21,6 +21,8 @@ export function useUpdateProfile(userId: string | undefined) {
     },
     onSuccess: (user) => {
       void queryClient.invalidateQueries({ queryKey: ["user", user.id] });
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+      void queryClient.invalidateQueries({ queryKey: ["follows"] });
       void queryClient.invalidateQueries({ queryKey: ["activities"] });
     },
   });

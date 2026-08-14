@@ -53,7 +53,11 @@ export function saveDb(db: LocalDb) {
 export function publicUser(user: StoredUser): User {
   const rest = { ...user };
   delete rest.passwordHash;
-  return { ...rest, emailVerified: rest.emailVerified !== false };
+  return {
+    ...rest,
+    emailVerified: rest.emailVerified !== false,
+    profileVisibility: rest.profileVisibility === "private" ? "private" : "public",
+  };
 }
 
 export function getSessionUserId() {

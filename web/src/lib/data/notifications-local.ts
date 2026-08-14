@@ -44,4 +44,12 @@ export const localNotifications: NotificationsRepo = {
     }
     save(rows);
   },
+
+  async remove(id, userId) {
+    const rows = load();
+    if (!rows[id]) return;
+    if (rows[id].recipientId !== userId && rows[id].actorId !== userId) return;
+    delete rows[id];
+    save(rows);
+  },
 };

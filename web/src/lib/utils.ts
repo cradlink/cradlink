@@ -13,6 +13,10 @@ export function memberId(activityId: string, userId: string) {
   return `${activityId}_${userId}`;
 }
 
+export function followId(followerId: string, followeeId: string) {
+  return `${followerId}_${followeeId}`;
+}
+
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";

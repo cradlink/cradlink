@@ -4,6 +4,8 @@ import type {
   ActivityFilters,
   AppNotification,
   CreateActivityInput,
+  Follow,
+  FollowWithUser,
   MemberWithUser,
   Paginated,
   UpdateActivityInput,
@@ -47,6 +49,7 @@ export type NotificationsRepo = {
   ensure(notification: AppNotification): Promise<{ created: boolean; notification: AppNotification }>;
   markRead(id: string, userId: string): Promise<void>;
   markAllRead(userId: string): Promise<void>;
+  remove(id: string, userId: string): Promise<void>;
 };
 
 export type CreateCommentInput = {
@@ -54,6 +57,18 @@ export type CreateCommentInput = {
   authorId: string;
   body: string;
   parentId?: string | null;
+};
+
+export type FollowsRepo = {
+  get(followerId: string, followeeId: string): Promise<Follow | null>;
+  listOutgoing(userId: string): Promise<Follow[]>;
+  listIncoming(userId: string): Promise<Follow[]>;
+  listRequests(userId: string): Promise<FollowWithUser[]>;
+  follow(actorId: string, targetId: string): Promise<Follow>;
+  unfollow(actorId: string, targetId: string): Promise<void>;
+  accept(actorId: string, followerId: string): Promise<Follow>;
+  decline(actorId: string, followerId: string): Promise<void>;
+  acceptAllPending(userId: string): Promise<void>;
 };
 
 export type CommentsRepo = {

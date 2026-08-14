@@ -1,16 +1,20 @@
 import { Link, useParams } from "react-router-dom";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, Lock, MapPin, Users } from "lucide-react";
 import { ActivityDiscussion } from "@/components/activity/activity-discussion";
 import { ActivityGallery } from "@/components/activity/activity-gallery";
 import { JoinButton } from "@/components/activity/join-button";
 import { LookingForChips } from "@/components/activity/looking-for-chips";
+import { FollowButton } from "@/components/profile/follow-button";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActivity, useActivityMembers, useMembership } from "@/hooks/use-activity";
 import { useAuth } from "@/hooks/use-auth";
+import { useFollow } from "@/hooks/use-follows";
 import { useJoinLeave } from "@/hooks/use-membership";
+import { useUser } from "@/hooks/use-profile";
+import { canSeeProfileActivities } from "@/lib/follow";
 import { errorMessage } from "@/lib/errors";
 import { formatHeadcount, formatJoinPolicy } from "@/lib/headcount";
 import { formatActivityWhen, formatLocation } from "@/lib/format";
@@ -31,6 +35,14 @@ export function ActivityDetailPage() {
     ? membershipQuery.data.status
     : null;
   const canDiscuss = Boolean(user && activity && (isOrganizer || membershipStatus === "joined"));
+  const creatorQuery = useUser(activity?.creatorId);
+  const followQuery = useFollow(user?.id, activity?.creatorId);
+  const canSeePrivate = Boolean(
+    isOrganizer
+    || membershipStatus === "joined"
+    || (creatorQuery.data
+      && canSeeProfileActivities(user?.id, creatorQuery.data, followQuery.data?.status)),
+  );
 
   if (activityQuery.isLoading) {
     return (
@@ -51,6 +63,38 @@ export function ActivityDetailPage() {
           Back to feed
         </Link>
       </div>
+    );
+  }
+
+  if (!isOrganizer && membershipStatus !== "joined" && (creatorQuery.isLoading || followQuery.isLoading)) {
+    return (
+      <div className="space-y-4 px-4 py-4">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-12 w-2/3" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
+
+  if (creatorQuery.data && !canSeePrivate) {
+    return (
+      <article>
+        <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
+          <h1 className="truncate text-xl font-bold">Private activity</h1>
+        </div>
+        <div className="px-8 py-16 text-center">
+          <span className="mx-auto flex size-16 items-center justify-center rounded-full border-2 border-foreground">
+            <Lock className="size-7" />
+          </span>
+          <h1 className="mt-4 text-3xl font-bold">This activity is private</h1>
+          <p className="mt-2 text-[15px] text-muted-foreground">
+            Follow {creatorQuery.data.displayName} to see it. They’ll have to confirm your request.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <FollowButton user={creatorQuery.data} size="default" />
+          </div>
+        </div>
+      </article>
     );
   }
 

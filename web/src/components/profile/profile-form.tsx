@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile, useUploadAvatar } from "@/hooks/use-profile";
+import { getBackend } from "@/lib/backend";
 import { errorMessage } from "@/lib/errors";
-import type { User } from "@/lib/types";
+import { isPrivateProfile, type User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export function ProfileForm({ user }: { user: User }) {
   const [location, setLocation] = useState(user.location);
   const [skills, setSkills] = useState(user.skills);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  const [isPrivate, setIsPrivate] = useState(isPrivateProfile(user));
   const [error, setError] = useState<string | null>(null);
 
   async function onFile(file: File | undefined) {
@@ -48,7 +50,11 @@ export function ProfileForm({ user }: { user: User }) {
         location: location.trim(),
         skills,
         avatarUrl,
+        profileVisibility: isPrivate ? "private" : "public",
       });
+      if (!isPrivate && isPrivateProfile(user)) {
+        await getBackend().follows.acceptAllPending(user.id);
+      }
       await refresh();
       toast.success("Profile saved.");
       navigate("/profile");
@@ -92,6 +98,23 @@ export function ProfileForm({ user }: { user: User }) {
       <div className="space-y-1.5">
         <Label>Skills</Label>
         <TagInput value={skills} onChange={setSkills} placeholder="Research, climbing, Figma" />
+      </div>
+      <div className="rounded-2xl border border-border px-4 py-3">
+        <label className="flex items-start justify-between gap-4">
+          <span>
+            <span className="block text-sm font-medium">Private account</span>
+            <span className="mt-1 block text-[13px] leading-5 text-muted-foreground">
+              Like Instagram: people must send a follow request. Only people you confirm can see your
+              activities.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={isPrivate}
+            onChange={(event) => setIsPrivate(event.target.checked)}
+            className="mt-1 size-5 accent-primary"
+          />
+        </label>
       </div>
       {error ? <p className="text-sm text-[#f4212e]">{error}</p> : null}
       <div className="flex gap-2">

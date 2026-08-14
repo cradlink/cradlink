@@ -48,6 +48,7 @@ function mapUser(id: string, data: DocumentData): User {
     location: asString(data.location),
     createdAt: asString(data.createdAt, nowIso()),
     updatedAt: asString(data.updatedAt, nowIso()),
+    profileVisibility: data.profileVisibility === "private" ? "private" : "public",
   };
 }
 

@@ -5,7 +5,9 @@ import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
 import { UserRow } from "@/components/search/user-row";
 import { Tabs } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/use-auth";
 import { useSearchResults } from "@/hooks/use-search";
+import { useVisibleActivities } from "@/hooks/use-visible-activities";
 import { FEED_GRID } from "@/lib/activity-meta";
 
 const TABS = [
@@ -26,7 +28,9 @@ export function SearchPage() {
   const q = params.get("q") ?? "";
   const tab = parseTab(params.get("f"));
   const [draft, setDraft] = useState(q);
+  const { user } = useAuth();
   const results = useSearchResults(q);
+  const visibleActivities = useVisibleActivities(user?.id, results.activities);
 
   useEffect(() => {
     setDraft(q);
@@ -64,7 +68,7 @@ export function SearchPage() {
   const showPeople = tab === "top" || tab === "people";
   const showActivities = tab === "top" || tab === "activities";
   const people = tab === "top" ? results.people.slice(0, 5) : results.people;
-  const activities = results.activities;
+  const activities = visibleActivities;
   const empty = Boolean(q) && !results.isLoading && people.length === 0 && activities.length === 0;
 
   return (

@@ -3,6 +3,8 @@ import { localAuth } from "@/lib/auth/local";
 import type { AuthRepo } from "@/lib/auth/types";
 import { firebaseComments } from "@/lib/data/comments-firebase";
 import { localComments } from "@/lib/data/comments-local";
+import { firebaseFollows } from "@/lib/data/follows-firebase";
+import { localFollows } from "@/lib/data/follows-local";
 import { firebaseActivities, firebaseMembers, firebaseUsers } from "@/lib/data/firebase";
 import { localActivities, localMembers, localUsers } from "@/lib/data/local";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
@@ -10,6 +12,7 @@ import { localNotifications } from "@/lib/data/notifications-local";
 import type {
   ActivitiesRepo,
   CommentsRepo,
+  FollowsRepo,
   MembersRepo,
   NotificationsRepo,
   StorageRepo,
@@ -29,6 +32,7 @@ export type Backend = {
   storage: StorageRepo;
   notifications: NotificationsRepo;
   comments: CommentsRepo;
+  follows: FollowsRepo;
 };
 
 export function getBackend(): Backend {
@@ -47,6 +51,7 @@ export function getBackend(): Backend {
       storage: firebaseStorageRepo,
       notifications: firebaseNotifications,
       comments: firebaseComments,
+      follows: firebaseFollows,
     };
   }
 
@@ -59,5 +64,6 @@ export function getBackend(): Backend {
     storage: localStorageRepo,
     notifications: localNotifications,
     comments: localComments,
+    follows: localFollows,
   };
 }

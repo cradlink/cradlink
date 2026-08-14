@@ -83,6 +83,42 @@ export async function notifyActivityEdited(
   );
 }
 
+export async function notifyFollowRequest(
+  repo: NotificationsRepo,
+  actor: Pick<User, "id" | "displayName" | "avatarUrl">,
+  recipientId: string,
+) {
+  if (recipientId === actor.id) return;
+  return notify(repo, {
+    id: `follow_request_${actor.id}`,
+    recipientId,
+    kind: "follow_request",
+    activityId: "",
+    activityTitle: "",
+    actorId: actor.id,
+    actorName: actor.displayName,
+    actorAvatar: actor.avatarUrl,
+  });
+}
+
+export async function notifyFollowed(
+  repo: NotificationsRepo,
+  actor: Pick<User, "id" | "displayName" | "avatarUrl">,
+  recipientId: string,
+) {
+  if (recipientId === actor.id) return;
+  return notify(repo, {
+    id: `followed_${actor.id}_${recipientId}`,
+    recipientId,
+    kind: "followed",
+    activityId: "",
+    activityTitle: "",
+    actorId: actor.id,
+    actorName: actor.displayName,
+    actorAvatar: actor.avatarUrl,
+  });
+}
+
 export async function notifyDiscussion(
   repo: NotificationsRepo,
   activity: Activity,

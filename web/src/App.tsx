@@ -6,6 +6,7 @@ import { ActivityDetailPage } from "@/pages/activity-detail-page";
 import { EditActivityPage } from "@/pages/edit-activity-page";
 import { EditProfilePage } from "@/pages/edit-profile-page";
 import { FeedPage } from "@/pages/feed-page";
+import { FollowRequestsPage } from "@/pages/follow-requests-page";
 import { LoginPage } from "@/pages/login-page";
 import { MyActivitiesPage } from "@/pages/my-activities-page";
 import { NewActivityPage } from "@/pages/new-activity-page";
@@ -68,6 +69,7 @@ export function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/explore" element={<SearchPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/notifications/requests" element={<FollowRequestsPage />} />
           <Route path="/me" element={<MyActivitiesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />

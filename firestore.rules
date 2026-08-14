@@ -116,7 +116,31 @@ service cloud.firestore {
       allow update: if signedIn()
         && resource.data.recipientId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["read"]);
-      allow delete: if signedIn() && resource.data.recipientId == request.auth.uid;
+      allow delete: if signedIn() && (
+        resource.data.recipientId == request.auth.uid
+        || resource.data.actorId == request.auth.uid
+      );
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn() && (
+        resource.data.followerId == request.auth.uid
+        || resource.data.followeeId == request.auth.uid
+      );
+      allow create: if signedIn()
+        && request.resource.data.followerId == request.auth.uid
+        && request.resource.data.followeeId is string
+        && request.resource.data.followeeId != request.auth.uid
+        && followId == request.auth.uid + '_' + request.resource.data.followeeId
+        && request.resource.data.status in ['pending', 'accepted'];
+      allow update: if signedIn()
+        && resource.data.followeeId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'accepted';
+      allow delete: if signedIn() && (
+        resource.data.followerId == request.auth.uid
+        || resource.data.followeeId == request.auth.uid
+      );
     }
   }
 }

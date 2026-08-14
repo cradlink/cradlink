@@ -59,6 +59,7 @@ function toUser(fbUser: FirebaseUser, data?: Partial<User>): User {
     createdAt: data?.createdAt || nowIso(),
     updatedAt: data?.updatedAt || nowIso(),
     emailVerified: fbUser.emailVerified,
+    profileVisibility: data?.profileVisibility === "private" ? "private" : "public",
   };
 }
 
@@ -105,6 +106,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       email,
       createdAt: timestamp,
       updatedAt: timestamp,
+      profileVisibility: "public",
     });
     const { emailVerified: _verified, ...stored } = user;
     await setDoc(ref, { ...stored, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
@@ -121,6 +123,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
     location: (data.location as string) || "",
     createdAt: typeof data.createdAt === "string" ? data.createdAt : nowIso(),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : nowIso(),
+    profileVisibility: data.profileVisibility === "private" ? "private" : "public",
   });
 }
 

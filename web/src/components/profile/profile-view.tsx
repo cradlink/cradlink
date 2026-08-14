@@ -1,17 +1,21 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarDays, Lock, MapPin } from "lucide-react";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
 import { LookingForChips } from "@/components/activity/looking-for-chips";
+import { FollowButton } from "@/components/profile/follow-button";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { useCreatedActivities } from "@/hooks/use-activities";
+import { useAuth } from "@/hooks/use-auth";
+import { useFollow, useIncomingFollows, useOutgoingFollows } from "@/hooks/use-follows";
 import { FEED_GRID } from "@/lib/activity-meta";
+import { canSeeProfileActivities } from "@/lib/follow";
 import { handleFromName } from "@/lib/format";
 import { formatJoined, isActivityPast } from "@/lib/search";
-import type { Activity, User } from "@/lib/types";
+import { isPrivateProfile, type Activity, type User } from "@/lib/types";
 
 function sortActive(a: Activity, b: Activity) {
   return (a.startAt || a.createdAt).localeCompare(b.startAt || b.createdAt);
@@ -29,14 +33,26 @@ export function ProfileView({
   isSelf?: boolean;
 }) {
   const navigate = useNavigate();
+  const { user: me } = useAuth();
   const created = useCreatedActivities(user.id);
+  const outgoing = useFollow(me?.id, user.id);
+  const incoming = useIncomingFollows(user.id);
+  const following = useOutgoingFollows(user.id);
   const [tab, setTab] = useState("active");
   const handle = handleFromName(user.displayName);
   const joined = formatJoined(user.createdAt);
+  const privateAccount = isPrivateProfile(user);
+  const locked =
+    privateAccount &&
+    !isSelf &&
+    (outgoing.isLoading || !canSeeProfileActivities(me?.id, user, outgoing.data?.status));
+  const followerCount = (incoming.data ?? []).filter((row) => row.status === "accepted").length;
+  const followingCount = (following.data ?? []).filter((row) => row.status === "accepted").length;
 
   const visible = useMemo(() => {
+    if (locked) return [];
     return (created.data ?? []).filter((activity) => activity.visibility === "public" || isSelf);
-  }, [created.data, isSelf]);
+  }, [created.data, isSelf, locked]);
 
   const active = useMemo(() => visible.filter((activity) => !isActivityPast(activity)).sort(sortActive), [visible]);
   const past = useMemo(() => visible.filter((activity) => isActivityPast(activity)).sort(sortPast), [visible]);
@@ -57,7 +73,9 @@ export function ProfileView({
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold leading-6">{user.displayName}</h1>
             <p className="text-[13px] text-muted-foreground">
-              {visible.length} {visible.length === 1 ? "activity" : "activities"}
+              {locked
+                ? "Private account"
+                : `${visible.length} ${visible.length === 1 ? "activity" : "activities"}`}
             </p>
           </div>
         </div>
@@ -70,15 +88,22 @@ export function ProfileView({
           <span className="rounded-full bg-background p-1">
             <Avatar name={user.displayName} src={user.avatarUrl} size="xl" />
           </span>
-          {isSelf ? (
-            <Button asChild variant="outline" size="sm" className="mb-1">
-              <Link to="/profile/edit">Edit profile</Link>
-            </Button>
-          ) : null}
+          <div className="mb-1 flex flex-wrap justify-end gap-2">
+            {isSelf ? (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/profile/edit">Edit profile</Link>
+              </Button>
+            ) : (
+              <FollowButton user={user} />
+            )}
+          </div>
         </div>
 
         <div className="mt-3">
-          <h2 className="text-xl font-bold leading-6">{user.displayName}</h2>
+          <h2 className="inline-flex items-center gap-1.5 text-xl font-bold leading-6">
+            {user.displayName}
+            {privateAccount ? <Lock className="size-4 text-muted-foreground" aria-label="Private account" /> : null}
+          </h2>
           <p className="text-[15px] leading-5 text-muted-foreground">@{handle}</p>
         </div>
 
@@ -101,6 +126,14 @@ export function ProfileView({
           ) : null}
         </div>
 
+        <p className="mt-3 text-[15px] leading-5">
+          <span className="font-bold">{followerCount}</span>{" "}
+          <span className="text-muted-foreground">{followerCount === 1 ? "follower" : "followers"}</span>
+          <span className="mx-2 text-muted-foreground">·</span>
+          <span className="font-bold">{followingCount}</span>{" "}
+          <span className="text-muted-foreground">following</span>
+        </p>
+
         {user.skills.length > 0 ? (
           <div className="mt-3">
             <LookingForChips items={user.skills} limit={12} />
@@ -108,46 +141,60 @@ export function ProfileView({
         ) : null}
       </div>
 
-      <div className="mt-4">
-        <Tabs
-          value={tab}
-          onChange={setTab}
-          items={[
-            { value: "active", label: "Active" },
-            { value: "past", label: "Past" },
-          ]}
-        />
-      </div>
-
-      {created.isLoading ? (
-        <div className={FEED_GRID}>
-          <ActivityCardSkeleton />
-          <ActivityCardSkeleton />
-        </div>
-      ) : null}
-
-      {!created.isLoading && list.length === 0 ? (
-        <div className="px-8 py-16 text-center">
-          <h2 className="text-3xl font-bold">
-            {tab === "past" ? "No past activities." : "No active activities."}
-          </h2>
+      {locked ? (
+        <div className="mt-6 border-t border-border px-8 py-16 text-center">
+          <span className="mx-auto flex size-16 items-center justify-center rounded-full border-2 border-foreground">
+            <Lock className="size-7" />
+          </span>
+          <h2 className="mt-4 text-3xl font-bold">This account is private</h2>
           <p className="mt-2 text-[15px] text-muted-foreground">
-            {tab === "past"
-              ? isSelf
-                ? "Finished and cancelled ones will land here."
-                : `${user.displayName} hasn’t wrapped any activities yet.`
-              : isSelf
-                ? "Create one and it’ll show up here."
-                : `${user.displayName} hasn’t posted anything upcoming.`}
+            Follow @{handle} to see their activities. They’ll have to confirm your request.
           </p>
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div className="mt-4">
+            <Tabs
+              value={tab}
+              onChange={setTab}
+              items={[
+                { value: "active", label: "Active" },
+                { value: "past", label: "Past" },
+              ]}
+            />
+          </div>
 
-      <div className={FEED_GRID}>
-        {list.map((activity) => (
-          <ActivityCard key={activity.id} activity={activity} showJoin={tab !== "past"} />
-        ))}
-      </div>
+          {created.isLoading ? (
+            <div className={FEED_GRID}>
+              <ActivityCardSkeleton />
+              <ActivityCardSkeleton />
+            </div>
+          ) : null}
+
+          {!created.isLoading && list.length === 0 ? (
+            <div className="px-8 py-16 text-center">
+              <h2 className="text-3xl font-bold">
+                {tab === "past" ? "No past activities." : "No active activities."}
+              </h2>
+              <p className="mt-2 text-[15px] text-muted-foreground">
+                {tab === "past"
+                  ? isSelf
+                    ? "Finished and cancelled ones will land here."
+                    : `${user.displayName} hasn’t wrapped any activities yet.`
+                  : isSelf
+                    ? "Create one and it’ll show up here."
+                    : `${user.displayName} hasn’t posted anything upcoming.`}
+              </p>
+            </div>
+          ) : null}
+
+          <div className={FEED_GRID}>
+            {list.map((activity) => (
+              <ActivityCard key={activity.id} activity={activity} showJoin={tab !== "past"} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

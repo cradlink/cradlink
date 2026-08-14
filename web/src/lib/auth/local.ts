@@ -61,6 +61,7 @@ export const localAuth: AuthRepo = {
       location: "",
       createdAt: timestamp,
       updatedAt: timestamp,
+      profileVisibility: "public",
       passwordHash: await hashPassword(password),
     };
     db.users[stored.id] = stored;

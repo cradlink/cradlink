@@ -4,6 +4,7 @@ import { ActivityCardSkeleton } from "@/components/activity/activity-card-skelet
 import { FeedFilters } from "@/components/activity/feed-filters";
 import { useActivityFeed } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
+import { useVisibleActivities } from "@/hooks/use-visible-activities";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { FEED_GRID } from "@/lib/activity-meta";
 import type { ActivityType, LocationType } from "@/lib/types";
@@ -21,7 +22,8 @@ export function FeedPage() {
   }, [feed]);
   const sentinel = useInfiniteScroll(loadMore, Boolean(feed.hasNextPage));
 
-  const activities = feed.data?.pages.flatMap((page) => page.items) ?? [];
+  const rawActivities = feed.data?.pages.flatMap((page) => page.items) ?? [];
+  const activities = useVisibleActivities(user?.id, rawActivities);
 
   return (
     <div>

@@ -17,6 +17,10 @@ export function notificationCopy(item: AppNotification) {
       return { lead: name, rest: ` commented on ${item.activityTitle}` };
     case "reply":
       return { lead: name, rest: ` replied to you on ${item.activityTitle}` };
+    case "follow_request":
+      return { lead: name, rest: " requested to follow you." };
+    case "followed":
+      return { lead: name, rest: " started following you." };
     case "reminder_day":
       return { lead: "Tomorrow", rest: ` · ${item.activityTitle}` };
     case "reminder_hour":
@@ -26,4 +30,8 @@ export function notificationCopy(item: AppNotification) {
 
 export function isReminder(kind: AppNotification["kind"]) {
   return kind === "reminder_day" || kind === "reminder_hour";
+}
+
+export function isFollowNotice(kind: AppNotification["kind"]) {
+  return kind === "follow_request" || kind === "followed";
 }

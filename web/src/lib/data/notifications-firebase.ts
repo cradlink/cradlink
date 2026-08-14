@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 import type { NotificationsRepo } from "@/lib/data/types";
 import { getFirebaseDb } from "@/lib/firebase";
 import type { AppNotification } from "@/lib/types";
@@ -52,5 +52,14 @@ export const firebaseNotifications: NotificationsRepo = {
     await Promise.all(
       items.filter((item) => !item.read).map((item) => updateDoc(doc(getFirebaseDb(), "notifications", item.id), { read: true })),
     );
+  },
+
+  async remove(id, userId) {
+    const ref = doc(getFirebaseDb(), "notifications", id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (data.recipientId !== userId && data.actorId !== userId) return;
+    await deleteDoc(ref);
   },
 };
