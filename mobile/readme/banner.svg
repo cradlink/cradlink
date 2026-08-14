@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img" aria-label="Cradlink mobile">
+  <defs>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000"/>
+      <stop offset="1" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="waveStroke" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.2" stop-color="#e7e9ea" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#1d9bf0" stop-opacity="0.9"/>
+      <stop offset="0.8" stop-color="#e7e9ea" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="420" fill="url(#fade)"/>
+  <rect x="0.5" y="0.5" width="1199" height="419" fill="none" stroke="#2f3336" stroke-width="1"/>
+
+  <g opacity="0.9">
+    <path d="M0 318 C 120 292, 200 348, 320 330 S 520 280, 640 318 S 880 370, 1040 328 S 1140 300, 1200 312 L1200 420 L0 420 Z" fill="#111214"/>
+    <path d="M0 338 C 140 310, 240 360, 360 342 S 560 300, 700 336 S 900 380, 1060 344 S 1150 318, 1200 330" fill="none" stroke="url(#waveStroke)" stroke-width="1.4">
+      <animate attributeName="d" dur="8s" repeatCount="indefinite"
+        values="
+          M0 338 C 140 310, 240 360, 360 342 S 560 300, 700 336 S 900 380, 1060 344 S 1150 318, 1200 330;
+          M0 346 C 140 370, 240 312, 360 334 S 560 378, 700 328 S 900 300, 1060 352 S 1150 370, 1200 338;
+          M0 338 C 140 310, 240 360, 360 342 S 560 300, 700 336 S 900 380, 1060 344 S 1150 318, 1200 330"/>
+    </path>
+    <path d="M0 358 C 160 340, 280 390, 420 366 S 640 318, 780 360 S 980 400, 1120 368 S 1170 350, 1200 356" fill="none" stroke="#e7e9ea" stroke-opacity="0.18" stroke-width="1">
+      <animate attributeName="d" dur="11s" repeatCount="indefinite"
+        values="
+          M0 358 C 160 340, 280 390, 420 366 S 640 318, 780 360 S 980 400, 1120 368 S 1170 350, 1200 356;
+          M0 368 C 160 390, 280 330, 420 356 S 640 400, 780 340 S 980 318, 1120 378 S 1170 390, 1200 360;
+          M0 358 C 160 340, 280 390, 420 366 S 640 318, 780 360 S 980 400, 1120 368 S 1170 350, 1200 356"/>
+    </path>
+  </g>
+
+  <g transform="translate(56 58)" fill="#e7e9ea">
+    <path d="M42 8c8-5 16-6 22 1 4 5 2 12-4 15-5 3-12 1-17-3C37 17 36 12 42 8Z"/>
+    <circle cx="28" cy="28" r="9"/>
+    <ellipse cx="10" cy="30" rx="7" ry="8"/>
+  </g>
+
+  <text x="118" y="92" fill="#e7e9ea" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="54" font-weight="800" letter-spacing="-2">CRADLINK</text>
+  <text x="120" y="128" fill="#71767b" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="4">MOBILE</text>
+
+  <text x="56" y="196" fill="#e7e9ea" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="28" font-weight="600">Find people. Do the thing.</text>
+  <text x="56" y="232" fill="#71767b" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="16">The sidewalk, not the slide deck.</text>
+
+  <g font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700">
+    <g transform="translate(56 262)">
+      <rect width="72" height="30" rx="15" fill="#000" stroke="#2f3336"/>
+      <text x="36" y="20" text-anchor="middle" fill="#e7e9ea">Expo</text>
+    </g>
+    <g transform="translate(138 262)">
+      <rect width="122" height="30" rx="15" fill="#000" stroke="#1d9bf0"/>
+      <text x="61" y="20" text-anchor="middle" fill="#1d9bf0">React Native</text>
+    </g>
+    <g transform="translate(270 262)">
+      <rect width="104" height="30" rx="15" fill="#000" stroke="#00ba7c"/>
+      <text x="52" y="20" text-anchor="middle" fill="#00ba7c">TypeScript</text>
+    </g>
+    <g transform="translate(384 262)">
+      <rect width="112" height="30" rx="15" fill="#000" stroke="#7856ff"/>
+      <text x="56" y="20" text-anchor="middle" fill="#7856ff">Reanimated</text>
+    </g>
+    <g transform="translate(506 262)">
+      <rect width="112" height="30" rx="15" fill="#000" stroke="#f91880"/>
+      <text x="56" y="20" text-anchor="middle" fill="#f91880">Expo Router</text>
+    </g>
+    <g transform="translate(628 262)">
+      <rect width="56" height="30" rx="15" fill="#000" stroke="#e7e9ea"/>
+      <text x="28" y="20" text-anchor="middle" fill="#e7e9ea">SVG</text>
+    </g>
+  </g>
+</svg>

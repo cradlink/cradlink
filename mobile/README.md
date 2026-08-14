@@ -1,34 +1,58 @@
-# Cradlink mobile
+<p align="center">
+  <img src="readme/banner.svg" alt="Cradlink mobile" width="100%"/>
+</p>
 
-Find people. Do the thing.
+<p align="center">
+  <img src="readme/type.svg" alt="Find people. Do the thing." width="100%"/>
+</p>
 
-Expo (React Native) app. Same product as the web app at the repo root. Phase 2 of Cradlink — same Firebase project later, not wired yet.
+<p align="center">
+  <img src="readme/wave.svg" alt="" width="100%"/>
+</p>
 
-## Run it
+<br/>
 
-Needs **Node 20.19+**. From this folder:
+<p align="center">
+  <strong>The city is not a group chat.</strong><br/>
+  Cradlink is the feed where a night actually happens.<br/>
+  You don’t apply. You show up.
+</p>
 
-```bash
-npm install
-npx expo start
-```
+<br/>
 
-Then open it in Expo Go (scan the QR), an iOS simulator, an Android emulator, or press `w` for web.
+<p align="center">
+  <img src="readme/card-join.svg" alt="Join" width="31%"/>
+  &nbsp;
+  <img src="readme/card-compose.svg" alt="Compose" width="31%"/>
+  &nbsp;
+  <img src="readme/card-maps.svg" alt="Place" width="31%"/>
+</p>
 
-## What’s here
+<br/>
 
-Scaffold only. Navigation matches the web app:
+---
 
-- Home feed (mock activities)
-- My activities (Created / Joined)
-- Profile + edit
-- Activity detail + create
-- Log in / sign up placeholders
+### Now playing
 
-Domain types in `lib/types.ts` are the same model as `src/lib/types.ts` on the web. Keep them aligned.
+A black screen. A card lifts off the feed like it was taken from a shelf.  
+Blur. Confirm. **Joined.** A snackbar, not a parade.
 
-Auth, join/leave, and Firebase come next. Do not talk to the web app’s `localStorage` from here.
+Compose is a post, not a form.  
+Banner for the type. Address or Maps.  
+X to close. One button to send.
 
-## Stack
+Lights out. Hairline borders. No chrome.
 
-Expo SDK 57 · Expo Router · React Native · TypeScript
+---
+
+<p align="center">
+  <code>find people</code>
+  &nbsp;·&nbsp;
+  <code>do the thing</code>
+  &nbsp;·&nbsp;
+  <code>don’t lurk</code>
+</p>
+
+<p align="center">
+  <sub>CRADLINK MOBILE&nbsp;&nbsp;·&nbsp;&nbsp;BLACK / WHITE / BLUE&nbsp;&nbsp;·&nbsp;&nbsp;THE SIDEWALK APP</sub>
+</p>

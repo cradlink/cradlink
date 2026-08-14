@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 28" width="960" height="28">
+  <rect width="960" height="28" fill="#000"/>
+  <path d="M0 16 C 80 4, 160 26, 240 14 S 400 4, 480 16 S 640 28, 720 12 S 880 4, 960 16" fill="none" stroke="#2f3336" stroke-width="1">
+    <animate attributeName="d" dur="7s" repeatCount="indefinite"
+      values="
+        M0 16 C 80 4, 160 26, 240 14 S 400 4, 480 16 S 640 28, 720 12 S 880 4, 960 16;
+        M0 14 C 80 26, 160 6, 240 18 S 400 26, 480 10 S 640 4, 720 20 S 880 26, 960 12;
+        M0 16 C 80 4, 160 26, 240 14 S 400 4, 480 16 S 640 28, 720 12 S 880 4, 960 16"/>
+  </path>
+</svg>
