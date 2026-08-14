@@ -2,7 +2,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { isFirebaseConfigured, getFirebaseDb } from "@/lib/firebase";
 import { handleFromName } from "@/lib/format";
 
-export type NameFilterReason = "tooShort" | "reserved" | "blocked";
+export type NameFilterReason = "tooShort" | "unavailable";
 
 type NameLists = {
   reserved: Set<string>;
@@ -71,9 +71,9 @@ export function nameFilterReason(name: string): NameFilterReason | null {
   if (trimmed.length < 2) return "tooShort";
   const handle = fold(handleFromName(trimmed)).replace(/[^a-z]/g, "");
   if (lists.reserved.has(handle) || tokens(trimmed).some((word) => lists.reserved.has(word))) {
-    return "reserved";
+    return "unavailable";
   }
-  if (looksBlocked(trimmed) || looksBlocked(handle)) return "blocked";
+  if (looksBlocked(trimmed) || looksBlocked(handle)) return "unavailable";
   return null;
 }
 

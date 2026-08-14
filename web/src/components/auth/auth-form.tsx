@@ -41,8 +41,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         await ensureNameFilter();
         const nameIssue = nameFilterReason(displayName);
         if (nameIssue === "tooShort") throw new Error(t("errors.addName"));
-        if (nameIssue === "reserved") throw new Error(t("errors.nameReserved"));
-        if (nameIssue === "blocked") throw new Error(t("errors.nameBlocked"));
+        if (nameIssue === "unavailable") throw new Error(t("errors.nameUnavailable"));
       }
       const signedIn =
         mode === "signup"

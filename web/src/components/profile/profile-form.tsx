@@ -82,12 +82,8 @@ export function ProfileForm({ user }: { user: User }) {
       setError(t("profile.nameTooShort"));
       return;
     }
-    if (nameIssue === "reserved") {
-      setError(t("errors.nameReserved"));
-      return;
-    }
-    if (nameIssue === "blocked") {
-      setError(t("errors.nameBlocked"));
+    if (nameIssue === "unavailable") {
+      setError(t("errors.nameUnavailable"));
       return;
     }
     setError(null);

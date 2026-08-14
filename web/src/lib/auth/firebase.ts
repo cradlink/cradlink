@@ -153,8 +153,7 @@ export const firebaseAuth: AuthRepo = {
   async signUp({ email, password, displayName }) {
     await ensureNameFilter();
     const nameIssue = nameFilterReason(displayName);
-    if (nameIssue === "reserved") throw appError("errors.nameReserved");
-    if (nameIssue === "blocked") throw appError("errors.nameBlocked");
+    if (nameIssue === "unavailable") throw appError("errors.nameUnavailable");
     if (nameIssue === "tooShort") throw appError("errors.addName");
     try {
       const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);

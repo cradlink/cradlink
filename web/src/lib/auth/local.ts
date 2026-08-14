@@ -43,8 +43,7 @@ export const localAuth: AuthRepo = {
     if (!name) throw appError("errors.addName");
     await ensureNameFilter();
     const nameIssue = nameFilterReason(name);
-    if (nameIssue === "reserved") throw appError("errors.nameReserved");
-    if (nameIssue === "blocked") throw appError("errors.nameBlocked");
+    if (nameIssue === "unavailable") throw appError("errors.nameUnavailable");
     if (nameIssue === "tooShort") throw appError("errors.addName");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       throw appError("errors.invalidEmail");
