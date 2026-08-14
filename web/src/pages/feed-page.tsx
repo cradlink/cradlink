@@ -4,6 +4,7 @@ import { ActivityCardSkeleton } from "@/components/activity/activity-card-skelet
 import { FeedFilters } from "@/components/activity/feed-filters";
 import { useActivityFeed } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecommendations } from "@/hooks/use-recommendations";
 import { useVisibleActivities } from "@/hooks/use-visible-activities";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { FEED_GRID } from "@/lib/activity-meta";
@@ -24,6 +25,15 @@ export function FeedPage() {
 
   const rawActivities = feed.data?.pages.flatMap((page) => page.items) ?? [];
   const activities = useVisibleActivities(user?.id, rawActivities);
+  const recommended = useRecommendations(user, activities);
+  const recommendedIds = useMemo(
+    () => new Set(recommended.picks.map((row) => row.activity.id)),
+    [recommended.picks],
+  );
+  const latest = useMemo(
+    () => activities.filter((activity) => !recommendedIds.has(activity.id)),
+    [activities, recommendedIds],
+  );
 
   return (
     <div>
@@ -55,6 +65,31 @@ export function FeedPage() {
         <Empty title="Couldn’t load the feed." body="Refresh and try again." />
       ) : null}
 
+      {!feed.isLoading && recommended.picks.length > 0 ? (
+        <section className="border-b border-border">
+          <div className="px-4 pb-1 pt-3">
+            <h2 className="text-xl font-bold">For you</h2>
+            <p className="text-[13px] text-muted-foreground">Based on your skills, place, and who you follow.</p>
+          </div>
+          <div className={FEED_GRID}>
+            {recommended.picks.map((row) => (
+              <div key={row.activity.id}>
+                {row.reasons[0] ? (
+                  <p className="px-4 pt-3 text-[13px] text-primary">{row.reasons[0]}</p>
+                ) : null}
+                <ActivityCard activity={row.activity} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {!feed.isLoading && (latest.length > 0 || activities.length > 0) && recommended.picks.length > 0 ? (
+        <div className="px-4 pb-1 pt-3">
+          <h2 className="text-xl font-bold">Latest</h2>
+        </div>
+      ) : null}
+
       {!feed.isLoading && activities.length === 0 ? (
         <Empty
           title="Nothing here yet."
@@ -63,7 +98,7 @@ export function FeedPage() {
       ) : null}
 
       <div className={FEED_GRID}>
-        {activities.map((activity) => (
+        {latest.map((activity) => (
           <ActivityCard key={activity.id} activity={activity} />
         ))}
       </div>
