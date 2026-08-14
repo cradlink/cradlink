@@ -34,10 +34,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setPending(true);
     setError(null);
     try {
-      if (mode === "signup") {
-        await signUp({ email, password, displayName });
-      } else {
-        await signIn({ email, password });
+      const signedIn =
+        mode === "signup"
+          ? await signUp({ email, password, displayName })
+          : await signIn({ email, password });
+      if (signedIn.emailVerified === false) {
+        navigate("/verify-email", { replace: true });
+        return;
       }
       go();
     } catch (err) {

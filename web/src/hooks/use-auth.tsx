@@ -11,6 +11,8 @@ type AuthContextValue = {
   signInWithGoogle: () => Promise<User>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
+  reloadUser: () => Promise<User | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,12 +33,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       ready,
-      signIn: (input) => backend.auth.signIn(input),
-      signUp: (input) => backend.auth.signUp(input),
-      signInWithGoogle: () => backend.auth.signInWithGoogle(),
-      signOut: () => backend.auth.signOut(),
+      signIn: async (input) => {
+        const next = await backend.auth.signIn(input);
+        setUser(next);
+        setReady(true);
+        return next;
+      },
+      signUp: async (input) => {
+        const next = await backend.auth.signUp(input);
+        setUser(next);
+        setReady(true);
+        return next;
+      },
+      signInWithGoogle: async () => {
+        const next = await backend.auth.signInWithGoogle();
+        setUser(next);
+        setReady(true);
+        return next;
+      },
+      signOut: async () => {
+        await backend.auth.signOut();
+        setUser(null);
+      },
       refresh: async () => {
         setUser(await backend.auth.getCurrentUser());
+      },
+      sendVerificationEmail: () => backend.auth.sendVerificationEmail(),
+      reloadUser: async () => {
+        const next = await backend.auth.reloadUser();
+        setUser(next);
+        return next;
       },
     }),
     [backend, ready, user],

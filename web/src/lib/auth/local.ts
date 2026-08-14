@@ -101,6 +101,12 @@ export const localAuth: AuthRepo = {
     emit(null);
   },
 
+  async sendVerificationEmail() {},
+
+  async reloadUser() {
+    return currentUserFromDb();
+  },
+
   onAuthChange(cb) {
     listeners.add(cb);
     void ensureSeed().then(() => cb(currentUserFromDb()));

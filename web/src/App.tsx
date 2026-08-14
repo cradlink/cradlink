@@ -13,6 +13,8 @@ import { NotFoundPage } from "@/pages/not-found-page";
 import { ProfilePage } from "@/pages/profile-page";
 import { PublicProfilePage } from "@/pages/public-profile-page";
 import { SignupPage } from "@/pages/signup-page";
+import { VerifyEmailPage } from "@/pages/verify-email-page";
+import { needsEmailVerification } from "@/lib/types";
 
 function RequireAuth() {
   const { user, ready } = useAuth();
@@ -24,13 +26,19 @@ function RequireAuth() {
     const to = next && next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login";
     return <Navigate to={to} replace />;
   }
+  if (needsEmailVerification(user)) return <Navigate to="/verify-email" replace />;
   return <Outlet />;
 }
 
 function GuestOnly() {
   const { user, ready } = useAuth();
+  const location = useLocation();
   if (!ready) return <BootScreen />;
-  if (user) return <Navigate to="/" replace />;
+  if (needsEmailVerification(user)) return <Navigate to="/verify-email" replace />;
+  if (user) {
+    const next = new URLSearchParams(location.search).get("next");
+    return <Navigate to={next && next.startsWith("/") ? next : "/"} replace />;
+  }
   return <Outlet />;
 }
 
@@ -46,6 +54,10 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
         </Route>
+      </Route>
+
+      <Route element={<AuthLayout />}>
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
       </Route>
 
       <Route element={<RequireAuth />}>
