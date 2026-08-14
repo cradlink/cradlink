@@ -6,7 +6,7 @@ import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
 import { LookingForChips } from "@/components/activity/looking-for-chips";
 import { FollowButton } from "@/components/profile/follow-button";
-import { Avatar } from "@/components/ui/avatar";
+import { ProfileAvatarFrame, ProfileBanner } from "@/components/profile/profile-hero";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { useCreatedActivities } from "@/hooks/use-activities";
@@ -84,14 +84,16 @@ export function ProfileView({
         </div>
       </div>
 
-      <div className="relative h-32 bg-muted" />
+      <div className="relative">
+        <ProfileBanner src={user.bannerUrl} />
+        <div className="absolute bottom-0 left-4 translate-y-1/2">
+          <ProfileAvatarFrame name={user.displayName} src={user.avatarUrl} />
+        </div>
+      </div>
 
       <div className="px-4">
-        <div className="-mt-10 flex items-end justify-between">
-          <span className="rounded-full bg-background p-1">
-            <Avatar name={user.displayName} src={user.avatarUrl} size="xl" />
-          </span>
-          <div className="mb-1 flex flex-wrap justify-end gap-2">
+        <div className="flex min-h-[68px] items-start justify-end pt-3">
+          <div className="flex flex-wrap justify-end gap-2">
             {isSelf ? (
               <Button asChild variant="outline" size="sm">
                 <Link to="/profile/edit">{t("profile.edit")}</Link>

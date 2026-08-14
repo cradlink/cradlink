@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import i18n, { resolveLocale } from "@/i18n";
 import { getBackend } from "@/lib/backend";
 import type { SignInInput, SignUpInput } from "@/lib/auth/types";
 import type { User } from "@/lib/types";
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return backend.auth.onAuthChange((next) => {
       setUser(next);
       setReady(true);
+      if (next?.locale) void i18n.changeLanguage(resolveLocale(next.locale));
     });
   }, [backend]);
 

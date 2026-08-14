@@ -32,6 +32,12 @@ export const firebaseStorageRepo: StorageRepo = {
     return uploadImage(`avatars/${userId}/avatar.${ext}`, file);
   },
 
+  async uploadBanner(userId, file) {
+    assertImage(file, "banners");
+    const ext = file.name.split(".").pop() || "jpg";
+    return uploadImage(`banners/${userId}/banner.${ext}`, file);
+  },
+
   async uploadActivityImage(userId, file) {
     assertImage(file, "each photo");
     const ext = file.name.split(".").pop() || "jpg";

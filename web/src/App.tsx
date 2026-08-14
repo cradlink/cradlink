@@ -16,6 +16,11 @@ import { NotFoundPage } from "@/pages/not-found-page";
 import { ProfilePage } from "@/pages/profile-page";
 import { PublicProfilePage } from "@/pages/public-profile-page";
 import { SearchPage } from "@/pages/search-page";
+import { SettingsAccountPage } from "@/pages/settings-account-page";
+import { SettingsDisplayPage } from "@/pages/settings-display-page";
+import { SettingsLanguagePage } from "@/pages/settings-language-page";
+import { SettingsNotificationsPage } from "@/pages/settings-notifications-page";
+import { SettingsPage } from "@/pages/settings-page";
 import { SignupPage } from "@/pages/signup-page";
 import { VerifyEmailPage } from "@/pages/verify-email-page";
 import { needsEmailVerification } from "@/lib/types";
@@ -76,6 +81,11 @@ export function App() {
           <Route path="/profile/edit" element={<EditProfilePage />} />
           <Route path="/profile/followers" element={<ConnectionsPage tab="followers" />} />
           <Route path="/profile/following" element={<ConnectionsPage tab="following" />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/account" element={<SettingsAccountPage />} />
+          <Route path="/settings/display" element={<SettingsDisplayPage />} />
+          <Route path="/settings/language" element={<SettingsLanguagePage />} />
+          <Route path="/settings/notifications" element={<SettingsNotificationsPage />} />
           <Route path="/activities/new" element={<NewActivityPage />} />
           <Route path="/activities/edit/:id" element={<EditActivityPage />} />
           <Route path="/activities/:id/edit" element={<EditActivityPage />} />

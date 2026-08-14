@@ -37,6 +37,14 @@ export function useUploadAvatar() {
   });
 }
 
+export function useUploadBanner() {
+  const backend = getBackend();
+  return useMutation({
+    mutationFn: ({ userId, file }: { userId: string; file: File }) =>
+      backend.storage.uploadBanner(userId, file),
+  });
+}
+
 export function useUploadActivityImages() {
   const backend = getBackend();
   return useMutation({

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, Search } from "lucide-react";
-import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Logo } from "@/components/layout/logo";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -71,7 +70,6 @@ export function Header() {
             <Bell className="size-5" />
             <NotificationBadge count={unread} className="right-0 top-0" />
           </Link>
-          <LanguageSwitcher compact align="right" />
           <ThemeToggle />
         {user ? (
           <div className="relative" ref={menuRef}>
@@ -96,6 +94,9 @@ export function Header() {
                 </MenuLink>
                 <MenuLink href="/me" onClick={() => setOpen(false)}>
                   {t("nav.myActivities")}
+                </MenuLink>
+                <MenuLink href="/settings" onClick={() => setOpen(false)}>
+                  {t("nav.settings")}
                 </MenuLink>
                 <button
                   type="button"

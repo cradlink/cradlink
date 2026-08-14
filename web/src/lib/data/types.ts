@@ -42,6 +42,7 @@ export type MembersRepo = {
 
 export type StorageRepo = {
   uploadAvatar(userId: string, file: File): Promise<string>;
+  uploadBanner(userId: string, file: File): Promise<string>;
   uploadActivityImage(userId: string, file: File): Promise<string>;
 };
 

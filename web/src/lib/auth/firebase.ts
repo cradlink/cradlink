@@ -51,11 +51,13 @@ function toUser(fbUser: FirebaseUser, data?: Partial<User>): User {
     bio: data?.bio || "",
     skills: data?.skills || [],
     avatarUrl: data?.avatarUrl ?? fbUser.photoURL,
+    bannerUrl: data?.bannerUrl ?? null,
     location: data?.location || "",
     createdAt: data?.createdAt || nowIso(),
     updatedAt: data?.updatedAt || nowIso(),
     emailVerified: fbUser.emailVerified,
     profileVisibility: data?.profileVisibility === "private" ? "private" : "public",
+    locale: data?.locale ?? null,
   };
 }
 
@@ -116,10 +118,12 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
     bio: (data.bio as string) || "",
     skills: (data.skills as string[]) || [],
     avatarUrl: (data.avatarUrl as string | null) ?? fbUser.photoURL,
+    bannerUrl: (data.bannerUrl as string | null) ?? null,
     location: (data.location as string) || "",
     createdAt: typeof data.createdAt === "string" ? data.createdAt : nowIso(),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : nowIso(),
     profileVisibility: data.profileVisibility === "private" ? "private" : "public",
+    locale: typeof data.locale === "string" ? data.locale : null,
   });
 }
 

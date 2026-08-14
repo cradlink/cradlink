@@ -45,10 +45,12 @@ function mapUser(id: string, data: DocumentData): User {
     bio: asString(data.bio),
     skills: Array.isArray(data.skills) ? data.skills : [],
     avatarUrl: (data.avatarUrl as string | null) ?? null,
+    bannerUrl: (data.bannerUrl as string | null) ?? null,
     location: asString(data.location),
     createdAt: asString(data.createdAt, nowIso()),
     updatedAt: asString(data.updatedAt, nowIso()),
     profileVisibility: data.profileVisibility === "private" ? "private" : "public",
+    locale: typeof data.locale === "string" ? data.locale : null,
   };
 }
 

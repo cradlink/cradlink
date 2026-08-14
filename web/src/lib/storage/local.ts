@@ -18,6 +18,9 @@ export const localStorageRepo: StorageRepo = {
   uploadAvatar(_userId, file) {
     return readAsDataUrl(file, "avatars");
   },
+  uploadBanner(_userId, file) {
+    return readAsDataUrl(file, "banners");
+  },
   uploadActivityImage(_userId, file) {
     return readAsDataUrl(file, "each photo");
   },

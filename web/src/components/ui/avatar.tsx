@@ -8,7 +8,7 @@ export function Avatar({
 }: {
   name: string;
   src?: string | null;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
   className?: string;
 }) {
   const dim =
@@ -18,7 +18,9 @@ export function Avatar({
         ? "h-16 w-16 text-lg"
         : size === "xl"
           ? "h-[72px] w-[72px] text-xl"
-          : "h-10 w-10 text-xs";
+          : size === "2xl"
+            ? "h-[112px] w-[112px] text-3xl"
+            : "h-10 w-10 text-xs";
   return (
     <span
       className={cn(

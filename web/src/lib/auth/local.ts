@@ -58,6 +58,7 @@ export const localAuth: AuthRepo = {
       bio: "",
       skills: [],
       avatarUrl: null,
+      bannerUrl: null,
       location: "",
       createdAt: timestamp,
       updatedAt: timestamp,

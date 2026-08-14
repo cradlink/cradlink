@@ -1,7 +1,6 @@
-import { Home, Search, Bell, CalendarDays, UserRound, PenSquare } from "lucide-react";
+import { Home, Search, Bell, CalendarDays, UserRound, Settings, PenSquare } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Logo } from "@/components/layout/logo";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -22,6 +21,7 @@ export function SideNav() {
     { href: "/notifications", label: t("nav.notifications"), icon: Bell },
     { href: "/me", label: t("nav.myActivities"), icon: CalendarDays },
     { href: "/profile", label: t("nav.profile"), icon: UserRound },
+    { href: "/settings", label: t("nav.settings"), icon: Settings },
   ];
 
   return (
@@ -39,7 +39,9 @@ export function SideNav() {
                   ? pathname.startsWith("/notifications")
                   : item.href === "/profile"
                     ? pathname === "/profile" || pathname.startsWith("/profile/") || pathname.startsWith("/u/")
-                    : pathname === item.href;
+                    : item.href === "/settings"
+                      ? pathname.startsWith("/settings")
+                      : pathname === item.href;
             const Icon = item.icon;
             return (
               <Link
@@ -69,14 +71,8 @@ export function SideNav() {
       </div>
 
       <div className="space-y-1 pb-2">
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center px-2">
           <ThemeToggle />
-          <span className="xl:hidden">
-            <LanguageSwitcher compact />
-          </span>
-          <span className="hidden xl:inline-flex">
-            <LanguageSwitcher />
-          </span>
         </div>
         {user ? (
           <button

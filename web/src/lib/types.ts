@@ -36,11 +36,13 @@ export type User = {
   bio: string;
   skills: string[];
   avatarUrl: string | null;
+  bannerUrl?: string | null;
   location: string;
   createdAt: string;
   updatedAt: string;
   emailVerified?: boolean;
   profileVisibility?: ProfileVisibility;
+  locale?: string | null;
 };
 
 export function isPrivateProfile(user: Pick<User, "profileVisibility">) {
@@ -128,7 +130,9 @@ export type UpdateProfileInput = {
   skills?: string[];
   location?: string;
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   profileVisibility?: ProfileVisibility;
+  locale?: string | null;
 };
 
 export type ActivityFilters = {
