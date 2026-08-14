@@ -3,7 +3,7 @@ import type { FollowsRepo } from "@/lib/data/types";
 import { firebaseUsers } from "@/lib/data/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyFollowRequest, notifyFollowed } from "@/lib/data/notify";
-import { AppError } from "@/lib/errors";
+import { AppError, isPermissionDenied } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
 import { isPrivateProfile, type Follow, type FollowWithUser } from "@/lib/types";
 import { followId, nowIso, stripUndefined } from "@/lib/utils";
@@ -20,8 +20,13 @@ function mapFollow(id: string, data: Record<string, unknown>): Follow {
 
 export const firebaseFollows: FollowsRepo = {
   async get(followerId, followeeId) {
-    const snap = await getDoc(doc(getFirebaseDb(), "follows", followId(followerId, followeeId)));
-    return snap.exists() ? mapFollow(snap.id, snap.data() as Record<string, unknown>) : null;
+    try {
+      const snap = await getDoc(doc(getFirebaseDb(), "follows", followId(followerId, followeeId)));
+      return snap.exists() ? mapFollow(snap.id, snap.data() as Record<string, unknown>) : null;
+    } catch (err) {
+      if (isPermissionDenied(err)) return null;
+      throw err;
+    }
   },
 
   async listOutgoing(userId) {
@@ -64,7 +69,14 @@ export const firebaseFollows: FollowsRepo = {
       status,
       createdAt: nowIso(),
     };
-    await setDoc(doc(getFirebaseDb(), "follows", follow.id), stripUndefined(follow));
+    try {
+      await setDoc(doc(getFirebaseDb(), "follows", follow.id), stripUndefined(follow));
+    } catch (err) {
+      if (isPermissionDenied(err)) {
+        throw new AppError("Couldn’t follow. Publish the latest Firestore rules, then try again.");
+      }
+      throw err;
+    }
     if (status === "pending") void notifyFollowRequest(firebaseNotifications, actor, targetId);
     else void notifyFollowed(firebaseNotifications, actor, targetId);
     return follow;
