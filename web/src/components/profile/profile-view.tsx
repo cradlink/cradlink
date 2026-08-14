@@ -49,7 +49,12 @@ export function ProfileView({
     privateAccount &&
     !isSelf &&
     (outgoing.isLoading || !canSeeProfileActivities(me?.id, user, outgoing.data?.status));
-  const followerCount = followers.data?.length ?? 0;
+  const iFollow = outgoing.data?.status === "accepted";
+  const listedFollowers = followers.data ?? [];
+  const followerCount =
+    iFollow && me && !listedFollowers.some((row) => row.user.id === me.id)
+      ? listedFollowers.length + 1
+      : listedFollowers.length;
   const followingCount = following.data?.length ?? 0;
 
   const visible = useMemo(() => {

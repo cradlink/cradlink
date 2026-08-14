@@ -1,10 +1,11 @@
+import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { UserRow } from "@/components/search/user-row";
 import { Tabs } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { useFollowers, useFollowing } from "@/hooks/use-follows";
+import { useFollow, useFollowers, useFollowing } from "@/hooks/use-follows";
 import { useUser } from "@/hooks/use-profile";
 import { connectionsPath, profilePath, type ConnectionsTab } from "@/lib/connections";
 import { handleFromName } from "@/lib/format";
@@ -21,8 +22,20 @@ export function ConnectionsPage({ tab }: { tab: ConnectionsTab }) {
   const followers = useFollowers(id);
   const following = useFollowing(id);
   const myFollowers = useFollowers(me?.id);
+  const myFollow = useFollow(me?.id, id);
   const list = tab === "followers" ? followers : following;
-  const people = list.data ?? [];
+  const people = useMemo(() => {
+    const rows = list.data ?? [];
+    if (
+      tab === "followers" &&
+      me &&
+      myFollow.data?.status === "accepted" &&
+      !rows.some((row) => row.user.id === me.id)
+    ) {
+      return [{ ...myFollow.data, user: me }, ...rows];
+    }
+    return rows;
+  }, [list.data, me, myFollow.data, tab]);
   const followsYou = new Set(
     (myFollowers.data ?? []).filter((row) => row.status === "accepted").map((row) => row.followerId),
   );
@@ -66,14 +79,14 @@ export function ConnectionsPage({ tab }: { tab: ConnectionsTab }) {
         <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">{t("common.loading")}</p>
       ) : null}
 
-      {list.isError ? (
+      {list.isError && people.length === 0 ? (
         <div className="px-8 py-16 text-center">
           <h2 className="text-3xl font-bold">{t("connections.loadError")}</h2>
           <p className="mt-2 text-[15px] text-muted-foreground">{t("common.refreshTryAgain")}</p>
         </div>
       ) : null}
 
-      {!list.isLoading && !list.isError && people.length === 0 ? (
+      {!list.isLoading && people.length === 0 && !list.isError ? (
         <div className="px-8 py-16 text-center">
           <h2 className="text-3xl font-bold">
             {tab === "followers" ? t("connections.emptyFollowersTitle") : t("connections.emptyFollowingTitle")}

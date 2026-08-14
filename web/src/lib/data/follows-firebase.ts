@@ -39,8 +39,9 @@ export const firebaseFollows: FollowsRepo = {
       const snap = await getDoc(doc(getFirebaseDb(), "follows", followId(followerId, followeeId)));
       return snap.exists() ? mapFollow(snap.id, snap.data() as Record<string, unknown>) : null;
     } catch (err) {
-      if (isPermissionDenied(err)) return null;
-      throw err;
+      if (!isPermissionDenied(err)) throw err;
+      const own = await firebaseFollows.listOutgoing(followerId);
+      return own.find((row) => row.followeeId === followeeId) ?? null;
     }
   },
 
