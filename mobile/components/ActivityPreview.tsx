@@ -38,13 +38,8 @@ export function ActivityPreview() {
   const progress = useSharedValue(0)
   const fromX = useSharedValue(0)
   const fromY = useSharedValue(0)
-  const [overflow, setOverflow] = useState(false)
-  const [viewportH, setViewportH] = useState(0)
-  const [contentH, setContentH] = useState(0)
-
-  useEffect(() => {
-    setOverflow(contentH > viewportH + 4)
-  }, [contentH, viewportH])
+  const [fadeW, setFadeW] = useState(TARGET_W)
+  const [footerH, setFooterH] = useState(70)
 
   useEffect(() => {
     if (!preview) return
@@ -112,8 +107,6 @@ export function ActivityPreview() {
             style={styles.scroll}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
-            onLayout={(event) => setViewportH(event.nativeEvent.layout.height)}
-            onContentSizeChange={(_, height) => setContentH(height)}
           >
             <View style={styles.byline}>
               <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
@@ -138,22 +131,31 @@ export function ActivityPreview() {
             </Text>
             <ActivityCover activity={activity} compact={false} />
           </ScrollView>
-          {overflow ? (
-            <Svg pointerEvents="none" style={styles.fade} width={TARGET_W} height={FADE_H}>
+          </RNView>
+          <RNView
+            style={styles.footer}
+            onLayout={(event) => {
+              const { width, height } = event.nativeEvent.layout
+              const nextW = Math.round(width)
+              const nextH = Math.round(height)
+              if (nextW > 0 && nextW !== fadeW) setFadeW(nextW)
+              if (nextH > 0 && nextH !== footerH) setFooterH(nextH)
+            }}
+          >
+            <JoinButton activity={activity} wide />
+          </RNView>
+          <RNView pointerEvents="none" style={[styles.fade, { bottom: footerH - 1 }]}>
+            <Svg width={fadeW} height={FADE_H}>
               <Defs>
                 <LinearGradient id="sheetFade" x1="0" y1="0" x2="0" y2="1">
                   <Stop offset="0" stopColor={SHEET_BG} stopOpacity="0" />
-                  <Stop offset="0.55" stopColor={SHEET_BG} stopOpacity="0.72" />
+                  <Stop offset="0.55" stopColor={SHEET_BG} stopOpacity="0.75" />
                   <Stop offset="1" stopColor={SHEET_BG} stopOpacity="1" />
                 </LinearGradient>
               </Defs>
-              <Rect x="0" y="0" width={TARGET_W} height={FADE_H} fill="url(#sheetFade)" />
+              <Rect x="0" y="0" width={fadeW} height={FADE_H} fill="url(#sheetFade)" />
             </Svg>
-          ) : null}
           </RNView>
-          <View style={styles.footer}>
-            <JoinButton activity={activity} wide />
-          </View>
         </Animated.View>
       </RNView>
     </Modal>
@@ -187,8 +189,6 @@ const styles = StyleSheet.create({
   sheet: {
     width: TARGET_W,
     height: TARGET_H,
-    zIndex: 2,
-    elevation: 24,
     borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
@@ -207,9 +207,11 @@ const styles = StyleSheet.create({
   },
   column: {
     flex: 1,
+    backgroundColor: SHEET_BG,
   },
   scroll: {
     flex: 1,
+    backgroundColor: SHEET_BG,
   },
   content: {
     padding: 20,
@@ -221,7 +223,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 0,
     height: FADE_H,
   },
   byline: {
@@ -253,8 +254,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   footer: {
+    zIndex: 2,
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: 8,
     paddingBottom: 16,
     backgroundColor: SHEET_BG,
   },

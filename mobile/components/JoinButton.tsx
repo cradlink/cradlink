@@ -1,42 +1,17 @@
-import { useState } from "react"
 import { Pressable, StyleSheet } from "react-native"
 
-import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { Text, useTheme } from "@/components/Themed"
+import { useConfirm } from "@/hooks/use-confirm"
 import { useMemberships } from "@/hooks/use-memberships"
 import type { Activity } from "@/lib/types"
 
-type Prompt = {
-  title: string
-  body: string
-  confirmLabel: string
-  cancelLabel?: string
-  destructive?: boolean
-  onConfirm: () => void
-}
-
 export function JoinButton({ activity, wide = false }: { activity: Activity; wide?: boolean }) {
+  const { ask } = useConfirm()
   const { statusOf, isOrganizer, isFull, join, leave } = useMemberships()
   const organizer = isOrganizer(activity)
   const status = statusOf(activity.id)
   const full = isFull(activity)
   const manual = activity.joinPolicy === "manual"
-  const [prompt, setPrompt] = useState<Prompt | null>(null)
-
-  const dialog = prompt ? (
-    <ConfirmDialog
-      title={prompt.title}
-      body={prompt.body}
-      confirmLabel={prompt.confirmLabel}
-      cancelLabel={prompt.cancelLabel}
-      destructive={prompt.destructive}
-      onConfirm={() => {
-        prompt.onConfirm()
-        setPrompt(null)
-      }}
-      onCancel={() => setPrompt(null)}
-    />
-  ) : null
 
   if (organizer) {
     return <Action label="Your activity" muted wide={wide} />
@@ -48,69 +23,60 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
 
   if (status === "pending") {
     return (
-      <>
-        <Action
-          label="Requested"
-          outline
-          wide={wide}
-          onPress={() =>
-            setPrompt({
-              title: "Withdraw request?",
-              body: "The organizer won’t see this request anymore.",
-              confirmLabel: "Withdraw",
-              cancelLabel: "Keep it",
-              destructive: true,
-              onConfirm: () => void leave(activity.id),
-            })
-          }
-        />
-        {dialog}
-      </>
+      <Action
+        label="Requested"
+        outline
+        wide={wide}
+        onPress={() =>
+          ask({
+            title: "Withdraw request?",
+            body: "The organizer won’t see this request anymore.",
+            confirmLabel: "Withdraw",
+            cancelLabel: "Keep it",
+            destructive: true,
+            onConfirm: () => void leave(activity.id),
+          })
+        }
+      />
     )
   }
 
   if (status === "joined") {
     return (
-      <>
-        <Action
-          label="Leave"
-          outline
-          wide={wide}
-          onPress={() =>
-            setPrompt({
-              title: "Leave this activity?",
-              body: "You can join again later if there’s still a spot.",
-              confirmLabel: "Leave",
-              cancelLabel: "Stay",
-              destructive: true,
-              onConfirm: () => void leave(activity.id),
-            })
-          }
-        />
-        {dialog}
-      </>
+      <Action
+        label="Leave"
+        outline
+        wide={wide}
+        onPress={() =>
+          ask({
+            title: "Leave this activity?",
+            body: "You can join again later if there’s still a spot.",
+            confirmLabel: "Leave",
+            cancelLabel: "Stay",
+            destructive: true,
+            onConfirm: () => void leave(activity.id),
+          })
+        }
+      />
     )
   }
 
   return (
-    <>
-      <Action
-        label={manual ? "Request to join" : "Join"}
-        filled
-        wide={wide}
-        onPress={() =>
-          setPrompt({
-            title: manual ? "Request to join?" : "Join this activity?",
-            body: manual
-              ? "The organizer will accept or decline. You’ll see Requested until they do."
-              : "You’ll be on the list. The organizer can see your name.",
-            confirmLabel: manual ? "Send request" : "Join",
-            onConfirm: () => void join(activity),
-          })
-        }
-      />
-      {dialog}
-    </>
+    <Action
+      label={manual ? "Request to join" : "Join"}
+      filled
+      wide={wide}
+      onPress={() =>
+        ask({
+          title: manual ? "Request to join?" : "Join this activity?",
+          body: manual
+            ? "The organizer will accept or decline. You’ll see Requested until they do."
+            : "You’ll be on the list. The organizer can see your name.",
+          confirmLabel: manual ? "Send request" : "Join",
+          onConfirm: () => void join(activity),
+        })
+      }
+    />
   )
 }
 
