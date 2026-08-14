@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet } from "react-native"
 
 import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
+import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { MOCK_ACTIVITIES } from "@/lib/mock"
 
@@ -15,6 +16,7 @@ export default function MyActivitiesScreen() {
 
   return (
     <View style={styles.screen}>
+      <TopBar title="My activities" />
       <View style={[styles.tabs, { borderBottomColor: theme.border }]}>
         {(["created", "joined"] as const).map((value) => {
           const active = tab === value

@@ -1,7 +1,6 @@
 import { SymbolView } from "expo-symbols"
 import { Tabs } from "expo-router"
 
-import { useClientOnlyValue } from "@/components/useClientOnlyValue"
 import { useColorScheme } from "@/components/useColorScheme"
 import Colors from "@/constants/Colors"
 
@@ -18,10 +17,7 @@ export default function TabLayout() {
           backgroundColor: colors.background,
           borderTopColor: colors.border,
         },
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.foreground,
-        headerShadowVisible: false,
-        headerShown: useClientOnlyValue(false, true),
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -54,7 +50,6 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          headerShown: false,
           href: "/profile",
           tabBarIcon: ({ color }) => (
             <SymbolView

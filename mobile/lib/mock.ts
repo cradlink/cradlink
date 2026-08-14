@@ -28,7 +28,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     createdAt: iso("2026-08-14T22:00:12+02:00"),
     updatedAt: iso("2026-08-14T22:00:12+02:00"),
     visibility: "public",
-    images: [],
+    images: ["spacex"],
   },
   {
     id: "act_imagine",
@@ -53,7 +53,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     createdAt: iso("2026-08-14T22:00:11+02:00"),
     updatedAt: iso("2026-08-14T22:00:11+02:00"),
     visibility: "public",
-    images: [],
+    images: ["imagine"],
   },
   {
     id: "act_connect",
@@ -78,7 +78,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     createdAt: iso("2026-08-14T22:00:10+02:00"),
     updatedAt: iso("2026-08-14T22:00:10+02:00"),
     visibility: "public",
-    images: [],
+    images: ["connect"],
   },
   {
     id: "act_seti",
@@ -102,7 +102,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     createdAt: iso("2026-08-14T22:00:08+02:00"),
     updatedAt: iso("2026-08-14T22:00:08+02:00"),
     visibility: "public",
-    images: [],
+    images: ["seti"],
   },
 ]
 

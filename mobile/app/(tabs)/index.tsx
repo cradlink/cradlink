@@ -1,30 +1,43 @@
+import { useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 
 import { ActivityCard } from "@/components/ActivityCard"
+import { EmptyState } from "@/components/EmptyState"
+import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
-import { APP_TAGLINE } from "@/constants/config"
-import { useAuth } from "@/hooks/use-auth"
 import { MOCK_ACTIVITIES } from "@/lib/mock"
 
 export default function FeedScreen() {
   const router = useRouter()
   const theme = useTheme()
-  const { user } = useAuth()
-  const first = user?.displayName.split(" ")[0]
+  const [query, setQuery] = useState("")
+  const activities = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return MOCK_ACTIVITIES
+    return MOCK_ACTIVITIES.filter((activity) => {
+      const hay = [
+        activity.title,
+        activity.description,
+        activity.creatorName,
+        ...activity.tags,
+        ...activity.lookingFor,
+      ]
+        .join(" ")
+        .toLowerCase()
+      return hay.includes(q)
+    })
+  }, [query])
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.list}>
-        <View style={[styles.intro, { borderBottomColor: theme.border }]}>
-          <Text style={styles.kicker} lightColor="#536471" darkColor="#71767b">
-            {APP_TAGLINE}
-          </Text>
-          <Text style={styles.lede}>{first ? `Hi ${first}.` : "What’s assembling"}</Text>
-        </View>
-        {MOCK_ACTIVITIES.map((activity) => (
-          <ActivityCard key={activity.id} activity={activity} />
-        ))}
+      <TopBar search searchValue={query} onSearchChange={setQuery} />
+      <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+        {activities.length === 0 ? (
+          <EmptyState title="No matches." body="Try another search." />
+        ) : (
+          activities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
+        )}
       </ScrollView>
       <Pressable
         onPress={() => router.push("/activities/new")}
@@ -45,19 +58,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 96,
-  },
-  intro: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  kicker: {
-    fontSize: 13,
-  },
-  lede: {
-    marginTop: 2,
-    fontSize: 20,
-    fontWeight: "700",
   },
   fab: {
     position: "absolute",
