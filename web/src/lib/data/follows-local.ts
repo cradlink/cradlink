@@ -33,6 +33,26 @@ export const localFollows: FollowsRepo = {
     return Object.values(load()).filter((row) => row.followeeId === userId);
   },
 
+  async listFollowers(userId) {
+    const accepted = (await localFollows.listIncoming(userId)).filter((row) => row.status === "accepted");
+    const users = await localUsers.getByIds(accepted.map((row) => row.followerId));
+    const byId = Object.fromEntries(users.map((user) => [user.id, user]));
+    return accepted
+      .map((row) => (byId[row.followerId] ? ({ ...row, user: byId[row.followerId] } satisfies FollowWithUser) : null))
+      .filter((row): row is FollowWithUser => Boolean(row))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+
+  async listFollowing(userId) {
+    const accepted = (await localFollows.listOutgoing(userId)).filter((row) => row.status === "accepted");
+    const users = await localUsers.getByIds(accepted.map((row) => row.followeeId));
+    const byId = Object.fromEntries(users.map((user) => [user.id, user]));
+    return accepted
+      .map((row) => (byId[row.followeeId] ? ({ ...row, user: byId[row.followeeId] } satisfies FollowWithUser) : null))
+      .filter((row): row is FollowWithUser => Boolean(row))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+
   async listRequests(userId) {
     const pending = (await localFollows.listIncoming(userId)).filter((row) => row.status === "pending");
     const users = await localUsers.getByIds(pending.map((row) => row.followerId));

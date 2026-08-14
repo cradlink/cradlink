@@ -8,6 +8,21 @@ import { getFirebaseDb } from "@/lib/firebase";
 import { isPrivateProfile, type Follow, type FollowWithUser } from "@/lib/types";
 import { followId, nowIso, stripUndefined } from "@/lib/utils";
 
+async function withUsers(
+  rows: Follow[],
+  userIdOf: (row: Follow) => string,
+): Promise<FollowWithUser[]> {
+  const users = await firebaseUsers.getByIds(rows.map(userIdOf));
+  const byId = Object.fromEntries(users.map((user) => [user.id, user]));
+  return rows
+    .map((row) => {
+      const user = byId[userIdOf(row)];
+      return user ? ({ ...row, user } satisfies FollowWithUser) : null;
+    })
+    .filter((row): row is FollowWithUser => Boolean(row))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 function mapFollow(id: string, data: Record<string, unknown>): Follow {
   return {
     id,
@@ -37,6 +52,34 @@ export const firebaseFollows: FollowsRepo = {
   async listIncoming(userId) {
     const snap = await getDocs(query(collection(getFirebaseDb(), "follows"), where("followeeId", "==", userId)));
     return snap.docs.map((row) => mapFollow(row.id, row.data() as Record<string, unknown>));
+  },
+
+  async listFollowers(userId) {
+    const snap = await getDocs(
+      query(
+        collection(getFirebaseDb(), "follows"),
+        where("followeeId", "==", userId),
+        where("status", "==", "accepted"),
+      ),
+    );
+    return withUsers(
+      snap.docs.map((row) => mapFollow(row.id, row.data() as Record<string, unknown>)),
+      (row) => row.followerId,
+    );
+  },
+
+  async listFollowing(userId) {
+    const snap = await getDocs(
+      query(
+        collection(getFirebaseDb(), "follows"),
+        where("followerId", "==", userId),
+        where("status", "==", "accepted"),
+      ),
+    );
+    return withUsers(
+      snap.docs.map((row) => mapFollow(row.id, row.data() as Record<string, unknown>)),
+      (row) => row.followeeId,
+    );
   },
 
   async listRequests(userId) {

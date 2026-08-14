@@ -6,6 +6,7 @@ import { ActivityDetailPage } from "@/pages/activity-detail-page";
 import { EditActivityPage } from "@/pages/edit-activity-page";
 import { EditProfilePage } from "@/pages/edit-profile-page";
 import { FeedPage } from "@/pages/feed-page";
+import { ConnectionsPage } from "@/pages/connections-page";
 import { FollowRequestsPage } from "@/pages/follow-requests-page";
 import { LoginPage } from "@/pages/login-page";
 import { MyActivitiesPage } from "@/pages/my-activities-page";
@@ -73,10 +74,14 @@ export function App() {
           <Route path="/me" element={<MyActivitiesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />
+          <Route path="/profile/followers" element={<ConnectionsPage tab="followers" />} />
+          <Route path="/profile/following" element={<ConnectionsPage tab="following" />} />
           <Route path="/activities/new" element={<NewActivityPage />} />
           <Route path="/activities/edit/:id" element={<EditActivityPage />} />
           <Route path="/activities/:id/edit" element={<EditActivityPage />} />
           <Route path="/activities/:id" element={<ActivityDetailPage />} />
+          <Route path="/u/:userId/followers" element={<ConnectionsPage tab="followers" />} />
+          <Route path="/u/:userId/following" element={<ConnectionsPage tab="following" />} />
           <Route path="/u/:userId" element={<PublicProfilePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

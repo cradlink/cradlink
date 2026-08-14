@@ -155,6 +155,18 @@
     "requestCount_few": "{{count}} zahteva",
     "requestCount_other": "{{count}} zahteva"
   },
+  "connections": {
+    "followers": "Pratioci",
+    "following": "Prati",
+    "followsYou": "Prati te",
+    "loadError": "Nismo uspeli da učitamo ovaj spisak.",
+    "emptyFollowersTitle": "Tražiš pratioce?",
+    "emptyFollowersBodySelf": "Kada te neko zaprati, pojaviće se ovde.",
+    "emptyFollowersBodyOther": "{{name}} još nema pratilaca.",
+    "emptyFollowingTitle": "Budi u toku",
+    "emptyFollowingBodySelf": "Praćenje naloga je lak način da središ početnu.",
+    "emptyFollowingBodyOther": "{{name}} još nikoga ne prati."
+  },
   "profile": {
     "edit": "Izmeni profil",
     "privateAccount": "Privatni nalog",

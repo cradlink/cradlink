@@ -64,6 +64,8 @@ export type FollowsRepo = {
   get(followerId: string, followeeId: string): Promise<Follow | null>;
   listOutgoing(userId: string): Promise<Follow[]>;
   listIncoming(userId: string): Promise<Follow[]>;
+  listFollowers(userId: string): Promise<FollowWithUser[]>;
+  listFollowing(userId: string): Promise<FollowWithUser[]>;
   listRequests(userId: string): Promise<FollowWithUser[]>;
   follow(actorId: string, targetId: string): Promise<Follow>;
   unfollow(actorId: string, targetId: string): Promise<void>;

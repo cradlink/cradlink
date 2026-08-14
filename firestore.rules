@@ -135,11 +135,13 @@ service cloud.firestore {
     match /follows/{followId} {
       allow get: if signedIn() && (
         resource == null
+        || resource.data.status == "accepted"
         || resource.data.followerId == request.auth.uid
         || resource.data.followeeId == request.auth.uid
       );
       allow list: if signedIn() && (
-        resource.data.followerId == request.auth.uid
+        resource.data.status == "accepted"
+        || resource.data.followerId == request.auth.uid
         || resource.data.followeeId == request.auth.uid
       );
       allow create: if signedIn()

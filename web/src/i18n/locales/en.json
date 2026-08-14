@@ -154,6 +154,18 @@
     "requestCount_one": "{{count}} request",
     "requestCount_other": "{{count}} requests"
   },
+  "connections": {
+    "followers": "Followers",
+    "following": "Following",
+    "followsYou": "Follows you",
+    "loadError": "Couldn’t load this list.",
+    "emptyFollowersTitle": "Looking for followers?",
+    "emptyFollowersBodySelf": "When someone follows you, they’ll show up here.",
+    "emptyFollowersBodyOther": "{{name}} doesn’t have any followers yet.",
+    "emptyFollowingTitle": "Be in the know",
+    "emptyFollowingBodySelf": "Following accounts is an easy way to curate your feed.",
+    "emptyFollowingBodyOther": "{{name}} isn’t following anyone yet."
+  },
   "profile": {
     "edit": "Edit profile",
     "privateAccount": "Private account",

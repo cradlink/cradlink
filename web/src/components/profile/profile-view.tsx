@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs } from "@/components/ui/tabs";
 import { useCreatedActivities } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
-import { useFollow, useIncomingFollows, useOutgoingFollows } from "@/hooks/use-follows";
+import { useFollow, useFollowers, useFollowing } from "@/hooks/use-follows";
 import { FEED_GRID } from "@/lib/activity-meta";
+import { connectionsPath } from "@/lib/connections";
 import { canSeeProfileActivities } from "@/lib/follow";
 import { handleFromName } from "@/lib/format";
 import { formatJoined, isActivityPast } from "@/lib/search";
@@ -38,8 +39,8 @@ export function ProfileView({
   const { user: me } = useAuth();
   const created = useCreatedActivities(user.id);
   const outgoing = useFollow(me?.id, user.id);
-  const incoming = useIncomingFollows(user.id);
-  const following = useOutgoingFollows(user.id);
+  const followers = useFollowers(user.id);
+  const following = useFollowing(user.id);
   const [tab, setTab] = useState("active");
   const handle = handleFromName(user.displayName);
   const joined = formatJoined(user.createdAt);
@@ -48,8 +49,8 @@ export function ProfileView({
     privateAccount &&
     !isSelf &&
     (outgoing.isLoading || !canSeeProfileActivities(me?.id, user, outgoing.data?.status));
-  const followerCount = (incoming.data ?? []).filter((row) => row.status === "accepted").length;
-  const followingCount = (following.data ?? []).filter((row) => row.status === "accepted").length;
+  const followerCount = followers.data?.length ?? 0;
+  const followingCount = following.data?.length ?? 0;
 
   const visible = useMemo(() => {
     if (locked) return [];
@@ -130,13 +131,21 @@ export function ProfileView({
           ) : null}
         </div>
 
-        <p className="mt-3 text-[15px] leading-5">
-          <span className="font-bold text-foreground">
-            {t("profile.followerCount", { count: followerCount })}
-          </span>
-          <span className="mx-2 text-muted-foreground">·</span>
-          <span className="font-bold">{followingCount}</span>{" "}
-          <span className="text-muted-foreground">{t("profile.following")}</span>
+        <p className="mt-3 flex flex-wrap gap-4 text-[15px] leading-5">
+          <Link
+            to={connectionsPath(user.id, "following", isSelf)}
+            className="hover:underline"
+          >
+            <span className="font-bold text-foreground">{followingCount}</span>{" "}
+            <span className="text-muted-foreground">{t("connections.following")}</span>
+          </Link>
+          <Link
+            to={connectionsPath(user.id, "followers", isSelf)}
+            className="hover:underline"
+          >
+            <span className="font-bold text-foreground">{followerCount}</span>{" "}
+            <span className="text-muted-foreground">{t("connections.followers")}</span>
+          </Link>
         </p>
 
         {user.skills.length > 0 ? (

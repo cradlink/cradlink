@@ -33,6 +33,24 @@ export function useIncomingFollows(userId: string | undefined) {
   });
 }
 
+export function useFollowers(userId: string | undefined) {
+  const backend = getBackend();
+  return useQuery({
+    queryKey: ["follows", "followers", userId],
+    queryFn: () => backend.follows.listFollowers(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useFollowing(userId: string | undefined) {
+  const backend = getBackend();
+  return useQuery({
+    queryKey: ["follows", "following", userId],
+    queryFn: () => backend.follows.listFollowing(userId!),
+    enabled: Boolean(userId),
+  });
+}
+
 export function useFollowRequests(userId: string | undefined) {
   const backend = getBackend();
   return useQuery({

@@ -38,7 +38,7 @@ export function SideNav() {
                 : item.href === "/notifications"
                   ? pathname.startsWith("/notifications")
                   : item.href === "/profile"
-                    ? pathname === "/profile" || pathname.startsWith("/u/")
+                    ? pathname === "/profile" || pathname.startsWith("/profile/") || pathname.startsWith("/u/")
                     : pathname === item.href;
             const Icon = item.icon;
             return (
