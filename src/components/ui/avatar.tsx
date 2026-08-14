@@ -1,0 +1,33 @@
+import { cn, initials } from "@/lib/utils";
+
+export function Avatar({
+  name,
+  src,
+  size = "md",
+  className,
+}: {
+  name: string;
+  src?: string | null;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const dim = size === "sm" ? "h-8 w-8 text-[10px]" : size === "lg" ? "h-16 w-16 text-lg" : "h-10 w-10 text-xs";
+  return (
+    <span
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#333639] font-semibold text-foreground",
+        dim,
+        className,
+      )}
+      aria-hidden={!src}
+    >
+      {src ? (
+        // data URLs and Google photos — skip next/image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials(name)
+      )}
+    </span>
+  );
+}

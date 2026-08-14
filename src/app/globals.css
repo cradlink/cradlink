@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  X Lights Out (the black dark theme):
+  bg #000000 · surfaces #16181c · text #e7e9ea · meta #71767b
+  hairline #2f3336 · accent #1d9bf0 · row hover rgba(231,233,234,0.03)
+*/
+:root,
+.dark {
+  --background: #000000;
+  --foreground: #e7e9ea;
+  --card: #16181c;
+  --card-foreground: #e7e9ea;
+  --primary: #1d9bf0;
+  --primary-foreground: #ffffff;
+  --terracotta: #1d9bf0;
+  --terracotta-foreground: #ffffff;
+  --muted: #16181c;
+  --muted-foreground: #71767b;
+  --border: #2f3336;
+  --ring: #1d9bf0;
+  --ink: #e7e9ea;
+  --paper: #000000;
+  --hover: rgba(231, 233, 234, 0.03);
+  --radius: 1rem;
+  color-scheme: dark;
+}
+
+:root:not(.dark) {
+  --background: #ffffff;
+  --foreground: #0f1419;
+  --card: #ffffff;
+  --card-foreground: #0f1419;
+  --primary: #1d9bf0;
+  --primary-foreground: #ffffff;
+  --terracotta: #1d9bf0;
+  --terracotta-foreground: #ffffff;
+  --muted: #eff3f4;
+  --muted-foreground: #536471;
+  --border: #eff3f4;
+  --ring: #1d9bf0;
+  --ink: #0f1419;
+  --paper: #ffffff;
+  --hover: rgba(15, 20, 25, 0.03);
+  --radius: 1rem;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-foreground: var(--terracotta-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-hover: var(--hover);
+  --font-sans: var(--font-inter), -apple-system, blinkmacsystemfont, "Segoe UI", roboto, helvetica, arial, sans-serif;
+  --font-display: var(--font-inter), -apple-system, blinkmacsystemfont, "Segoe UI", roboto, helvetica, arial, sans-serif;
+  --radius-lg: var(--radius);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.font-display {
+  font-family: inherit;
+  font-weight: 700;
+}
+
+::selection {
+  background: #1d9bf055;
+}
