@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ActivityCard } from "@/components/activity/activity-card";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateActivity } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
+import { useUploadActivityImages } from "@/hooks/use-profile";
 import { ACTIVITY_META } from "@/lib/activity-meta";
 import { errorMessage } from "@/lib/errors";
 import { datetimeLocalToIso } from "@/lib/format";
@@ -32,7 +33,7 @@ type FormState = {
   startAt: string;
   endAt: string;
   capacity: string;
-  images: string[];
+  images: File[];
 };
 
 const empty: FormState = {
@@ -51,12 +52,25 @@ const empty: FormState = {
   images: [],
 };
 
+function useFilePreviews(files: File[]) {
+  const [urls, setUrls] = useState<string[]>([]);
+  useEffect(() => {
+    const next = files.map((file) => URL.createObjectURL(file));
+    setUrls(next);
+    return () => next.forEach((url) => URL.revokeObjectURL(url));
+  }, [files]);
+  return urls;
+}
+
 export function CreateActivityForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const create = useCreateActivity();
+  const upload = useUploadActivityImages();
   const [form, setForm] = useState<FormState>(empty);
   const [error, setError] = useState<string | null>(null);
+  const imageUrls = useFilePreviews(form.images);
+  const posting = create.isPending || upload.isPending;
 
   const preview = useMemo<Activity | null>(() => {
     if (!user) return null;
@@ -85,11 +99,11 @@ export function CreateActivityForm() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       visibility: "public",
-      images: form.images,
+      images: imageUrls,
       joinPolicy: "auto",
       headcount: { mode: "open" },
     };
-  }, [form, user]);
+  }, [form, imageUrls, user]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -114,6 +128,9 @@ export function CreateActivityForm() {
 
     setError(null);
     try {
+      const images = form.images.length
+        ? await upload.mutateAsync({ userId: user.id, files: form.images })
+        : [];
       const activity = await create.mutateAsync({
         creator: user,
         input: {
@@ -131,7 +148,7 @@ export function CreateActivityForm() {
           endAt: form.isFlexible ? null : datetimeLocalToIso(form.endAt),
           isFlexible: form.isFlexible,
           capacity,
-          images: form.images,
+          images,
         },
       });
       toast.success("Activity posted.");
@@ -257,7 +274,11 @@ export function CreateActivityForm() {
         ) : null}
 
         <Field label="Photos" hint="Optional. Up to 6. Empty uses the type default.">
-          <ImagePicker value={form.images} onChange={(next) => set("images", next)} />
+          <ImagePicker
+            value={form.images}
+            previews={imageUrls}
+            onChange={(next) => set("images", next)}
+          />
         </Field>
 
         <Field label="Capacity" hint="Leave blank for no limit.">
@@ -272,8 +293,8 @@ export function CreateActivityForm() {
 
         {error ? <p className="text-sm text-[#f4212e]">{error}</p> : null}
 
-        <Button type="submit" variant="terracotta" size="lg" disabled={create.isPending}>
-          {create.isPending ? "Posting…" : "Post activity"}
+        <Button type="submit" variant="terracotta" size="lg" disabled={posting}>
+          {upload.isPending ? "Uploading photos…" : create.isPending ? "Posting…" : "Post activity"}
         </Button>
       </form>
 

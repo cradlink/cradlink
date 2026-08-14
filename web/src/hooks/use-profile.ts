@@ -33,3 +33,11 @@ export function useUploadAvatar() {
       backend.storage.uploadAvatar(userId, file),
   });
 }
+
+export function useUploadActivityImages() {
+  const backend = getBackend();
+  return useMutation({
+    mutationFn: ({ userId, files }: { userId: string; files: File[] }) =>
+      Promise.all(files.map((file) => backend.storage.uploadActivityImage(userId, file))),
+  });
+}

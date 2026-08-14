@@ -5,31 +5,25 @@ import { toast } from "sonner";
 const MAX_BYTES = 1.5 * 1024 * 1024;
 const MAX_IMAGES = 6;
 
-function readFile(file: File) {
+function assertImage(file: File) {
   if (!file.type.startsWith("image/")) throw new AppError("Please choose image files.");
   if (file.size > MAX_BYTES) throw new AppError("Keep each image under 1.5 MB.");
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new AppError("Could not read that image."));
-    reader.onload = () => resolve(String(reader.result));
-    reader.readAsDataURL(file);
-  });
 }
 
 export function ImagePicker({
   value,
+  previews,
   onChange,
 }: {
-  value: string[];
-  onChange: (next: string[]) => void;
+  value: File[];
+  previews: string[];
+  onChange: (next: File[]) => void;
 }) {
-  async function onFiles(files: FileList | null) {
+  function onFiles(files: FileList | null) {
     if (!files?.length) return;
     try {
-      const extras: string[] = [];
-      for (const file of Array.from(files)) {
-        extras.push(await readFile(file));
-      }
+      const extras = Array.from(files);
+      extras.forEach(assertImage);
       onChange([...value, ...extras].slice(0, MAX_IMAGES));
     } catch (err) {
       toast.error(errorMessage(err));
@@ -40,9 +34,14 @@ export function ImagePicker({
     <div className="space-y-2">
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {value.map((src, index) => (
-            <div key={`${src.slice(0, 24)}-${index}`} className="relative h-20 w-28 overflow-hidden rounded-xl border border-border">
-              <img src={src} alt="" className="h-full w-full object-cover" />
+          {value.map((file, index) => (
+            <div
+              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+              className="relative h-20 w-28 overflow-hidden rounded-xl border border-border bg-muted"
+            >
+              {previews[index] ? (
+                <img src={previews[index]} alt="" className="h-full w-full object-cover" />
+              ) : null}
               <button
                 type="button"
                 onClick={() => onChange(value.filter((_, i) => i !== index))}
@@ -65,7 +64,7 @@ export function ImagePicker({
         multiple
         disabled={value.length >= MAX_IMAGES}
         onChange={(event) => {
-          void onFiles(event.target.files);
+          onFiles(event.target.files);
           event.target.value = "";
         }}
         className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm"

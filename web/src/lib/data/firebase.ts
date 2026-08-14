@@ -4,15 +4,12 @@ import {
   getDoc,
   getDocs,
   limit,
-  orderBy,
   query,
   runTransaction,
   setDoc,
-  startAfter,
   updateDoc,
   where,
   type DocumentData,
-  type QueryConstraint,
 } from "firebase/firestore";
 import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
@@ -135,37 +132,31 @@ export const firebaseUsers: UsersRepo = {
   },
 };
 
+function byNewest(a: Activity, b: Activity) {
+  return b.createdAt.localeCompare(a.createdAt);
+}
+
 export const firebaseActivities: ActivitiesRepo = {
   async list(filters) {
     const pageSize = filters.limit ?? PAGE_SIZE;
-    const constraints: QueryConstraint[] = [
-      where("visibility", "==", "public"),
-    ];
+    const snap = await getDocs(
+      query(collection(getFirebaseDb(), "activities"), where("visibility", "==", "public"), limit(100)),
+    );
+    let items = snap.docs
+      .map((row) => mapActivity(row.id, row.data()))
+      .filter((a) => a.status !== "cancelled")
+      .sort(byNewest);
 
     if (filters.type && filters.type !== "all") {
-      constraints.push(where("type", "==", filters.type));
-    } else if (filters.locationType && filters.locationType !== "all") {
-      constraints.push(where("location.type", "==", filters.locationType));
+      items = items.filter((a) => a.type === filters.type);
     }
-
-    constraints.push(orderBy("createdAt", "desc"));
-
-    if (filters.cursor) {
-      const cursorSnap = await getDoc(doc(getFirebaseDb(), "activities", filters.cursor));
-      if (cursorSnap.exists()) constraints.push(startAfter(cursorSnap));
-    }
-
-    constraints.push(limit(pageSize + 4));
-
-    const snap = await getDocs(query(collection(getFirebaseDb(), "activities"), ...constraints));
-    let items = snap.docs.map((row) => mapActivity(row.id, row.data())).filter((a) => a.status !== "cancelled");
-
-    if (filters.type && filters.type !== "all" && filters.locationType && filters.locationType !== "all") {
+    if (filters.locationType && filters.locationType !== "all") {
       items = items.filter((a) => a.location.type === filters.locationType);
     }
 
-    const page = items.slice(0, pageSize);
-    const nextCursor = items.length > pageSize ? page[page.length - 1]?.id ?? null : null;
+    const start = filters.cursor ? items.findIndex((a) => a.id === filters.cursor) + 1 : 0;
+    const page = items.slice(Math.max(0, start), Math.max(0, start) + pageSize);
+    const nextCursor = start + pageSize < items.length ? page[page.length - 1]?.id ?? null : null;
     return { items: page, nextCursor };
   },
 
@@ -202,6 +193,10 @@ export const firebaseActivities: ActivitiesRepo = {
       images: input.images ?? [],
     };
 
+    if (activity.images.some((src) => src.startsWith("data:"))) {
+      throw new AppError("Photos are too large to save in the activity. They need to be uploaded first.");
+    }
+
     const db = getFirebaseDb();
     await setDoc(doc(db, "activities", id), stripUndefined(activity));
     const mid = memberId(id, creator.id);
@@ -221,24 +216,18 @@ export const firebaseActivities: ActivitiesRepo = {
 
   async listCreatedBy(userId) {
     const snap = await getDocs(
-      query(
-        collection(getFirebaseDb(), "activities"),
-        where("creatorId", "==", userId),
-        orderBy("createdAt", "desc"),
-      ),
+      query(collection(getFirebaseDb(), "activities"), where("creatorId", "==", userId)),
     );
-    return snap.docs.map((row) => mapActivity(row.id, row.data()));
+    return snap.docs.map((row) => mapActivity(row.id, row.data())).sort(byNewest);
   },
 
   async listJoinedBy(userId) {
     const memberships = await getDocs(
-      query(
-        collection(getFirebaseDb(), "activityMembers"),
-        where("userId", "==", userId),
-        where("status", "==", "joined"),
-      ),
+      query(collection(getFirebaseDb(), "activityMembers"), where("userId", "==", userId)),
     );
-    const ids = memberships.docs.map((row) => asString(row.data().activityId));
+    const ids = memberships.docs
+      .filter((row) => row.data().status === "joined")
+      .map((row) => asString(row.data().activityId));
     const activities = await Promise.all(ids.map((id) => firebaseActivities.getById(id)));
     return activities
       .filter((a): a is Activity => Boolean(a))

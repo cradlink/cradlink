@@ -40,7 +40,8 @@ export function useCreateActivity() {
   return useMutation({
     mutationFn: ({ creator, input }: { creator: User; input: CreateActivityInput }) =>
       backend.activities.create(creator, input),
-    onSuccess: () => {
+    onSuccess: (activity) => {
+      queryClient.setQueryData(["activity", activity.id], activity);
       void queryClient.invalidateQueries({ queryKey: ["activities"] });
     },
   });
