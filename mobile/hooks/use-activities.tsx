@@ -103,7 +103,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
       get,
       reload,
       add: async (input) => {
-        if (!user) throw new Error("Sign in to post.")
+        if (!user) throw new Error("signInToPost")
         const now = new Date().toISOString()
         const activity: Activity = {
           id: `act_${Date.now().toString(36)}`,
@@ -133,10 +133,10 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
         return activity
       },
       update: async (id, input) => {
-        if (!user) throw new Error("Sign in to edit.")
+        if (!user) throw new Error("signInToEdit")
         const existing = activities.find((activity) => activity.id === id)
-        if (!existing) throw new Error("Activity not found.")
-        if (existing.creatorId !== user.id) throw new Error("Only the organizer can edit.")
+        if (!existing) throw new Error("activityNotFound")
+        if (existing.creatorId !== user.id) throw new Error("onlyOrganizer")
         const now = new Date().toISOString()
         const next: Activity = {
           ...existing,

@@ -1,8 +1,10 @@
 import { Stack } from "expo-router"
 
 import { palette } from "@/constants/Colors"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function ProfileStack() {
+  const { messages } = useI18n()
   return (
     <Stack
       screenOptions={{
@@ -14,7 +16,7 @@ export default function ProfileStack() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="edit" options={{ title: "Edit profile" }} />
+      <Stack.Screen name="edit" options={{ title: messages.profile.editTitle }} />
     </Stack>
   )
 }

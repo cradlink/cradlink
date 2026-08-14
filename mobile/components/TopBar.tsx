@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Logo } from "@/components/Logo"
 import { Text, useTheme } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import { useNotifications } from "@/hooks/use-notifications"
 
 export function TopBar({
@@ -33,13 +34,14 @@ export function TopBar({
   const router = useRouter()
   const pathname = usePathname()
   const { unread } = useNotifications()
+  const { messages } = useI18n()
 
   function openBell() {
     if (pathname !== "/notifications") router.push("/notifications")
   }
 
   const bell = (
-    <Pressable onPress={openBell} hitSlop={8} accessibilityLabel="Notifications" style={styles.bellBtn}>
+    <Pressable onPress={openBell} hitSlop={8} accessibilityLabel={messages.common.notifications} style={styles.bellBtn}>
       <SymbolView
         name={
           unread > 0
@@ -70,7 +72,7 @@ export function TopBar({
           <View style={styles.right}>
             {bell}
             {onSettings ? (
-              <Pressable onPress={onSettings} hitSlop={8} accessibilityLabel="Settings" style={styles.bellBtn}>
+              <Pressable onPress={onSettings} hitSlop={8} accessibilityLabel={messages.common.settings} style={styles.bellBtn}>
                 <SymbolView
                   name={{ ios: "gearshape", android: "settings", web: "settings" }}
                   tintColor={theme.foreground}
@@ -100,7 +102,7 @@ export function TopBar({
                 keyboardAppearance="dark"
                 value={searchValue}
                 onChangeText={onSearchChange}
-                placeholder="Search"
+                placeholder={messages.common.search}
                 placeholderTextColor={theme.mutedForeground}
                 selectionColor={theme.primary}
                 autoCapitalize="none"
@@ -110,7 +112,7 @@ export function TopBar({
               />
             ) : (
               <Pressable onPress={onSearchPress} style={styles.fieldHit} accessibilityRole="search">
-                <Text style={[styles.input, { color: theme.mutedForeground }]}>Search</Text>
+                <Text style={[styles.input, { color: theme.mutedForeground }]}>{messages.common.search}</Text>
               </Pressable>
             )}
           </View>

@@ -5,6 +5,7 @@ import { Avatar } from "@/components/Avatar"
 import { Button } from "@/components/Button"
 import { LookingForChips } from "@/components/LookingForChips"
 import { Text, View } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import type { User } from "@/lib/types"
 
 export function ProfileView({
@@ -17,21 +18,30 @@ export function ProfileView({
   hostedCount?: number
 }) {
   const router = useRouter()
+  const { messages, tx } = useI18n()
 
   return (
     <View style={styles.wrap} lightColor="transparent" darkColor="transparent">
-      <Avatar name={user.displayName} src={user.avatarUrl} size={80} />
-      <Text style={styles.name}>{user.displayName}</Text>
-      {user.location ? (
-        <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-          {user.location}
-        </Text>
-      ) : null}
-      {hostedCount != null ? (
-        <Text style={styles.meta} lightColor="#536471" darkColor="#71767b">
-          {hostedCount === 1 ? "1 activity" : `${hostedCount} activities`}
-        </Text>
-      ) : null}
+      <View style={styles.hero} lightColor="transparent" darkColor="transparent">
+        <Avatar name={user.displayName} src={user.avatarUrl} size={80} />
+        <View style={styles.identity} lightColor="transparent" darkColor="transparent">
+          <Text style={styles.name} numberOfLines={2}>
+            {user.displayName}
+          </Text>
+          {user.location ? (
+            <Text style={styles.meta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
+              {user.location}
+            </Text>
+          ) : null}
+          {hostedCount != null ? (
+            <Text style={styles.meta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
+              {hostedCount === 1
+                ? messages.profile.oneActivity
+                : tx(messages.profile.manyActivities, { count: hostedCount })}
+            </Text>
+          ) : null}
+        </View>
+      </View>
       {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
       {user.skills.length > 0 ? (
         <View style={styles.skills} lightColor="transparent" darkColor="transparent">
@@ -40,7 +50,7 @@ export function ProfileView({
       ) : null}
       {isSelf ? (
         <Button
-          label="Edit profile"
+          label={messages.profile.edit}
           variant="outline"
           size="compact"
           onPress={() => router.push("/profile/edit")}
@@ -57,18 +67,29 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  identity: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: "center",
+    gap: 3,
+  },
   name: {
-    marginTop: 14,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
     letterSpacing: -0.4,
+    lineHeight: 26,
   },
   meta: {
-    marginTop: 4,
     fontSize: 15,
+    lineHeight: 19,
   },
   bio: {
-    marginTop: 14,
+    marginTop: 16,
     fontSize: 16,
     lineHeight: 22,
   },

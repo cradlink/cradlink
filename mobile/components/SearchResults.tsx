@@ -9,12 +9,14 @@ import { Refreshable, Stagger } from "@/components/Refreshable"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
 import { searchActivities, searchPeople } from "@/lib/search"
 import type { User } from "@/lib/types"
 
 export function SearchResults({ query }: { query: string }) {
   const { user, people } = useAuth()
   const { activities } = useActivities()
+  const { messages } = useI18n()
   const q = query.trim()
   const foundPeople = useMemo(() => (q ? searchPeople(people, q) : []), [people, q])
   const foundActivities = useMemo(() => (q ? searchActivities(activities, q) : []), [activities, q])
@@ -26,19 +28,19 @@ export function SearchResults({ query }: { query: string }) {
         {!q ? (
           <EmptyState
             key="hint"
-            title="Search"
-            body="People and activities. Type a name, a place, or a title."
+            title={messages.search.hintTitle}
+            body={messages.search.hintBody}
             icon={{ ios: "magnifyingglass", android: "search", web: "search" }}
             iconSize={28}
             iconColor="#e7e9ea"
           />
         ) : empty ? (
-          <EmptyState key="empty" title="No matches." body="Try another name or title." />
+          <EmptyState key="empty" title={messages.search.emptyTitle} body={messages.search.emptyBody} />
         ) : (
           [
             foundPeople.length > 0 ? (
               <Text key="people-h" style={styles.section}>
-                People
+                {messages.common.people}
               </Text>
             ) : null,
             ...foundPeople.map((person) => (
@@ -46,7 +48,7 @@ export function SearchResults({ query }: { query: string }) {
             )),
             foundActivities.length > 0 ? (
               <Text key="acts-h" style={styles.section}>
-                Activities
+                {messages.common.activities}
               </Text>
             ) : null,
             ...foundActivities.map((activity) => <ActivityCard key={activity.id} activity={activity} />),
@@ -60,6 +62,7 @@ export function SearchResults({ query }: { query: string }) {
 function PersonRow({ person, isSelf }: { person: User; isSelf?: boolean }) {
   const router = useRouter()
   const theme = useTheme()
+  const { messages } = useI18n()
 
   return (
     <Pressable
@@ -75,7 +78,7 @@ function PersonRow({ person, isSelf }: { person: User; isSelf?: boolean }) {
           {person.displayName}
         </Text>
         <Text style={styles.personMeta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-          {person.location || (isSelf ? "You" : "Somewhere")}
+          {person.location || (isSelf ? messages.common.you : messages.common.somewhere)}
         </Text>
       </View>
     </Pressable>

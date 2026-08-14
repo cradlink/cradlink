@@ -2,15 +2,17 @@ import { Link, Stack } from "expo-router"
 import { StyleSheet } from "react-native"
 
 import { Text, View } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function NotFoundScreen() {
+  const { messages } = useI18n()
   return (
     <>
-      <Stack.Screen options={{ title: "Not found" }} />
+      <Stack.Screen options={{ title: messages.notFound.title }} />
       <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn’t exist.</Text>
+        <Text style={styles.title}>{messages.notFound.body}</Text>
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go home</Text>
+          <Text style={styles.linkText}>{messages.notFound.goHome}</Text>
         </Link>
       </View>
     </>

@@ -17,6 +17,7 @@ import { Button } from "@/components/Button"
 import { Text, useTheme } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
 
 export default function EditProfileScreen() {
@@ -26,6 +27,7 @@ export default function EditProfileScreen() {
   const { user, updateProfile } = useAuth()
   const { ask } = useConfirm()
   const { show } = useToast()
+  const { messages } = useI18n()
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? "")
   const [bio, setBio] = useState(user?.bio ?? "")
@@ -74,10 +76,10 @@ export default function EditProfileScreen() {
       return
     }
     ask({
-      title: "Discard changes?",
-      body: "Your edits won’t be saved.",
-      confirmLabel: "Discard",
-      cancelLabel: "Keep editing",
+      title: messages.compose.discardEditTitle,
+      body: messages.compose.discardEditBody,
+      confirmLabel: messages.common.discard,
+      cancelLabel: messages.compose.keepEditing,
       destructive: true,
       onConfirm: () => router.back(),
     })
@@ -94,10 +96,10 @@ export default function EditProfileScreen() {
         skills,
         avatarUrl,
       })
-      show({ title: "Profile saved" })
+      show({ title: messages.profile.saved })
       router.back()
     } catch {
-      show({ title: "Couldn’t save", tone: "error" })
+      show({ title: messages.compose.couldntSave, tone: "error" })
     } finally {
       setBusy(false)
     }
@@ -113,14 +115,14 @@ export default function EditProfileScreen() {
         >
           <Pressable onPress={() => void pickAvatar()} style={styles.avatarWrap}>
             <Avatar name={displayName || user.displayName} src={avatarUrl} size={80} />
-            <Text style={[styles.change, { color: theme.primary }]}>Change photo</Text>
+            <Text style={[styles.change, { color: theme.primary }]}>{messages.profile.changePhoto}</Text>
           </Pressable>
 
-          <Field label="Name">
+          <Field label={messages.auth.name}>
             <TextInput
               value={displayName}
               onChangeText={setDisplayName}
-              placeholder="Your name"
+              placeholder={messages.auth.namePlaceholder}
               placeholderTextColor={theme.mutedForeground}
               keyboardAppearance="dark"
               selectionColor={theme.primary}
@@ -128,11 +130,11 @@ export default function EditProfileScreen() {
             />
           </Field>
 
-          <Field label="Location">
+          <Field label={messages.profile.location}>
             <TextInput
               value={location}
               onChangeText={setLocation}
-              placeholder="Belgrade"
+              placeholder={messages.profile.locationPlaceholder}
               placeholderTextColor={theme.mutedForeground}
               keyboardAppearance="dark"
               selectionColor={theme.primary}
@@ -140,11 +142,11 @@ export default function EditProfileScreen() {
             />
           </Field>
 
-          <Field label="Bio">
+          <Field label={messages.profile.bio}>
             <TextInput
               value={bio}
               onChangeText={setBio}
-              placeholder="A line about you."
+              placeholder={messages.profile.bioPlaceholder}
               placeholderTextColor={theme.mutedForeground}
               keyboardAppearance="dark"
               selectionColor={theme.primary}
@@ -153,7 +155,7 @@ export default function EditProfileScreen() {
             />
           </Field>
 
-          <Field label="Skills">
+          <Field label={messages.profile.skills}>
             <View style={styles.skillRow}>
               {skills.map((skill) => (
                 <Pressable
@@ -170,7 +172,7 @@ export default function EditProfileScreen() {
               value={draft}
               onChangeText={setDraft}
               onSubmitEditing={addSkill}
-              placeholder="Add a skill"
+              placeholder={messages.profile.skillPlaceholder}
               placeholderTextColor={theme.mutedForeground}
               keyboardAppearance="dark"
               selectionColor={theme.primary}
@@ -181,9 +183,9 @@ export default function EditProfileScreen() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button label="Cancel" variant="ghost" size="compact" onPress={close} style={styles.half} />
+          <Button label={messages.common.cancel} variant="ghost" size="compact" onPress={close} style={styles.half} />
           <Button
-            label={busy ? "Saving…" : "Save"}
+            label={busy ? messages.common.saving : messages.common.save}
             variant="ink"
             size="compact"
             disabled={!canSave}

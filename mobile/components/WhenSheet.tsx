@@ -15,11 +15,12 @@ import Animated, {
 } from "react-native-reanimated"
 
 import { Text, useTheme } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 15, 30, 45]
 const ROW = 58
-const WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+const WEEK_KEYS = ["mo", "tu", "we", "th", "fr", "sa", "su"] as const
 const SLIDE = Dimensions.get("window").height
 const OPEN = { duration: 380, easing: Easing.out(Easing.cubic) }
 const CLOSE = { duration: 320, easing: Easing.in(Easing.cubic) }
@@ -156,6 +157,7 @@ export function WhenSheet({
   onDone: (next: Date) => void
   onClose: () => void
 }) {
+  const { messages, dateLocale } = useI18n()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const [cursor, setCursor] = useState(() => startOfDay(new Date()))
@@ -221,7 +223,7 @@ export function WhenSheet({
     transform: [{ translateY: interpolate(progress.value, [0, 1], [SLIDE, 0]) }],
   }))
 
-  const title = cursor.toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+  const title = cursor.toLocaleDateString(dateLocale, { month: "long", year: "numeric" })
 
   if (!shown) return null
 
@@ -269,9 +271,9 @@ export function WhenSheet({
         </View>
 
           <View style={styles.week}>
-            {WEEK.map((d) => (
-              <Text key={d} style={styles.weekDay} lightColor="#536471" darkColor="#71767b">
-                {d}
+            {WEEK_KEYS.map((key) => (
+              <Text key={key} style={styles.weekDay} lightColor="#536471" darkColor="#71767b">
+                {messages.weekdays[key]}
               </Text>
             ))}
           </View>
@@ -324,7 +326,7 @@ export function WhenSheet({
             onPress={confirm}
             style={({ pressed }) => [styles.done, { backgroundColor: theme.foreground, opacity: pressed ? 0.8 : 1 }]}
           >
-            <Text style={[styles.doneLabel, { color: theme.background }]}>Done</Text>
+            <Text style={[styles.doneLabel, { color: theme.background }]}>{messages.common.done}</Text>
           </Pressable>
       </Animated.View>
     </View>

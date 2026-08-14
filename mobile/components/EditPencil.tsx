@@ -4,6 +4,7 @@ import { SymbolView } from "expo-symbols"
 
 import { useTheme } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
+import { useI18n } from "@/hooks/use-i18n"
 
 export function EditPencil({
   activityId,
@@ -15,11 +16,12 @@ export function EditPencil({
   const theme = useTheme()
   const router = useRouter()
   const { preview, dismiss } = useActivityPreview()
+  const { messages } = useI18n()
 
   return (
     <Pressable
       hitSlop={10}
-      accessibilityLabel="Edit activity"
+      accessibilityLabel={messages.activity.editA11y}
       onPress={() => {
         if (preview?.activity.id === activityId) dismiss()
         router.push(`/activities/edit/${activityId}`)

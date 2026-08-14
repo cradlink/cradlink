@@ -5,6 +5,7 @@ import { ActivityPressable, listHairline } from "@/components/ActivityPressable"
 import { EditPencil } from "@/components/EditPencil"
 import { MetaPill, TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatHeadcount, formatJoinPolicy } from "@/lib/format"
 import { formatPlace, formatShortWhen } from "@/lib/schedule"
@@ -13,10 +14,17 @@ import type { Activity } from "@/lib/types"
 export function HostCard({ activity }: { activity: Activity }) {
   const theme = useTheme()
   const { pendingCount, decorate } = useMemberships()
+  const { messages, tx } = useI18n()
   const viewed = decorate(activity)
   const waiting = pendingCount(activity.id)
   const status =
-    activity.status === "full" ? "Full" : activity.status === "cancelled" ? "Cancelled" : activity.status === "completed" ? "Done" : null
+    activity.status === "full"
+      ? messages.status.full
+      : activity.status === "cancelled"
+        ? messages.status.cancelled
+        : activity.status === "completed"
+          ? messages.status.completed
+          : null
 
   return (
     <ActivityPressable activity={activity} style={[styles.card, { borderBottomColor: theme.border }]}>
@@ -25,7 +33,10 @@ export function HostCard({ activity }: { activity: Activity }) {
         <View style={styles.chips} lightColor="transparent" darkColor="transparent">
           <TypeBadge type={activity.type} />
           {waiting > 0 ? (
-            <MetaPill label={waiting === 1 ? "1 waiting" : `${waiting} waiting`} color={theme.primary} />
+            <MetaPill
+              label={waiting === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: waiting })}
+              color={theme.primary}
+            />
           ) : status ? (
             <MetaPill label={status} color={theme.mutedForeground} />
           ) : null}

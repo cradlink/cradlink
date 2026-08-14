@@ -6,6 +6,7 @@ import { useActivityPreview } from "@/hooks/use-activity-preview"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useMemberships } from "@/hooks/use-memberships"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
 import type { Activity } from "@/lib/types"
 
@@ -14,6 +15,7 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
   const { ask } = useConfirm()
   const { preview, dismiss } = useActivityPreview()
   const { show } = useToast()
+  const { messages } = useI18n()
   const { notifyHost } = useNotifications()
   const { statusOf, isOrganizer, isFull, join, leave } = useMemberships()
   const organizer = isOrganizer(activity)
@@ -24,7 +26,7 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
   if (organizer) {
     return (
       <Action
-        label="Edit"
+        label={messages.join.edit}
         outline
         wide={wide}
         onPress={() => {
@@ -36,21 +38,21 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
   }
 
   if (full && status !== "joined" && status !== "pending") {
-    return <Action label="Full" muted wide={wide} />
+    return <Action label={messages.join.full} muted wide={wide} />
   }
 
   if (status === "pending") {
     return (
       <Action
-        label="Requested"
+        label={messages.join.requested}
         outline
         wide={wide}
         onPress={() =>
           ask({
-            title: "Withdraw request?",
-            body: "The organizer won’t see this request anymore.",
-            confirmLabel: "Withdraw",
-            cancelLabel: "Keep it",
+            title: messages.join.withdrawTitle,
+            body: messages.join.withdrawBody,
+            confirmLabel: messages.join.withdraw,
+            cancelLabel: messages.join.keepIt,
             destructive: true,
             onConfirm: () => void leave(activity.id),
           })
@@ -62,15 +64,15 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
   if (status === "joined") {
     return (
       <Action
-        label="Leave"
+        label={messages.join.leave}
         outline
         wide={wide}
         onPress={() =>
           ask({
-            title: "Leave this activity?",
-            body: "You can join again later if there’s still a spot.",
-            confirmLabel: "Leave",
-            cancelLabel: "Stay",
+            title: messages.join.leaveTitle,
+            body: messages.join.leaveBody,
+            confirmLabel: messages.join.leave,
+            cancelLabel: messages.join.stay,
             destructive: true,
             onConfirm: () => void leave(activity.id),
           })
@@ -81,25 +83,23 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
 
   return (
     <Action
-      label={manual ? "Request to join" : "Join"}
+      label={manual ? messages.join.request : messages.join.join}
       filled
       wide={wide}
       onPress={() =>
         ask({
-          title: manual ? "Request to join?" : "Join this activity?",
-          body: manual
-            ? "The organizer will accept or decline. You’ll see Requested until they do."
-            : "You’ll be on the list. The organizer can see your name.",
-          confirmLabel: manual ? "Send request" : "Join",
+          title: manual ? messages.join.requestTitle : messages.join.joinTitle,
+          body: manual ? messages.join.requestBody : messages.join.joinBody,
+          confirmLabel: manual ? messages.join.sendRequest : messages.join.join,
           onConfirm: () => {
             void (async () => {
               try {
                 await join(activity)
                 await notifyHost(activity, manual ? "request" : "joined")
                 if (preview?.activity.id === activity.id) dismiss()
-                show({ title: manual ? "Request sent" : "Joined" })
+                show({ title: manual ? messages.join.requestSent : messages.join.joined })
               } catch {
-                show({ title: manual ? "Couldn’t send request" : "Couldn’t join", tone: "error" })
+                show({ title: manual ? messages.join.couldntRequest : messages.join.couldntJoin, tone: "error" })
               }
             })()
           },

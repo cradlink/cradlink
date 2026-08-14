@@ -1,12 +1,13 @@
 import { StyleSheet } from "react-native"
 
 import { Text, View } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import type { ActivityType } from "@/lib/types"
 
 export function TypeBadge({ type }: { type: ActivityType }) {
-  const meta = ACTIVITY_META[type]
-  return <MetaPill label={meta.label} color={meta.color} />
+  const { messages } = useI18n()
+  return <MetaPill label={messages.types[type]} color={ACTIVITY_META[type].color} />
 }
 
 export function MetaPill({ label, color }: { label: string; color: string }) {

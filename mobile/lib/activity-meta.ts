@@ -1,3 +1,4 @@
+import { getMessages } from "@/lib/i18n"
 import type { ActivityType, LocationType } from "@/lib/types"
 
 export type ActivityMeta = {
@@ -22,4 +23,12 @@ export const LOCATION_LABELS: Record<LocationType, string> = {
   online: "Online",
   "in-person": "In person",
   hybrid: "Hybrid",
+}
+
+export function activityTypeLabel(type: ActivityType) {
+  return getMessages().types[type]
+}
+
+export function locationTypeLabel(type: LocationType | "all") {
+  return getMessages().places[type]
 }

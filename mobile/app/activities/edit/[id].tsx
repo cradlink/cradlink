@@ -7,12 +7,14 @@ import { EmptyState } from "@/components/EmptyState"
 import { View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function EditActivityScreen() {
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { user } = useAuth()
   const { get, ready } = useActivities()
+  const { messages } = useI18n()
   const activity = id ? get(id) : null
 
   if (!ready) return <View style={styles.screen} />
@@ -20,7 +22,7 @@ export default function EditActivityScreen() {
   if (!activity || activity.creatorId !== user?.id) {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <EmptyState title="Can’t edit this." body="Only the organizer can change an activity." />
+        <EmptyState title={messages.activity.cantEditTitle} body={messages.activity.cantEditBody} />
       </View>
     )
   }

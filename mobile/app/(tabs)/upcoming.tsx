@@ -9,6 +9,7 @@ import { TopBar } from "@/components/TopBar"
 import { View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { groupBySchedule, nextUp } from "@/lib/schedule"
 
@@ -17,6 +18,7 @@ export default function UpcomingScreen() {
   const { user } = useAuth()
   const { activities, ready } = useActivities()
   const { decorate, joinedIds, statusOf, ready: memReady } = useMemberships()
+  const { locale, messages } = useI18n()
 
   const { next, groups, requested } = useMemo(() => {
     const joined = activities
@@ -33,23 +35,23 @@ export default function UpcomingScreen() {
       groups: groupBySchedule(rest),
       requested: pending,
     }
-  }, [activities, decorate, joinedIds, statusOf, user?.id])
+  }, [activities, decorate, joinedIds, locale, statusOf, user?.id])
 
   const empty = !next && groups.length === 0 && requested.length === 0
 
   return (
     <View style={styles.screen}>
-      <TopBar title="Upcoming" />
+      <TopBar title={messages.upcoming.title} />
       <Refreshable contentContainerStyle={styles.list}>
         {!ready || !memReady ? null : (
           <Stagger>
             {empty ? (
               <EmptyState
                 key="empty"
-                title="Nothing upcoming."
-                body="Join something from Home and it will show up here."
+                title={messages.upcoming.emptyTitle}
+                body={messages.upcoming.emptyBody}
                 icon={{ ios: "calendar", android: "calendar_today", web: "calendar_today" }}
-                action={{ label: "Find something", onPress: () => router.navigate("/") }}
+                action={{ label: messages.upcoming.findSomething, onPress: () => router.navigate("/") }}
               />
             ) : (
               [
@@ -64,7 +66,7 @@ export default function UpcomingScreen() {
                     />
                   )),
                 ]),
-                requested.length > 0 ? <AgendaSection key="requested" title="Requested" /> : null,
+                requested.length > 0 ? <AgendaSection key="requested" title={messages.upcoming.requested} /> : null,
                 ...requested.map((activity) => (
                   <AgendaRow key={`p-${activity.id}`} activity={activity} pending />
                 )),

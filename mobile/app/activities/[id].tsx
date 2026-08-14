@@ -13,6 +13,7 @@ import { RequestList } from "@/components/RequestList"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
+import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 
@@ -20,6 +21,7 @@ export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { get } = useActivities()
   const { decorate, isOrganizer } = useMemberships()
+  const { messages } = useI18n()
   const activity = id ? get(id) : null
   const viewed = activity ? decorate(activity) : null
 
@@ -29,8 +31,8 @@ export default function ActivityDetailScreen() {
         {!activity || !viewed ? (
           <EmptyState
             key="missing"
-            title="Activity not found."
-            body="It may have been removed, or this is a stale link."
+            title={messages.activity.notFoundTitle}
+            body={messages.activity.notFoundBody}
           />
         ) : (
           [

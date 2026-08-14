@@ -12,6 +12,7 @@ import Animated, {
 
 import { Text, useTheme } from "@/components/Themed"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useI18n } from "@/hooks/use-i18n"
 
 const OPEN = { duration: 220, easing: Easing.bezier(0.16, 1, 0.3, 1) }
 const CLOSE = { duration: 180, easing: Easing.bezier(0.4, 0, 0.2, 1) }
@@ -22,6 +23,7 @@ const CARD_W = Math.min(SCREEN_W - 56, 340)
 export function ConfirmModalHost() {
   const { prompt, dismiss } = useConfirm()
   const theme = useTheme()
+  const { messages } = useI18n()
   const progress = useSharedValue(0)
 
   useEffect(() => {
@@ -103,7 +105,7 @@ export function ConfirmModalHost() {
               { backgroundColor: "transparent", borderColor: theme.border, opacity: pressed ? 0.75 : 1 },
             ]}
           >
-            <Text style={styles.actionLabel}>{prompt.cancelLabel ?? "Cancel"}</Text>
+            <Text style={styles.actionLabel}>{prompt.cancelLabel ?? messages.common.cancel}</Text>
           </Pressable>
         </Animated.View>
       </View>

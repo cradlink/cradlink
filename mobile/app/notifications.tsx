@@ -9,9 +9,13 @@ import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
 import { useNotifications } from "@/hooks/use-notifications"
 import { formatRelative } from "@/lib/format"
-import type { AppNotification } from "@/lib/types"
+import { formatShortWhen } from "@/lib/schedule"
+import type { Activity, AppNotification } from "@/lib/types"
+import type { Messages } from "@/lib/i18n"
+import { tx } from "@/lib/i18n"
 
 export default function NotificationsScreen() {
   const theme = useTheme()
@@ -20,6 +24,7 @@ export default function NotificationsScreen() {
   const { get } = useActivities()
   const { open } = useActivityPreview()
   const { user, people } = useAuth()
+  const { messages } = useI18n()
 
   function actorIdOf(item: AppNotification) {
     if (item.actorId) return item.actorId
@@ -45,14 +50,14 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.screen}>
-      <TopBar title="Notifications" />
+      <TopBar title={messages.notifications.title} />
       <Refreshable contentContainerStyle={styles.list}>
         <Stagger>
           {items.length === 0 ? (
             <EmptyState
               key="empty"
-              title="No notifications."
-              body="Joins, requests, and reminders for your activities land here."
+              title={messages.notifications.emptyTitle}
+              body={messages.notifications.emptyBody}
               icon={{ ios: "bell", android: "notifications_none", web: "notifications_none" }}
             />
           ) : (
@@ -60,6 +65,7 @@ export default function NotificationsScreen() {
               <NotificationRow
                 key={item.id}
                 item={item}
+                copy={notificationCopy(item, messages, item.activityId ? get(item.activityId) : null)}
                 onPerson={() => openProfile(item)}
                 onOpen={() => {
                   if (item.type === "reminder") openActivity(item)
@@ -76,14 +82,45 @@ export default function NotificationsScreen() {
   )
 }
 
+function notificationCopy(item: AppNotification, m: Messages, activity: Activity | null) {
+  const name = item.actorName
+  const title = activity?.title || item.title
+  switch (item.type) {
+    case "joined":
+      return { title: tx(m.notifications.joinedTitle, { name, title }), body: m.notifications.joinedBody }
+    case "request":
+      return { title: tx(m.notifications.requestTitle, { name, title }), body: m.notifications.requestBody }
+    case "accepted":
+      return { title: tx(m.notifications.acceptedTitle, { title }), body: m.notifications.acceptedBody }
+    case "declined":
+      return { title: tx(m.notifications.declinedTitle, { title }), body: m.notifications.declinedBody }
+    case "updated":
+      return { title: tx(m.notifications.updatedTitle, { title }), body: m.notifications.updatedBody }
+    case "reminder":
+      return {
+        title,
+        body:
+          activity && (activity.isFlexible || !activity.startAt)
+            ? m.notifications.reminderFlex
+            : activity
+              ? tx(m.notifications.reminderWhen, { when: formatShortWhen(activity) })
+              : item.body,
+      }
+    default:
+      return { title: item.title, body: item.body }
+  }
+}
+
 function NotificationRow({
   item,
+  copy,
   onPerson,
   onOpen,
   unreadColor,
   border,
 }: {
   item: AppNotification
+  copy: { title: string; body: string }
   onPerson: () => void
   onOpen: () => void
   unreadColor: string
@@ -101,9 +138,9 @@ function NotificationRow({
         <Avatar name={item.actorName} src={item.actorAvatar} size={40} />
       </Pressable>
       <View style={styles.body} lightColor="transparent" darkColor="transparent">
-        <Text style={[styles.title, !item.read && styles.unread]}>{item.title}</Text>
+        <Text style={[styles.title, !item.read && styles.unread]}>{copy.title}</Text>
         <Text style={styles.copy} lightColor="#536471" darkColor="#71767b">
-          {item.body}
+          {copy.body}
         </Text>
         <Text style={styles.time} lightColor="#536471" darkColor="#71767b">
           {formatRelative(item.createdAt)}

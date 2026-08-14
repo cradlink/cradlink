@@ -1,16 +1,7 @@
-import { LOCATION_LABELS } from "@/lib/activity-meta"
+import { getDateLocale, getMessages, tx } from "@/lib/i18n"
 import type { Activity } from "@/lib/types"
 
 export type ScheduleBucket = "today" | "tomorrow" | "thisWeek" | "later" | "anytime" | "past"
-
-const LABELS: Record<ScheduleBucket, string> = {
-  today: "Today",
-  tomorrow: "Tomorrow",
-  thisWeek: "This week",
-  later: "Later",
-  anytime: "Anytime",
-  past: "Past",
-}
 
 const ORDER: ScheduleBucket[] = ["today", "tomorrow", "thisWeek", "later", "anytime", "past"]
 
@@ -64,39 +55,42 @@ export function nextUp(activities: Activity[]) {
 }
 
 export function groupBySchedule(activities: Activity[]) {
+  const labels = getMessages().schedule
   return ORDER.flatMap((key) => {
     const items = activities.filter((activity) => scheduleBucket(activity) === key).sort(sortBySchedule)
-    return items.length > 0 ? [{ key, title: LABELS[key], items }] : []
+    return items.length > 0 ? [{ key, title: labels[key], items }] : []
   })
 }
 
 export function formatClock(activity: Pick<Activity, "isFlexible" | "startAt">) {
   const start = activityStart(activity)
-  if (!start) return "Flexible"
-  return start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+  if (!start) return getMessages().schedule.flexible
+  return start.toLocaleTimeString(getDateLocale(), { hour: "2-digit", minute: "2-digit" })
 }
 
 export function formatShortWhen(activity: Pick<Activity, "isFlexible" | "startAt">) {
+  const m = getMessages()
   const start = activityStart(activity)
-  if (!start) return "Flexible"
+  if (!start) return m.schedule.flexible
   const time = formatClock(activity)
   const bucket = scheduleBucket(activity)
-  if (bucket === "today") return `Today · ${time}`
-  if (bucket === "tomorrow") return `Tomorrow · ${time}`
-  const day = start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+  if (bucket === "today") return tx(m.format.todayWhen, { time })
+  if (bucket === "tomorrow") return tx(m.format.tomorrowWhen, { time })
+  const day = start.toLocaleDateString(getDateLocale(), { weekday: "short", day: "numeric", month: "short" })
   return `${day} · ${time}`
 }
 
 export function formatDateParts(activity: Pick<Activity, "isFlexible" | "startAt">) {
   const start = activityStart(activity)
   if (!start) return null
+  const date = getDateLocale()
   return {
-    weekday: start.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase(),
+    weekday: start.toLocaleDateString(date, { weekday: "short" }).toUpperCase(),
     day: String(start.getDate()),
-    month: start.toLocaleDateString("en-GB", { month: "short" }).toUpperCase(),
+    month: start.toLocaleDateString(date, { month: "short" }).toUpperCase(),
   }
 }
 
 export function formatPlace(activity: Pick<Activity, "location">) {
-  return activity.location.venue || activity.location.city || LOCATION_LABELS[activity.location.type]
+  return activity.location.venue || activity.location.city || getMessages().places[activity.location.type]
 }

@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useMemberships } from "@/hooks/use-memberships"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
 import type { Activity, JoinRequest } from "@/lib/types"
 
@@ -19,6 +20,7 @@ const LIST_CAP = 3
 export function WaitingInbox() {
   const { inbox } = useMemberships()
   const { activities } = useActivities()
+  const { messages, tx } = useI18n()
   const [open, setOpen] = useState(false)
   const items = inbox()
   if (items.length === 0) return null
@@ -27,7 +29,7 @@ export function WaitingInbox() {
   return (
     <View style={styles.inbox} lightColor="transparent" darkColor="transparent">
       <Text style={styles.kicker} lightColor="#536471" darkColor="#71767b">
-        {items.length === 1 ? "1 waiting" : `${items.length} waiting`}
+        {items.length === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: items.length })}
       </Text>
       {visible.map((row) => {
         const activity = activities.find((item) => item.id === row.activityId)
@@ -37,7 +39,7 @@ export function WaitingInbox() {
       {items.length > LIST_CAP ? (
         <Pressable onPress={() => setOpen((value) => !value)} hitSlop={8}>
           <Text style={styles.more} lightColor="#536471" darkColor="#71767b">
-            {open ? "Show less" : "Show more"}
+            {open ? messages.common.showLess : messages.common.showMore}
           </Text>
         </Pressable>
       ) : null}
@@ -56,13 +58,14 @@ export function RequestList({ activity, compact = false }: { activity: Activity;
 }
 
 function CappedList({ activity, pending }: { activity: Activity; pending: JoinRequest[] }) {
+  const { messages, tx } = useI18n()
   const [open, setOpen] = useState(false)
   const visible = open ? pending : pending.slice(0, LIST_CAP)
 
   return (
     <View style={styles.wrap} lightColor="transparent" darkColor="transparent">
       <Text style={styles.kicker} lightColor="#536471" darkColor="#71767b">
-        {pending.length === 1 ? "1 waiting" : `${pending.length} waiting`}
+        {pending.length === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: pending.length })}
       </Text>
       {visible.map((row) => (
         <RequestRow key={row.id} row={row} activity={activity} />
@@ -70,7 +73,7 @@ function CappedList({ activity, pending }: { activity: Activity; pending: JoinRe
       {pending.length > LIST_CAP ? (
         <Pressable onPress={() => setOpen((value) => !value)} hitSlop={8}>
           <Text style={styles.more} lightColor="#536471" darkColor="#71767b">
-            {open ? "Show less" : "Show more"}
+            {open ? messages.common.showLess : messages.common.showMore}
           </Text>
         </Pressable>
       ) : null}
@@ -81,6 +84,7 @@ function CappedList({ activity, pending }: { activity: Activity; pending: JoinRe
 const LIFT = { duration: 320, easing: Easing.bezier(0.16, 1, 0.3, 1) }
 
 function CompactRequests({ activity, pending }: { activity: Activity; pending: JoinRequest[] }) {
+  const { messages, tx } = useI18n()
   const { reviewOpen, setReviewOpen } = usePreviewReview()
   const many = pending.length > 1
   const [open, setOpen] = useState(reviewOpen)
@@ -123,9 +127,11 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
           style={styles.summary}
         >
           <AvatarStack people={pending} ring="#16181c" />
-          <Text style={styles.summaryLabel}>{pending.length} waiting</Text>
+          <Text style={styles.summaryLabel}>
+            {pending.length === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: pending.length })}
+          </Text>
           <Text style={styles.summaryAction} lightColor="#536471" darkColor="#71767b">
-            {open ? "Hide" : "Review"}
+            {open ? messages.common.hide : messages.common.review}
           </Text>
         </Pressable>
       ) : null}
@@ -141,7 +147,7 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
           <RequestRow row={pending[0]} activity={activity} />
           {extra > 0 ? (
             <Text style={[styles.more, styles.morePad]} lightColor="#536471" darkColor="#71767b">
-              and {extra} more on My activities
+              {tx(messages.requests.moreOnMine, { count: extra })}
             </Text>
           ) : null}
         </View>
@@ -151,7 +157,7 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
           <RequestRow row={pending[0]} activity={activity} />
           {extra > 0 ? (
             <Text style={[styles.more, styles.morePad]} lightColor="#536471" darkColor="#71767b">
-              and {extra} more on My activities
+              {tx(messages.requests.moreOnMine, { count: extra })}
             </Text>
           ) : null}
         </View>
@@ -205,63 +211,64 @@ function RequestRow({
   const { user } = useAuth()
   const { ask } = useConfirm()
   const { show } = useToast()
+  const { messages, tx } = useI18n()
   const { notifyUser } = useNotifications()
   const { isFull, accept, decline } = useMemberships()
   const full = isFull(activity)
 
   async function onAccept() {
     if (full) {
-      show({ title: "Already full", tone: "error" })
+      show({ title: messages.requests.alreadyFull, tone: "error" })
       return
     }
     try {
       const next = await accept(row.id, activity)
       if (!next) {
-        show({ title: "Already full", tone: "error" })
+        show({ title: messages.requests.alreadyFull, tone: "error" })
         return
       }
       await notifyUser(row.userId, {
         type: "accepted",
         activityId: activity.id,
         actorId: user?.id ?? null,
-        actorName: user?.displayName ?? "The organizer",
+        actorName: user?.displayName ?? messages.requests.organizer,
         actorAvatar: user?.avatarUrl ?? null,
-        title: `You’re in · ${activity.title}`,
-        body: "The organizer accepted your request.",
+        title: tx(messages.notifications.acceptedTitle, { title: activity.title }),
+        body: messages.notifications.acceptedBody,
       })
-      show({ title: "Accepted" })
+      show({ title: messages.requests.accepted })
     } catch {
-      show({ title: "Couldn’t accept", tone: "error" })
+      show({ title: messages.requests.couldntAccept, tone: "error" })
     }
   }
 
   function onDecline() {
     ask({
-      title: `Decline ${row.userName}?`,
-      body: "They can request again later.",
-      confirmLabel: "Decline",
-      cancelLabel: "Keep them",
+      title: tx(messages.requests.declineTitle, { name: row.userName }),
+      body: messages.requests.declineBody,
+      confirmLabel: messages.common.decline,
+      cancelLabel: messages.requests.keepThem,
       destructive: true,
       onConfirm: () => {
         void (async () => {
           try {
             const next = await decline(row.id)
             if (!next) {
-              show({ title: "Couldn’t decline", tone: "error" })
+              show({ title: messages.requests.couldntDecline, tone: "error" })
               return
             }
             await notifyUser(row.userId, {
               type: "declined",
               activityId: activity.id,
               actorId: user?.id ?? null,
-              actorName: user?.displayName ?? "The organizer",
+              actorName: user?.displayName ?? messages.requests.organizer,
               actorAvatar: user?.avatarUrl ?? null,
-              title: `Not this time · ${activity.title}`,
-              body: "The organizer declined your request.",
+              title: tx(messages.notifications.declinedTitle, { title: activity.title }),
+              body: messages.notifications.declinedBody,
             })
-            show({ title: "Declined" })
+            show({ title: messages.requests.declined })
           } catch {
-            show({ title: "Couldn’t decline", tone: "error" })
+            show({ title: messages.requests.couldntDecline, tone: "error" })
           }
         })()
       },
@@ -280,7 +287,7 @@ function RequestRow({
           </Text>
         </CreatorPress>
         <Text style={styles.sub} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-          {subtitle ? `Wants to join · ${subtitle}` : "Wants to join"}
+          {subtitle ? tx(messages.requests.wantsJoinNamed, { title: subtitle }) : messages.requests.wantsJoin}
         </Text>
       </View>
       <Pressable
@@ -289,7 +296,7 @@ function RequestRow({
         style={({ pressed }) => [styles.ghost, { opacity: pressed ? 0.6 : 1 }]}
       >
         <Text style={styles.ghostLabel} lightColor="#536471" darkColor="#71767b">
-          Decline
+          {messages.common.decline}
         </Text>
       </Pressable>
       <Pressable
@@ -302,7 +309,7 @@ function RequestRow({
           },
         ]}
       >
-        <Text style={[styles.acceptLabel, { color: theme.background }]}>Accept</Text>
+        <Text style={[styles.acceptLabel, { color: theme.background }]}>{messages.common.accept}</Text>
       </Pressable>
     </View>
   )

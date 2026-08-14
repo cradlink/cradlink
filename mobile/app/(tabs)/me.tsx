@@ -11,7 +11,7 @@ import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { useMemberships } from "@/hooks/use-memberships"
+import { useI18n } from "@/hooks/use-i18n"
 import { groupBySchedule } from "@/lib/schedule"
 
 export default function MyActivitiesScreen() {
@@ -19,6 +19,7 @@ export default function MyActivitiesScreen() {
   const theme = useTheme()
   const { user } = useAuth()
   const { activities, ready } = useActivities()
+  const { locale, messages } = useI18n()
   const { groups, flat } = useMemo(() => {
     const hosted = activities.filter((activity) => activity.creatorId === user?.id)
     const next = groupBySchedule(hosted)
@@ -26,13 +27,13 @@ export default function MyActivitiesScreen() {
       groups: next,
       flat: next.flatMap((group) => group.items),
     }
-  }, [activities, user?.id])
+  }, [activities, locale, user?.id])
 
   const sectioned = groups.length > 1
 
   return (
     <View style={styles.screen}>
-      <TopBar title="My activities" />
+      <TopBar title={messages.me.title} />
       <Refreshable contentContainerStyle={styles.list}>
         {!ready ? null : (
           <Stagger>
@@ -40,11 +41,11 @@ export default function MyActivitiesScreen() {
             {flat.length === 0 ? (
               <EmptyState
                 key="empty"
-                title="You haven’t posted yet."
-                body="Host something people can actually show up to."
+                title={messages.me.emptyTitle}
+                body={messages.me.emptyBody}
                 icon={{ ios: "square.and.pencil", android: "edit", web: "edit" }}
                 action={{
-                  label: "Post an activity",
+                  label: messages.me.postActivity,
                   variant: "primary",
                   onPress: () => router.push("/activities/new"),
                 }}

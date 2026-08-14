@@ -3,15 +3,11 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 
 import { Text, useTheme } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import { ACTIVITY_TYPES, type ActivityType, type LocationType } from "@/lib/types"
 
-const PLACES: { value: LocationType | "all"; label: string }[] = [
-  { value: "all", label: "Any place" },
-  { value: "online", label: "Online" },
-  { value: "in-person", label: "In person" },
-  { value: "hybrid", label: "Hybrid" },
-]
+const PLACE_VALUES: (LocationType | "all")[] = ["all", "online", "in-person", "hybrid"]
 
 export function FeedFilters({
   type,
@@ -25,15 +21,16 @@ export function FeedFilters({
   onLocation: (value: LocationType | "all") => void
 }) {
   const theme = useTheme()
+  const { messages } = useI18n()
 
   return (
     <View style={[styles.wrap, { borderBottomColor: theme.border }]}>
       <FadeScroller>
-        <Chip label="All" active={type === "all"} onPress={() => onType("all")} />
+        <Chip label={messages.common.all} active={type === "all"} onPress={() => onType("all")} />
         {ACTIVITY_TYPES.map((value) => (
           <Chip
             key={value}
-            label={ACTIVITY_META[value].label}
+            label={messages.types[value]}
             color={ACTIVITY_META[value].color}
             active={type === value}
             onPress={() => onType(value)}
@@ -41,12 +38,12 @@ export function FeedFilters({
         ))}
       </FadeScroller>
       <FadeScroller>
-        {PLACES.map((item) => (
+        {PLACE_VALUES.map((value) => (
           <Chip
-            key={item.value}
-            label={item.label}
-            active={locationType === item.value}
-            onPress={() => onLocation(item.value)}
+            key={value}
+            label={messages.places[value]}
+            active={locationType === value}
+            onPress={() => onLocation(value)}
           />
         ))}
       </FadeScroller>

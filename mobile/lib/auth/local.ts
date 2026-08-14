@@ -152,12 +152,12 @@ export const localAuth: AuthRepo = {
 
   async updateProfile(input: UpdateProfileInput) {
     const id = await AsyncStorage.getItem(SESSION_KEY)
-    if (!id) throw new AppError("Sign in first.")
+    if (!id) throw new AppError("signInFirst")
     const users = await ensureSeed()
     const stored = users[id]
-    if (!stored) throw new AppError("Account not found.")
+    if (!stored) throw new AppError("accountNotFound")
     const name = input.displayName?.trim()
-    if (name !== undefined && name.length < 2) throw new AppError("Name needs at least 2 characters.")
+    if (name !== undefined && name.length < 2) throw new AppError("nameTooShort")
     users[id] = {
       ...stored,
       displayName: name ?? stored.displayName,
@@ -177,13 +177,13 @@ export const localAuth: AuthRepo = {
     const users = await ensureSeed()
     const trimmedEmail = email.trim().toLowerCase()
     const name = displayName.trim()
-    if (!name) throw new AppError("Please add a name.")
+    if (!name) throw new AppError("nameRequired")
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      throw new AppError("That email doesn’t look right.")
+      throw new AppError("emailInvalid")
     }
-    if (password.length < 6) throw new AppError("Password needs at least 6 characters.")
+    if (password.length < 6) throw new AppError("passwordTooShort")
     if (Object.values(users).some((user) => user.email.toLowerCase() === trimmedEmail)) {
-      throw new AppError("An account with that email already exists.")
+      throw new AppError("emailTaken")
     }
 
     const timestamp = nowIso()
@@ -211,9 +211,9 @@ export const localAuth: AuthRepo = {
     const users = await ensureSeed()
     const trimmedEmail = email.trim().toLowerCase()
     const stored = Object.values(users).find((user) => user.email.toLowerCase() === trimmedEmail)
-    if (!stored?.passwordHash) throw new AppError("Wrong email or password.")
+    if (!stored?.passwordHash) throw new AppError("badCredentials")
     const incoming = hashPassword(password)
-    if (incoming !== stored.passwordHash) throw new AppError("Wrong email or password.")
+    if (incoming !== stored.passwordHash) throw new AppError("badCredentials")
     await AsyncStorage.setItem(SESSION_KEY, stored.id)
     const user = publicUser(stored)
     emit(user)

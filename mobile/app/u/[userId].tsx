@@ -8,20 +8,22 @@ import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function PublicProfileScreen() {
   const navigation = useNavigation()
   const router = useRouter()
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const { user, getUser, reload } = useAuth()
+  const { messages } = useI18n()
   const { activities } = useActivities()
   const person = userId ? getUser(userId) : null
   const hosted = person ? activities.filter((activity) => activity.creatorId === person.id) : []
   const isSelf = Boolean(person && user?.id === person.id)
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: person?.displayName ?? "Profile" })
-  }, [navigation, person?.displayName])
+    navigation.setOptions({ title: person?.displayName ?? messages.tabs.profile })
+  }, [messages.tabs.profile, navigation, person?.displayName])
 
   useEffect(() => {
     if (userId && !getUser(userId)) void reload()
@@ -37,7 +39,7 @@ export default function PublicProfileScreen() {
     <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
         {!person ? (
-          <EmptyState key="missing" title="No one here by that name." body="They may have left, or this link is old." />
+          <EmptyState key="missing" title={messages.profile.missingTitle} body={messages.profile.missingBody} />
         ) : (
           [
             <ProfileView key="hero" user={person} hostedCount={hosted.length} />,

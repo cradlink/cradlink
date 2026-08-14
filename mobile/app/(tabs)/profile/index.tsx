@@ -8,11 +8,13 @@ import { TopBar } from "@/components/TopBar"
 import { View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
+import { useI18n } from "@/hooks/use-i18n"
 
 export default function ProfileScreen() {
   const router = useRouter()
   const { user } = useAuth()
   const { activities } = useActivities()
+  const { messages } = useI18n()
 
   if (!user) return null
 
@@ -20,7 +22,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <TopBar title="Profile" onSettings={() => router.push("/settings")} />
+      <TopBar title={messages.profile.title} onSettings={() => router.push("/settings")} />
       <Refreshable contentContainerStyle={styles.list}>
         <Stagger>
           <ProfileView key="hero" user={user} isSelf hostedCount={hosted.length} />

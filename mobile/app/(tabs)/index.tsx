@@ -10,12 +10,14 @@ import { SearchResults } from "@/components/SearchResults"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
+import { useI18n } from "@/hooks/use-i18n"
 import type { ActivityType, LocationType } from "@/lib/types"
 
 export default function FeedScreen() {
   const router = useRouter()
   const theme = useTheme()
   const { activities: all } = useActivities()
+  const { messages } = useI18n()
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState("")
   const [type, setType] = useState<ActivityType | "all">("all")
@@ -59,7 +61,7 @@ export default function FeedScreen() {
           <Refreshable contentContainerStyle={styles.list} keyboardDismissMode="on-drag">
             <Stagger>
               {activities.length === 0 ? (
-                <EmptyState key="empty" title="No matches." body="Try another search." />
+                <EmptyState key="empty" title={messages.home.noMatchesTitle} body={messages.home.noMatchesBody} />
               ) : (
                 activities.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
               )}

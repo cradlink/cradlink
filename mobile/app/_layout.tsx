@@ -15,6 +15,7 @@ import { ActivitiesProvider } from "@/hooks/use-activities"
 import { ActivityPreviewProvider } from "@/hooks/use-activity-preview"
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
+import { I18nProvider, useI18n } from "@/hooks/use-i18n"
 import { MembershipProvider } from "@/hooks/use-memberships"
 import { NotificationsProvider } from "@/hooks/use-notifications"
 import { ToastProvider } from "@/hooks/use-toast"
@@ -67,6 +68,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function RootNav() {
+  const { messages } = useI18n()
   return (
     <ThemeProvider value={cradlinkDark}>
       <AuthGate>
@@ -99,9 +101,9 @@ function RootNav() {
           />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="search" options={{ headerShown: false }} />
-          <Stack.Screen name="settings" options={{ title: "Settings" }} />
-          <Stack.Screen name="activities/[id]" options={{ title: "Activity" }} />
-          <Stack.Screen name="u/[userId]" options={{ title: "Profile" }} />
+          <Stack.Screen name="settings" options={{ title: messages.settings.title }} />
+          <Stack.Screen name="activities/[id]" options={{ title: messages.common.activity }} />
+          <Stack.Screen name="u/[userId]" options={{ title: messages.tabs.profile }} />
         </Stack>
       </AuthGate>
       <ActivityPreview />
@@ -115,20 +117,22 @@ function RootNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <ActivitiesProvider>
-        <MembershipProvider>
-          <NotificationsProvider>
-            <ActivityPreviewProvider>
-              <ConfirmProvider>
-                <ToastProvider>
-                  <RootNav />
-                </ToastProvider>
-              </ConfirmProvider>
-            </ActivityPreviewProvider>
-          </NotificationsProvider>
-        </MembershipProvider>
-      </ActivitiesProvider>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <ActivitiesProvider>
+          <MembershipProvider>
+            <NotificationsProvider>
+              <ActivityPreviewProvider>
+                <ConfirmProvider>
+                  <ToastProvider>
+                    <RootNav />
+                  </ToastProvider>
+                </ConfirmProvider>
+              </ActivityPreviewProvider>
+            </NotificationsProvider>
+          </MembershipProvider>
+        </ActivitiesProvider>
+      </AuthProvider>
+    </I18nProvider>
   )
 }

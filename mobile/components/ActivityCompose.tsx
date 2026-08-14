@@ -21,8 +21,10 @@ import { WhenSheet } from "@/components/WhenSheet"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
 import { ACTIVITY_META } from "@/lib/activity-meta"
+import { getDateLocale, tx } from "@/lib/i18n"
 import { presetsForType, resolveBannerKey } from "@/lib/banners"
 import {
   ACTIVITY_TYPES,
@@ -51,7 +53,7 @@ function tomorrowAt(hours = 18) {
 }
 
 function formatPicked(d: Date) {
-  return d.toLocaleString("en-GB", {
+  return d.toLocaleString(getDateLocale(), {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -78,6 +80,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
   const { add, update } = useActivities()
   const { ask } = useConfirm()
   const { show } = useToast()
+  const { messages } = useI18n()
   const editing = Boolean(activity)
 
   const [title, setTitle] = useState(activity?.title ?? "")
@@ -147,10 +150,10 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
       return
     }
     ask({
-      title: editing ? "Discard changes?" : "Discard activity?",
-      body: editing ? "Your edits won’t be saved." : "This won’t be saved.",
-      confirmLabel: "Discard",
-      cancelLabel: editing ? "Keep editing" : "Keep writing",
+      title: editing ? messages.compose.discardEditTitle : messages.compose.discardNewTitle,
+      body: editing ? messages.compose.discardEditBody : messages.compose.discardNewBody,
+      confirmLabel: messages.common.discard,
+      cancelLabel: editing ? messages.compose.keepEditing : messages.compose.keepWriting,
       destructive: true,
       onConfirm: () => router.back(),
     })
@@ -194,14 +197,14 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
       }
       if (editing && activity) {
         await update(activity.id, input)
-        show({ title: "Saved" })
+        show({ title: messages.compose.saved })
       } else {
         await add(input)
-        show({ title: "Posted" })
+        show({ title: messages.compose.posted })
       }
       router.back()
     } catch {
-      show({ title: editing ? "Couldn’t save" : "Couldn’t post", tone: "error" })
+      show({ title: editing ? messages.compose.couldntSave : messages.compose.couldntPost, tone: "error" })
     } finally {
       setBusy(false)
     }
@@ -210,7 +213,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
   return (
     <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: theme.background }]}>
       <View style={[styles.top, { borderBottomColor: theme.border }]}>
-        <Pressable onPress={close} hitSlop={12} style={styles.iconBtn} accessibilityLabel="Close">
+        <Pressable onPress={close} hitSlop={12} style={styles.iconBtn} accessibilityLabel={messages.common.close}>
           <SymbolView
             name={{ ios: "xmark", android: "close", web: "close" }}
             tintColor={theme.foreground}
@@ -229,12 +232,12 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
           contentContainerStyle={styles.body}
         >
           <View style={styles.compose}>
-            <Avatar name={user?.displayName ?? "You"} src={user?.avatarUrl} size={36} />
+            <Avatar name={user?.displayName ?? messages.common.you} src={user?.avatarUrl} size={36} />
             <View style={styles.fields}>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="What’s the activity?"
+                placeholder={messages.compose.titlePlaceholder}
                 placeholderTextColor={theme.mutedForeground}
                 keyboardAppearance="dark"
                 selectionColor={theme.primary}
@@ -243,7 +246,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
               <TextInput
                 value={description}
                 onChangeText={setDescription}
-                placeholder="What happens, who it’s for, what to bring."
+                placeholder={messages.compose.bodyPlaceholder}
                 placeholderTextColor={theme.mutedForeground}
                 keyboardAppearance="dark"
                 selectionColor={theme.primary}
@@ -254,7 +257,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
           </View>
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
-            Type
+            {messages.compose.type}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
             {ACTIVITY_TYPES.map((value) => {
@@ -277,7 +280,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
                       { color: active ? theme.background : ACTIVITY_META[value].color },
                     ]}
                   >
-                    {ACTIVITY_META[value].label}
+                    {messages.types[value]}
                   </Text>
                 </Pressable>
               )
@@ -285,7 +288,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
           </ScrollView>
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
-            Banner
+            {messages.compose.banner}
           </Text>
           <Pressable
             onPress={() => setPickerOpen(true)}
@@ -295,7 +298,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
               <>
                 <Image source={banner} style={styles.bannerImage} />
                 <View style={styles.bannerHint}>
-                  <Text style={styles.bannerHintText}>Change banner</Text>
+                  <Text style={styles.bannerHintText}>{messages.compose.changeBanner}</Text>
                 </View>
               </>
             ) : (
@@ -305,16 +308,16 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
                   tintColor={theme.mutedForeground}
                   size={28}
                 />
-                <Text style={styles.bannerTitle}>Add a banner</Text>
+                <Text style={styles.bannerTitle}>{messages.compose.addBanner}</Text>
                 <Text style={styles.bannerSub} lightColor="#536471" darkColor="#71767b">
-                  Pick one for {ACTIVITY_META[type].label}, or use your photo
+                  {tx(messages.compose.addBannerSub, { type: messages.types[type] })}
                 </Text>
               </View>
             )}
           </Pressable>
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
-            Where
+            {messages.compose.where}
           </Text>
           <View style={styles.row}>
             {PLACES.map((value) => {
@@ -332,7 +335,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
                   ]}
                 >
                   <Text style={[styles.chipLabel, { color: active ? theme.background : theme.mutedForeground }]}>
-                    {value === "in-person" ? "In person" : value === "online" ? "Online" : "Hybrid"}
+                    {messages.places[value]}
                   </Text>
                 </Pressable>
               )
@@ -342,7 +345,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
             <TextInput
               value={city}
               onChangeText={setCity}
-              placeholder="Place name"
+              placeholder={messages.compose.placeName}
               placeholderTextColor={theme.mutedForeground}
               keyboardAppearance="dark"
               selectionColor={theme.primary}
@@ -352,15 +355,15 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
           ) : null}
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
-            When
+            {messages.compose.when}
           </Text>
           <View style={styles.row}>
             {(
               [
-                { id: "flex", label: "Flexible", on: setFlexibleOn, active: flexible },
-                { id: "today", label: "Today", on: setToday, active: !flexible && !!startAt && isSameDay(startAt, 0) },
-                { id: "tmrw", label: "Tomorrow", on: setTomorrow, active: !flexible && !!startAt && isSameDay(startAt, 1) },
-                { id: "pick", label: "Pick date", on: setPick, active: !flexible && !!startAt && !isSameDay(startAt, 0) && !isSameDay(startAt, 1) },
+                { id: "flex", label: messages.schedule.flexible, on: setFlexibleOn, active: flexible },
+                { id: "today", label: messages.schedule.today, on: setToday, active: !flexible && !!startAt && isSameDay(startAt, 0) },
+                { id: "tmrw", label: messages.schedule.tomorrow, on: setTomorrow, active: !flexible && !!startAt && isSameDay(startAt, 1) },
+                { id: "pick", label: messages.schedule.pickDate, on: setPick, active: !flexible && !!startAt && !isSameDay(startAt, 0) && !isSameDay(startAt, 1) },
               ] as const
             ).map((item) => (
               <Pressable
@@ -387,13 +390,13 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
           ) : null}
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
-            Who can join
+            {messages.compose.who}
           </Text>
           <View style={styles.row}>
             {(
               [
-                { value: "auto" as const, label: "Anyone" },
-                { value: "manual" as const, label: "Request" },
+                { value: "auto" as const, label: messages.compose.anyone },
+                { value: "manual" as const, label: messages.compose.request },
               ]
             ).map((item) => {
               const active = joinPolicy === item.value
@@ -431,7 +434,13 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
             ]}
           >
             <Text style={[styles.postLabel, { color: theme.background }]}>
-              {busy ? (editing ? "Saving…" : "Posting…") : editing ? "Save" : "Post activity"}
+              {busy
+                ? editing
+                  ? messages.common.saving
+                  : messages.compose.posting
+                : editing
+                  ? messages.common.save
+                  : messages.compose.post}
             </Text>
           </Pressable>
         </View>
@@ -452,9 +461,9 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
         <View style={styles.sheetRoot}>
           <Pressable style={styles.sheetDim} onPress={() => setPickerOpen(false)} />
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16), borderColor: theme.border }]}>
-            <Text style={styles.sheetTitle}>Choose a banner</Text>
+            <Text style={styles.sheetTitle}>{messages.compose.chooseBanner}</Text>
             <Text style={styles.sheetSub} lightColor="#536471" darkColor="#71767b">
-              {ACTIVITY_META[type].label}
+              {messages.types[type]}
             </Text>
             <View style={styles.grid}>
               <Pressable onPress={() => void pickOwn()} style={[styles.own, { borderColor: theme.border }]}>
@@ -463,7 +472,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
                   tintColor={theme.foreground}
                   size={22}
                 />
-                <Text style={styles.ownLabel}>Your photo</Text>
+                <Text style={styles.ownLabel}>{messages.compose.yourPhoto}</Text>
               </Pressable>
               {presets.map((key) => {
                 const src = resolveBannerKey(key)

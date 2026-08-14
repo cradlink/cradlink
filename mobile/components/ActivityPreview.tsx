@@ -21,6 +21,7 @@ import { RequestList } from "@/components/RequestList"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
+import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 
@@ -38,6 +39,7 @@ export function ActivityPreview() {
   const theme = useTheme()
   const pathname = usePathname()
   const { preview, close, registerCloser } = useActivityPreview()
+  const { messages } = useI18n()
   const onProfile = pathname.startsWith("/u/") || pathname === "/profile" || pathname.startsWith("/profile/")
   const wasAway = useRef(false)
   const { decorate } = useMemberships()
@@ -116,7 +118,7 @@ export function ActivityPreview() {
             cardStyle,
           ]}
         >
-          <Pressable onPress={dismiss} style={styles.close} hitSlop={12} accessibilityLabel="Close">
+          <Pressable onPress={dismiss} style={styles.close} hitSlop={12} accessibilityLabel={messages.common.close}>
             <SymbolView
               name={{ ios: "xmark", android: "close", web: "close" }}
               tintColor={theme.foreground}

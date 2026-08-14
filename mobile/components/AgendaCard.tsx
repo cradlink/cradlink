@@ -5,6 +5,7 @@ import { ActivityPressable, listHairline } from "@/components/ActivityPressable"
 import { CreatorPress } from "@/components/CreatorPress"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
+import { useI18n } from "@/hooks/use-i18n"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import { formatHeadcount } from "@/lib/format"
 import { resolveActivityBanner } from "@/lib/banners"
@@ -27,13 +28,14 @@ export function AgendaHero({
   pending?: boolean
 }) {
   const theme = useTheme()
+  const { messages } = useI18n()
 
   return (
     <ActivityPressable activity={activity} style={[styles.hero, { borderBottomColor: theme.border }]}>
       <ActivityCover activity={activity} />
       <View style={styles.heroMeta} lightColor="transparent" darkColor="transparent">
         <TypeBadge type={activity.type} />
-        {pending ? <StatusPill label="Requested" color={theme.primary} /> : null}
+        {pending ? <StatusPill label={messages.join.requested} color={theme.primary} /> : null}
       </View>
       <Text style={styles.heroTitle}>{activity.title}</Text>
       <Text style={styles.heroWhen}>{formatShortWhen(activity)}</Text>
@@ -59,6 +61,7 @@ export function AgendaRow({
   showDate?: boolean
 }) {
   const theme = useTheme()
+  const { messages } = useI18n()
   const parts = formatDateParts(activity)
   const accent = ACTIVITY_META[activity.type].color
   const dated = showDate && parts
@@ -91,7 +94,7 @@ export function AgendaRow({
             ? `${formatClock(activity)} · ${formatPlace(activity)}`
             : parts
               ? formatPlace(activity)
-              : `Flexible · ${formatPlace(activity)}`}
+              : `${messages.schedule.flexible} · ${formatPlace(activity)}`}
         </Text>
         <View style={styles.foot} lightColor="transparent" darkColor="transparent">
           <CreatorPress userId={activity.creatorId}>
@@ -99,7 +102,7 @@ export function AgendaRow({
               {activity.creatorName} · {formatHeadcount(activity)}
             </Text>
           </CreatorPress>
-          {pending ? <StatusPill label="Requested" color={theme.primary} /> : null}
+          {pending ? <StatusPill label={messages.join.requested} color={theme.primary} /> : null}
         </View>
       </View>
 
