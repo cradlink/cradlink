@@ -2,13 +2,21 @@
 
 Find people. Do the thing.
 
-Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is this React (Vite) app. Phase 2 is the Expo app in [`mobile/`](./mobile). Same Firebase project later.
+Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is the React (Vite) app in [`web/`](./web). Phase 2 is the Expo app in [`mobile/`](./mobile). Same Firebase project later.
 
-## Run it
+```
+web/      React (Vite) app
+mobile/   Expo app (later)
+```
+
+Firebase rules at the repo root are shared.
+
+## Run the web app
 
 Needs **Node 20.19+**.
 
 ```bash
+cd web
 npm install
 npm run dev
 ```
@@ -51,7 +59,7 @@ Data lives in this browser until you switch to Firebase.
 
 1. Create a Firebase project. Enable **Authentication** (Email/Password + Google), **Firestore**, and **Storage**.
 2. Register a web app and copy the config.
-3. Copy `.env.example` to `.env.local` and fill in the keys:
+3. Copy `web/.env.example` to `web/.env.local` and fill in the keys:
 
 ```
 VITE_BACKEND=firebase
@@ -65,13 +73,19 @@ VITE_FIREBASE_APP_ID=...
 
 4. Paste `firestore.rules` and `storage.rules` in the Firebase console (or deploy with the Firebase CLI).
 5. Deploy `firestore.indexes.json` or accept the index links the console shows on first query.
-6. Restart `npm run dev`.
+6. Restart `npm run dev` from `web/`.
 
 The UI does not change. Auth, activities, members, and avatars go through the same repository interface.
 
 ## Deploy (web)
 
-Push to GitHub, import the repo on Vercel, add the same env vars, and add the Vercel domain under Firebase Auth → Authorized domains. `vercel.json` rewrites unknown paths to `index.html` so client-side routes work.
+Import the repo on Vercel. The app is in `web/`.
+
+- Set **Root Directory** to `web`, or leave the repo root — `vercel.json` at the root builds `web/`.
+- Add the same `VITE_*` env vars.
+- Add the Vercel domain under Firebase Auth → Authorized domains.
+
+SPA routes are rewritten to `index.html`.
 
 ## Stack
 

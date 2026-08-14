@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" class="dark h-full antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/images/cradlink.svg" />
+    <link rel="apple-touch-icon" href="/images/cradlink.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cradlink</title>
+    <meta name="description" content="Find people. Do the thing." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("cl_theme_v2");
+          var d = t !== "light";
+          if (d) {
+            document.documentElement.classList.add("dark");
+            document.documentElement.style.colorScheme = "dark";
+          } else {
+            document.documentElement.classList.remove("dark");
+            document.documentElement.style.colorScheme = "light";
+          }
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-full bg-background font-sans text-foreground">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
