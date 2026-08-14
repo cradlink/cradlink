@@ -1,7 +1,7 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View as RNView } from "react-native"
-import { BlurView } from "expo-blur"
 import { SymbolView } from "expo-symbols"
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg"
 import Animated, {
   Easing,
   interpolate,
@@ -26,41 +26,51 @@ const TARGET_W = Math.min(SCREEN_W - 28, 420)
 const TARGET_H = Math.min(SCREEN_H * 0.8, 680)
 const TARGET_X = (SCREEN_W - TARGET_W) / 2
 const TARGET_Y = (SCREEN_H - TARGET_H) / 2
-const OPEN = { duration: 360, easing: Easing.bezier(0.22, 1, 0.36, 1) }
-const CLOSE = { duration: 240, easing: Easing.bezier(0.4, 0, 0.2, 1) }
+const OPEN = { duration: 400, easing: Easing.bezier(0.16, 1, 0.3, 1) }
+const CLOSE = { duration: 320, easing: Easing.bezier(0.4, 0, 0.2, 1) }
+const SHEET_BG = "#16181c"
+const FADE_H = 72
 
 export function ActivityPreview() {
   const theme = useTheme()
   const { preview, close } = useActivityPreview()
   const { decorate } = useMemberships()
   const progress = useSharedValue(0)
-  const ox = useSharedValue(TARGET_X)
-  const oy = useSharedValue(TARGET_Y)
-  const ow = useSharedValue(TARGET_W)
-  const oh = useSharedValue(TARGET_H)
+  const fromX = useSharedValue(0)
+  const fromY = useSharedValue(0)
+  const [overflow, setOverflow] = useState(false)
+  const [viewportH, setViewportH] = useState(0)
+  const [contentH, setContentH] = useState(0)
+
+  useEffect(() => {
+    setOverflow(contentH > viewportH + 4)
+  }, [contentH, viewportH])
 
   useEffect(() => {
     if (!preview) return
     const { x, y, width, height } = preview.origin
-    ox.value = width > 8 ? x : TARGET_X
-    oy.value = height > 8 ? y : TARGET_Y
-    ow.value = width > 8 ? width : TARGET_W * 0.9
-    oh.value = height > 8 ? height : TARGET_H * 0.9
+    if (width > 8 && height > 8) {
+      fromX.value = x + width / 2 - (TARGET_X + TARGET_W / 2)
+      fromY.value = y + height / 2 - (TARGET_Y + TARGET_H / 2)
+    } else {
+      fromX.value = 0
+      fromY.value = 40
+    }
     progress.value = 0
     progress.value = withTiming(1, OPEN)
-  }, [oh, ow, ox, oy, preview, progress])
+  }, [fromX, fromY, preview, progress])
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, 1]),
   }))
 
   const cardStyle = useAnimatedStyle(() => ({
-    position: "absolute" as const,
-    left: interpolate(progress.value, [0, 1], [ox.value, TARGET_X]),
-    top: interpolate(progress.value, [0, 1], [oy.value, TARGET_Y]),
-    width: interpolate(progress.value, [0, 1], [ow.value, TARGET_W]),
-    height: interpolate(progress.value, [0, 1], [oh.value, TARGET_H]),
-    opacity: interpolate(progress.value, [0, 0.12, 1], [0, 1, 1]),
+    transform: [
+      { translateX: interpolate(progress.value, [0, 1], [fromX.value, 0]) },
+      { translateY: interpolate(progress.value, [0, 1], [fromY.value, 0]) },
+      { scale: interpolate(progress.value, [0, 1], [0.88, 1]) },
+    ],
+    opacity: interpolate(progress.value, [0, 0.45, 1], [0, 1, 1]),
   }))
 
   if (!preview) return null
@@ -79,19 +89,14 @@ export function ActivityPreview() {
       <RNView style={styles.layer}>
         <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={styles.fill} onPress={dismiss}>
-            <BlurView
-              intensity={55}
-              tint="default"
-              blurMethod="dimezisBlurView"
-              style={styles.fill}
-            />
+            <RNView style={styles.dim} pointerEvents="none" />
           </Pressable>
         </Animated.View>
 
         <Animated.View
           style={[
             styles.sheet,
-            { backgroundColor: "#16181c", borderColor: theme.border },
+            { backgroundColor: SHEET_BG, borderColor: theme.border },
             cardStyle,
           ]}
         >
@@ -102,10 +107,13 @@ export function ActivityPreview() {
               size={18}
             />
           </Pressable>
+          <RNView style={styles.column}>
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
+            onLayout={(event) => setViewportH(event.nativeEvent.layout.height)}
+            onContentSizeChange={(_, height) => setContentH(height)}
           >
             <View style={styles.byline}>
               <Avatar name={activity.creatorName} src={activity.creatorAvatar} size={44} />
@@ -130,7 +138,20 @@ export function ActivityPreview() {
             </Text>
             <ActivityCover activity={activity} compact={false} />
           </ScrollView>
-          <View style={[styles.footer, { borderTopColor: theme.border }]}>
+          {overflow ? (
+            <Svg pointerEvents="none" style={styles.fade} width={TARGET_W} height={FADE_H}>
+              <Defs>
+                <LinearGradient id="sheetFade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={SHEET_BG} stopOpacity="0" />
+                  <Stop offset="0.55" stopColor={SHEET_BG} stopOpacity="0.72" />
+                  <Stop offset="1" stopColor={SHEET_BG} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width={TARGET_W} height={FADE_H} fill="url(#sheetFade)" />
+            </Svg>
+          ) : null}
+          </RNView>
+          <View style={styles.footer}>
             <JoinButton activity={activity} wide />
           </View>
         </Animated.View>
@@ -142,6 +163,8 @@ export function ActivityPreview() {
 const styles = StyleSheet.create({
   layer: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   fill: {
     flex: 1,
@@ -153,7 +176,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
   },
+  dim: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(0,0,0,0.55)",
+  },
   sheet: {
+    width: TARGET_W,
+    height: TARGET_H,
     zIndex: 2,
     elevation: 24,
     borderRadius: 24,
@@ -172,14 +205,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(22,24,28,0.85)",
   },
+  column: {
+    flex: 1,
+  },
   scroll: {
     flex: 1,
   },
   content: {
     padding: 20,
     paddingTop: 24,
-    paddingBottom: 16,
+    paddingBottom: 28,
     gap: 10,
+  },
+  fade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: FADE_H,
   },
   byline: {
     flexDirection: "row",
@@ -211,9 +254,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    backgroundColor: "transparent",
+    backgroundColor: SHEET_BG,
   },
 })

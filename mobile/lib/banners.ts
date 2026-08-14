@@ -7,6 +7,7 @@ const NAMED: Record<string, ImageSourcePropType> = {
   imagine: require("../assets/activities/imagine.jpg"),
   connect: require("../assets/activities/connect.jpg"),
   seti: require("../assets/activities/seti.jpg"),
+  hike: require("../assets/activities/hike.jpg"),
 }
 
 const DEFAULTS: Record<ActivityType, ImageSourcePropType> = {
