@@ -22,7 +22,7 @@ export function getBackend(): Backend {
   if (getBackendName() === "firebase") {
     if (!isFirebaseConfigured()) {
       throw new Error(
-        "NEXT_PUBLIC_BACKEND=firebase but Firebase env vars are missing. Add them to .env.local or switch back to local.",
+        "VITE_BACKEND=firebase but Firebase env vars are missing. Add them to .env.local or switch back to local.",
       );
     }
     return {

@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useMemo, useState } from "react";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
@@ -10,7 +8,7 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { FEED_GRID } from "@/lib/activity-meta";
 import type { ActivityType, LocationType } from "@/lib/types";
 
-export default function FeedPage() {
+export function FeedPage() {
   const { user, ready } = useAuth();
   const [type, setType] = useState<ActivityType | "all">("all");
   const [locationType, setLocationType] = useState<LocationType | "all">("all");

@@ -8,7 +8,10 @@
 !.yarn/releases
 !.yarn/versions
 
-# next.js
+# vite
+/.vite/
+
+# leftover next.js
 /.next/
 /out/
 .turbo

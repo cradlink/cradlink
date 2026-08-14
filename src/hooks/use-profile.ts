@@ -1,5 +1,3 @@
-"use client";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getBackend } from "@/lib/backend";
 import type { UpdateProfileInput } from "@/lib/types";

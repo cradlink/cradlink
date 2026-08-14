@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Images } from "lucide-react";
 import { resolveActivityImages } from "@/lib/activity-meta";
@@ -16,7 +14,6 @@ export function ActivityCover({
   const images = resolveActivityImages(activity);
   return (
     <div className={cn("relative overflow-hidden bg-muted", className)}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={images[0]} alt="" className="h-full w-full object-cover" />
       {images.length > 1 ? (
         <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[11px] font-medium text-white">
@@ -36,7 +33,6 @@ export function ActivityGallery({ activity }: { activity: Activity }) {
   return (
     <div className="space-y-2">
       <div className="overflow-hidden rounded-2xl border border-border bg-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={current} alt={activity.title} className="aspect-[16/9] w-full object-cover" />
       </div>
       {images.length > 1 ? (
@@ -51,7 +47,6 @@ export function ActivityGallery({ activity }: { activity: Activity }) {
                 index === active ? "border-primary ring-2 ring-primary/40" : "border-border",
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={src} alt="" className="h-full w-full object-cover" />
             </button>
           ))}
