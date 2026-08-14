@@ -8,11 +8,15 @@ export function EmptyState({
   title,
   body,
   icon,
+  iconColor,
+  iconSize,
   action,
 }: {
   title: string
   body: string
   icon?: SymbolViewProps["name"]
+  iconColor?: string
+  iconSize?: number
   action?: { label: string; onPress: () => void; variant?: "primary" | "outline" }
 }) {
   const theme = useTheme()
@@ -21,7 +25,7 @@ export function EmptyState({
     <View style={styles.wrap} lightColor="transparent" darkColor="transparent">
       {icon ? (
         <View style={styles.icon} lightColor="transparent" darkColor="transparent">
-          <SymbolView name={icon} tintColor={theme.mutedForeground} size={36} />
+          <SymbolView name={icon} tintColor={iconColor ?? theme.foreground} size={iconSize ?? 28} />
         </View>
       ) : null}
       <Text style={styles.title}>{title}</Text>

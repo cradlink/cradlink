@@ -107,6 +107,7 @@ export type AppNotification = {
   userId: string;
   type: NotificationType;
   activityId: string | null;
+  actorId?: string | null;
   actorName: string;
   actorAvatar: string | null;
   title: string;

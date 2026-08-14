@@ -7,6 +7,7 @@ import type { UpdateProfileInput, User } from "@/lib/types"
 type AuthContextValue = {
   user: User | null
   ready: boolean
+  people: User[]
   getUser: (id: string) => User | null
   signIn: (input: SignInInput) => Promise<User>
   signUp: (input: SignUpInput) => Promise<User>
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       ready,
+      people: directory,
       getUser: (id) => {
         if (user?.id === id) return user
         return directory.find((entry) => entry.id === id) ?? null

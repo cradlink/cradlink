@@ -22,6 +22,7 @@ type NotificationsValue = {
     input: {
       type: NotificationType
       activityId: string | null
+      actorId?: string | null
       actorName: string
       actorAvatar: string | null
       title: string
@@ -49,6 +50,7 @@ function seedFor(userId: string, hosted: Activity[]): AppNotification[] {
       userId,
       type: "joined",
       activityId: first.id,
+      actorId: "user_ana",
       actorName: "Ana Kovač",
       actorAvatar: null,
       title: `Ana Kovač joined ${first.title}`,
@@ -61,6 +63,7 @@ function seedFor(userId: string, hosted: Activity[]): AppNotification[] {
       userId,
       type: "reminder",
       activityId: first.id,
+      actorId: first.creatorId,
       actorName: first.creatorName,
       actorAvatar: first.creatorAvatar,
       title: first.title,
@@ -76,6 +79,7 @@ function seedFor(userId: string, hosted: Activity[]): AppNotification[] {
       userId,
       type: "request",
       activityId: requested.id,
+      actorId: "user_luka",
       actorName: "Luka Ilić",
       actorAvatar: null,
       title: `Luka Ilić requested to join ${requested.title}`,
@@ -160,6 +164,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           userId: activity.creatorId,
           type,
           activityId: activity.id,
+          actorId: user.id,
           actorName: user.displayName,
           actorAvatar: user.avatarUrl,
           title:

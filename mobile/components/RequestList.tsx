@@ -223,6 +223,7 @@ function RequestRow({
       await notifyUser(row.userId, {
         type: "accepted",
         activityId: activity.id,
+        actorId: user?.id ?? null,
         actorName: user?.displayName ?? "The organizer",
         actorAvatar: user?.avatarUrl ?? null,
         title: `You’re in · ${activity.title}`,
@@ -252,6 +253,7 @@ function RequestRow({
             await notifyUser(row.userId, {
               type: "declined",
               activityId: activity.id,
+              actorId: user?.id ?? null,
               actorName: user?.displayName ?? "The organizer",
               actorAvatar: user?.avatarUrl ?? null,
               title: `Not this time · ${activity.title}`,

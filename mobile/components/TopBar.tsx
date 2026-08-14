@@ -12,6 +12,9 @@ export function TopBar({
   search,
   searchValue,
   onSearchChange,
+  onSearchPress,
+  searchActive,
+  onSearchCancel,
   action,
   onSettings,
 }: {
@@ -19,6 +22,9 @@ export function TopBar({
   search?: boolean
   searchValue?: string
   onSearchChange?: (value: string) => void
+  onSearchPress?: () => void
+  searchActive?: boolean
+  onSearchCancel?: () => void
   action?: { label: string; onPress: () => void }
   onSettings?: () => void
 }) {
@@ -83,18 +89,30 @@ export function TopBar({
         <View style={styles.searchRow}>
           <Logo compact iconSize={28} />
           <View style={[styles.field, { backgroundColor: theme.muted }]}>
-            <TextInput
-              keyboardAppearance="dark"
-              value={searchValue}
-              onChangeText={onSearchChange}
-              placeholder="Search"
-              placeholderTextColor={theme.mutedForeground}
-              selectionColor={theme.primary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              style={[styles.input, { color: theme.foreground }]}
+            <SymbolView
+              name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+              tintColor={theme.mutedForeground}
+              size={16}
             />
+            {searchActive ? (
+              <TextInput
+                autoFocus
+                keyboardAppearance="dark"
+                value={searchValue}
+                onChangeText={onSearchChange}
+                placeholder="Search"
+                placeholderTextColor={theme.mutedForeground}
+                selectionColor={theme.primary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                style={[styles.input, { color: theme.foreground, flex: 1 }]}
+              />
+            ) : (
+              <Pressable onPress={onSearchPress} style={styles.fieldHit} accessibilityRole="search">
+                <Text style={[styles.input, { color: theme.mutedForeground }]}>Search</Text>
+              </Pressable>
+            )}
           </View>
           {bell}
         </View>
@@ -157,8 +175,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 38,
     borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+  },
+  fieldHit: {
+    flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 16,
   },
   input: {
     fontSize: 16,
