@@ -21,7 +21,7 @@ export function SideNav() {
     <aside className="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col justify-between px-2 py-2 xl:w-[275px] lg:flex">
       <div>
         <div className="px-3 py-3">
-          <Logo wordmarkClassName="hidden xl:inline" />
+          <Logo wordmarkClassName="hidden xl:inline-block" />
         </div>
         <nav className="mt-1 space-y-1">
           {ITEMS.map((item) => {
