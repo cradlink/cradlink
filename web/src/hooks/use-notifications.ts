@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useFollowRequests } from "@/hooks/use-follows";
 import { getBackend } from "@/lib/backend";
 
 export function useNotifications(userId: string | undefined) {
@@ -7,13 +8,18 @@ export function useNotifications(userId: string | undefined) {
     queryKey: ["notifications", userId],
     queryFn: () => backend.notifications.list(userId!),
     enabled: Boolean(userId),
-    refetchInterval: 30_000,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 }
 
 export function useUnreadCount(userId: string | undefined) {
   const list = useNotifications(userId);
-  return list.data?.filter((item) => !item.read).length ?? 0;
+  const requests = useFollowRequests(userId);
+  const unread = list.data?.filter((item) => !item.read).length ?? 0;
+  const pending = requests.data?.length ?? 0;
+  const requestNotifs = list.data?.filter((item) => item.kind === "follow_request" && !item.read).length ?? 0;
+  return unread + Math.max(0, pending - requestNotifs);
 }
 
 export function useMarkNotificationRead() {

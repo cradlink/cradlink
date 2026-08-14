@@ -378,8 +378,12 @@ export const firebaseMembers: MembersRepo = {
       tx.update(actRef, { memberCount, status, updatedAt: timestamp });
       return { ...activity, memberCount, status, updatedAt: timestamp };
     }).then(async (activity) => {
-      const actor = await firebaseUsers.getById(userId);
-      if (actor) void notifyJoin(firebaseNotifications, activity, actor);
+      try {
+        const actor = await firebaseUsers.getById(userId);
+        if (actor) await notifyJoin(firebaseNotifications, activity, actor);
+      } catch {
+        // Join already succeeded; organizer just won’t get a ping this time.
+      }
       return activity;
     });
   },

@@ -1,6 +1,7 @@
 import { Home, Search, Bell, CalendarDays, UserRound, PenSquare } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/layout/logo";
+import { NotificationBadge } from "@/components/notifications/notification-badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
@@ -32,9 +33,11 @@ export function SideNav() {
             const active =
               item.href === "/search"
                 ? pathname === "/search" || pathname === "/explore"
-                : item.href === "/profile"
-                  ? pathname === "/profile" || pathname.startsWith("/u/")
-                  : pathname === item.href;
+                : item.href === "/notifications"
+                  ? pathname.startsWith("/notifications")
+                  : item.href === "/profile"
+                    ? pathname === "/profile" || pathname.startsWith("/u/")
+                    : pathname === item.href;
             const Icon = item.icon;
             return (
               <Link
@@ -47,11 +50,7 @@ export function SideNav() {
               >
                 <span className="relative">
                   <Icon className="size-7" strokeWidth={active ? 2.4 : 1.8} />
-                  {item.href === "/notifications" && unread > 0 ? (
-                    <span className="absolute -right-1.5 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
-                      {unread > 20 ? "20+" : unread}
-                    </span>
-                  ) : null}
+                  {item.href === "/notifications" ? <NotificationBadge count={unread} /> : null}
                 </span>
                 <span className="hidden xl:inline">{item.label}</span>
               </Link>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Search } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
+import { NotificationBadge } from "@/components/notifications/notification-badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
@@ -66,9 +67,7 @@ export function Header() {
             aria-label="Notifications"
           >
             <Bell className="size-5" />
-            {unread > 0 ? (
-              <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
-            ) : null}
+            <NotificationBadge count={unread} className="right-0 top-0" />
           </Link>
           <ThemeToggle />
         {user ? (

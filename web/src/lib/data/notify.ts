@@ -29,7 +29,7 @@ export async function notifyJoin(
   if (activity.creatorId === actor.id) return;
   const kind = activity.joinPolicy === "manual" ? "join_request" : "joined";
   return notify(repo, {
-    id: socialId(kind, activity.id, actor.id),
+    id: `${kind}_${activity.id}_${actor.id}_${createId("n")}`,
     recipientId: activity.creatorId,
     kind,
     activityId: activity.id,
