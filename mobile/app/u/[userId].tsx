@@ -1,18 +1,19 @@
-import { useEffect, useLayoutEffect } from "react"
+import { useEffect } from "react"
 import { StyleSheet } from "react-native"
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router"
+import { useLocalSearchParams, useRouter } from "expo-router"
 
 import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
 import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
+import { TopBar } from "@/components/TopBar"
+import { View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 
 export default function PublicProfileScreen() {
-  const navigation = useNavigation()
   const router = useRouter()
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const { user, getUser, reload } = useAuth()
@@ -23,10 +24,6 @@ export default function PublicProfileScreen() {
   const visible = person ? canSeeActivities(person) : false
   const hosted = person && visible ? activities.filter((activity) => activity.creatorId === person.id) : []
   const isSelf = Boolean(person && user?.id === person.id)
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: messages.profile.title })
-  }, [messages.profile.title, navigation])
 
   useEffect(() => {
     if (userId && !getUser(userId)) void reload()
@@ -39,7 +36,9 @@ export default function PublicProfileScreen() {
   if (isSelf) return null
 
   return (
-    <Refreshable contentContainerStyle={styles.list}>
+    <View style={styles.screen}>
+      <TopBar title={messages.profile.title} back />
+      <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
         {!person ? (
           <EmptyState key="missing" title={messages.profile.missingTitle} body={messages.profile.missingBody} />
@@ -63,11 +62,15 @@ export default function PublicProfileScreen() {
           ]
         )}
       </Stagger>
-    </Refreshable>
+      </Refreshable>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   list: {
     flexGrow: 1,
     paddingBottom: 40,

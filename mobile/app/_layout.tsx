@@ -113,7 +113,7 @@ function RootNav() {
           <Stack.Screen name="settings" options={{ title: messages.settings.title }} />
           <Stack.Screen name="follow-requests" options={{ title: messages.profile.requestsTitle }} />
           <Stack.Screen name="activities/[id]" options={{ title: messages.common.activity }} />
-          <Stack.Screen name="u/[userId]" options={{ title: messages.profile.title }} />
+          <Stack.Screen name="u/[userId]" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
       <ActivityPreview />

@@ -18,6 +18,7 @@ export function TopBar({
   onSearchCancel,
   action,
   onSettings,
+  back,
 }: {
   title?: string
   search?: boolean
@@ -28,6 +29,7 @@ export function TopBar({
   onSearchCancel?: () => void
   action?: { label: string; onPress: () => void }
   onSettings?: () => void
+  back?: boolean
 }) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
@@ -68,7 +70,23 @@ export function TopBar({
     >
       {title && !search ? (
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{title}</Text>
+          <View style={styles.left}>
+            {back ? (
+              <Pressable
+                onPress={() => router.back()}
+                hitSlop={8}
+                accessibilityLabel={messages.common.close}
+                style={styles.bellBtn}
+              >
+                <SymbolView
+                  name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
+                  tintColor={theme.foreground}
+                  size={22}
+                />
+              </Pressable>
+            ) : null}
+            <Text style={styles.title}>{title}</Text>
+          </View>
           <View style={styles.right}>
             {bell}
             {onSettings ? (
@@ -133,6 +151,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  left: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minWidth: 0,
   },
   title: {
     flexShrink: 1,
