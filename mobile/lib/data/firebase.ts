@@ -52,6 +52,7 @@ function mapUser(id: string, data: DocumentData): User {
     avatarUrl: (data.avatarUrl as string | null) ?? null,
     location: asString(data.location),
     visibility: data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
+    deactivatedAt: asString(data.deactivatedAt) || null,
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
   }

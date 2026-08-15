@@ -78,9 +78,7 @@ function PersonRow({ person, isSelf }: { person: User; isSelf?: boolean }) {
           {person.displayName}
         </Text>
         <Text style={styles.personMeta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-          {person.username
-            ? `@${person.username}`
-            : person.location || (isSelf ? messages.common.you : messages.common.somewhere)}
+          {handleOf(person)}
         </Text>
       </View>
     </Pressable>

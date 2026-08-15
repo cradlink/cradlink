@@ -1,3 +1,4 @@
+import { isDeactivated } from "@/lib/account"
 import type { Activity, User } from "@/lib/types"
 
 const PEOPLE_LIMIT = 7
@@ -32,6 +33,7 @@ function peopleScore(person: User, query: string) {
 
 export function searchPeople(people: User[], query: string) {
   return people
+    .filter((person) => !isDeactivated(person))
     .map((person) => ({ person, score: peopleScore(person, query) }))
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || a.person.displayName.localeCompare(b.person.displayName))

@@ -34,11 +34,9 @@ export function ProfileView({
           <Text style={styles.name} numberOfLines={2}>
             {user.displayName}
           </Text>
-          {user.username ? (
-            <Text style={styles.meta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-              {handleOf(user)}
-            </Text>
-          ) : null}
+          <Text style={styles.handle} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
+            {handleOf(user)}
+          </Text>
           {user.location ? (
             <Text style={styles.meta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
               {user.location}
@@ -104,6 +102,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.4,
     lineHeight: 26,
+  },
+  handle: {
+    fontSize: 15,
+    lineHeight: 19,
   },
   follow: {
     marginTop: 16,

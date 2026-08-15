@@ -57,7 +57,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [user?.id])
 
   useEffect(() => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setItems([])
       setReady(true)
       return
@@ -65,7 +65,6 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
     let active = true
     let stop: (() => void) | undefined
-    let retry: ReturnType<typeof setTimeout> | undefined
 
     function attach() {
       if (!user || !active) return
@@ -89,8 +88,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           setReady(true)
         },
         () => {
-          if (!active) return
-          retry = setTimeout(attach, 1200)
+          if (active) setReady(true)
         },
       )
     }
@@ -103,7 +101,6 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     return () => {
       active = false
       stop?.()
-      if (retry) clearTimeout(retry)
       app.remove()
     }
   }, [generation, user])

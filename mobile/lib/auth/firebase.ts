@@ -51,6 +51,7 @@ function mapUser(id: string, data: Record<string, unknown>, fallback?: Partial<U
     avatarUrl: (data.avatarUrl as string | null | undefined) ?? fallback?.avatarUrl ?? null,
     location: asString(data.location),
     visibility: data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
+    deactivatedAt: asString(data.deactivatedAt) || null,
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
   }
@@ -75,6 +76,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       avatarUrl: fbUser.photoURL,
       location: "",
       visibility: "public",
+      deactivatedAt: null,
       createdAt: timestamp,
       updatedAt: timestamp,
     }

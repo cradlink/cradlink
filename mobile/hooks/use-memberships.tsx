@@ -37,7 +37,7 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
   const [ready, setReady] = useState(false)
 
   const reload = useCallback(async () => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setMine({})
       setInboxItems([])
       setPendingMap({})
@@ -87,7 +87,7 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!activitiesReady) return
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setMine({})
       setInboxItems([])
       setPendingMap({})

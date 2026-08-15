@@ -105,7 +105,7 @@ export default function SettingsScreen() {
           onPress={() => router.push("/settings-deactivate")}
           style={({ pressed }) => [styles.danger, { opacity: pressed ? 0.7 : 1 }]}
         >
-          <Text style={styles.dangerLabel}>{messages.settings.deleteAccount}</Text>
+          <Text style={styles.dangerLabel}>{messages.settings.deactivate}</Text>
         </Pressable>
       </Stagger>
       </Refreshable>

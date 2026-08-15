@@ -152,7 +152,9 @@ export function watchFollows(userId: string, onData: (rows: FollowRequest[]) => 
         publish()
       },
       () => {
-        accepted = []
+        accepted = incoming.filter((row) => row.status === "accepted").concat(
+          outgoing.filter((row) => row.status === "accepted"),
+        )
         publish()
       },
     ),

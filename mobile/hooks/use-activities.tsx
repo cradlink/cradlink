@@ -32,7 +32,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   const [ready, setReady] = useState(false)
 
   const reload = useCallback(async () => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setActivities([])
       setReady(true)
       return
@@ -58,7 +58,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   }, [user])
 
   useEffect(() => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setActivities([])
       setReady(true)
       return

@@ -53,7 +53,7 @@ export function RepliesProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setItems([])
       setReady(true)
       return

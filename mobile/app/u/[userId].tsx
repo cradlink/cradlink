@@ -12,6 +12,7 @@ import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
+import { handleOf } from "@/lib/types"
 
 export default function PublicProfileScreen() {
   const router = useRouter()
@@ -37,7 +38,7 @@ export default function PublicProfileScreen() {
 
   return (
     <ScreenBlurTarget style={styles.screen}>
-      <TopBar title={messages.profile.title} back />
+      <TopBar title={person ? handleOf(person) : messages.profile.title} back />
       <Refreshable contentContainerStyle={styles.list}>
       <Stagger>
         {!person ? (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput } from "react-native"
 import { useRouter } from "expo-router"
 
@@ -7,60 +7,48 @@ import { Logo } from "@/components/Logo"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
 import { useI18n } from "@/hooks/use-i18n"
-import { errorMessage } from "@/lib/i18n"
-import { normalizeUsername, suggestUsername, usernameIssue } from "@/lib/username"
 import { usernameTaken } from "@/lib/data/account"
+import { normalizeUsername, suggestUsername, usernameIssue } from "@/lib/username"
 
 export default function UsernameScreen() {
   const theme = useTheme()
   const router = useRouter()
-  const { user, setUsername } = useAuth()
+  const { user, people, setUsername } = useAuth()
   const { messages } = useI18n()
   const seed = user?.displayName || user?.email?.split("@")[0] || ""
   const [value, setValue] = useState(suggestUsername(seed))
   const [pending, setPending] = useState(false)
-  const [taken, setTaken] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [unavailable, setUnavailable] = useState(false)
   const handle = normalizeUsername(value)
   const issue = usernameIssue(handle)
 
-  useEffect(() => {
-    let live = true
-    if (issue) {
-      setTaken(false)
-      return
-    }
-    const timer = setTimeout(() => {
-      void usernameTaken(handle, user?.id).then((busy) => {
-        if (live) setTaken(busy)
-      })
-    }, 280)
-    return () => {
-      live = false
-      clearTimeout(timer)
-    }
-  }, [handle, issue, user?.id])
-
   const hint = useMemo(() => {
+    if (unavailable) return messages.username.taken
     if (!handle) return messages.username.hint
     if (issue === "tooShort") return messages.username.tooShort
     if (issue === "tooLong") return messages.username.tooLong
     if (issue === "invalid" || issue === "unavailable") return messages.username.invalid
-    if (taken) return messages.username.taken
     return messages.username.available
-  }, [handle, issue, messages.username, taken])
+  }, [handle, issue, messages.username, unavailable])
 
-  const ok = !issue && !taken && handle.length >= 3
+  const ok = !issue && handle.length >= 3
+  const hintColor = unavailable || issue ? "#f4212e" : ok ? "#00ba7c" : "#71767b"
 
   async function save() {
     if (!ok || pending) return
     setPending(true)
-    setError(null)
+    setUnavailable(false)
     try {
+      const localHit = people.some((person) => person.id !== user?.id && person.username === handle)
+      const remoteHit = await usernameTaken(handle, user?.id)
+      if (localHit || remoteHit) {
+        setUnavailable(true)
+        return
+      }
       await setUsername(handle)
       router.replace("/")
-    } catch (err) {
-      setError(errorMessage(err))
+    } catch {
+      setUnavailable(true)
     } finally {
       setPending(false)
     }
@@ -80,7 +68,10 @@ export default function UsernameScreen() {
             <Text style={styles.at}>@</Text>
             <TextInput
               value={value}
-              onChangeText={(text) => setValue(normalizeUsername(text))}
+              onChangeText={(text) => {
+                setUnavailable(false)
+                setValue(normalizeUsername(text))
+              }}
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="username"
@@ -92,15 +83,14 @@ export default function UsernameScreen() {
               style={[styles.input, { color: theme.foreground }]}
             />
           </View>
-          <Text style={styles.hint} lightColor={ok ? "#00ba7c" : "#71767b"} darkColor={ok ? "#00ba7c" : "#71767b"}>
+          <Text style={styles.hint} lightColor={hintColor} darkColor={hintColor}>
             {hint}
           </Text>
         </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
           label={pending ? messages.username.saving : messages.username.continue}
           variant="ink"
-          disabled={!ok || pending}
+          disabled={!ok || pending || unavailable}
           onPress={() => void save()}
         />
         <Pressable

@@ -39,6 +39,7 @@ export type User = {
   avatarUrl: string | null
   location: string
   visibility: ProfileVisibility
+  deactivatedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -183,6 +184,7 @@ export type UpdateProfileInput = {
   location?: string
   avatarUrl?: string | null
   visibility?: ProfileVisibility
+  deactivatedAt?: string | null
 }
 
 export function needsUsername(user: Pick<User, "username"> | null | undefined) {
@@ -190,7 +192,12 @@ export function needsUsername(user: Pick<User, "username"> | null | undefined) {
 }
 
 export function handleOf(user: Pick<User, "username" | "displayName">) {
-  return user.username ? `@${user.username}` : ""
+  const raw = (user.username || user.displayName || "member")
+    .trim()
+    .replace(/^@+/, "")
+    .replace(/\s+/g, "")
+    .toLowerCase()
+  return `@${raw || "member"}`
 }
 
 export type ActivityFilters = {
