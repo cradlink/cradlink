@@ -1,27 +1,25 @@
 import { appError } from "@/lib/errors";
 import type { StorageRepo } from "@/lib/data/types";
+import { prepareImageFile } from "@/lib/image-file";
 
-const MAX_BYTES = 1.5 * 1024 * 1024;
-
-function readAsDataUrl(file: File, label: string) {
-  if (!file.type.startsWith("image/")) throw appError("errors.chooseImage");
-  if (file.size > MAX_BYTES) throw appError("errors.imageTooLarge", { label });
+async function readAsDataUrl(file: File) {
+  const jpeg = await prepareImageFile(file);
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(appError("errors.couldNotReadImage"));
     reader.onload = () => resolve(String(reader.result));
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(jpeg);
   });
 }
 
 export const localStorageRepo: StorageRepo = {
   uploadAvatar(_userId, file) {
-    return readAsDataUrl(file, "avatars");
+    return readAsDataUrl(file);
   },
   uploadBanner(_userId, file) {
-    return readAsDataUrl(file, "banners");
+    return readAsDataUrl(file);
   },
   uploadActivityImage(_userId, file) {
-    return readAsDataUrl(file, "each photo");
+    return readAsDataUrl(file);
   },
 };

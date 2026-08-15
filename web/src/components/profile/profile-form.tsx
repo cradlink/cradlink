@@ -19,6 +19,7 @@ import { useUpdateProfile, useUploadAvatar, useUploadBanner } from "@/hooks/use-
 import { getBackend } from "@/lib/backend";
 import { errorMessage } from "@/lib/errors";
 import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
+import { isStorageUrl } from "@/lib/image-file";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
@@ -93,8 +94,8 @@ export function ProfileForm({ user }: { user: User }) {
         bio: bio.trim(),
         location: location.trim(),
         skills,
-        avatarUrl,
-        bannerUrl,
+        avatarUrl: isStorageUrl(avatarUrl) ? avatarUrl : user.avatarUrl,
+        bannerUrl: isStorageUrl(bannerUrl) ? bannerUrl : user.bannerUrl ?? null,
         profileVisibility: isPrivate ? "private" : "public",
       });
       if (!isPrivate && isPrivateProfile(user)) {

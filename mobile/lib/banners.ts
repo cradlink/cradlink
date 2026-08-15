@@ -57,12 +57,27 @@ export function presetsForType(type: ActivityType): string[] {
   return [`${type}-1`, `${type}-2`, `${type}-3`]
 }
 
+function keyFromStored(value: string) {
+  if (NAMED[value]) return value
+  try {
+    const path = value.startsWith("http") ? new URL(value).pathname : value
+    const match = decodeURIComponent(path).match(/([^/?#]+)$/i)
+    const candidate = match?.[1]?.replace(/\.jpg$/i, "")
+    if (candidate && NAMED[candidate]) return candidate
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
 export function resolveBannerKey(key: string | undefined): ImageSourcePropType | null {
   if (!key) return null
+  const named = keyFromStored(key)
+  if (named) return NAMED[named]
   if (key.startsWith("file:") || key.startsWith("content:") || key.startsWith("http") || key.startsWith("data:")) {
     return { uri: key }
   }
-  return NAMED[key] ?? null
+  return null
 }
 
 export function resolveActivityBanner(activity: Pick<Activity, "type" | "images">): ImageSourcePropType {

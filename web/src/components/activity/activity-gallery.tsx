@@ -1,8 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Images } from "lucide-react";
 import { resolveActivityImages } from "@/lib/activity-meta";
+import { fallbackCoverSrc } from "@/lib/default-covers";
 import type { Activity } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+function CoverImage({
+  src,
+  type,
+  alt,
+  className,
+}: {
+  src: string;
+  type?: Activity["type"];
+  alt?: string;
+  className?: string;
+}) {
+  const [current, setCurrent] = useState(src);
+  useEffect(() => {
+    setCurrent(src);
+  }, [src]);
+  const fallback = fallbackCoverSrc(current, type);
+  return (
+    <img
+      src={current}
+      alt={alt ?? ""}
+      className={className}
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (fallback) setCurrent(fallback);
+      }}
+    />
+  );
+}
 
 export function ActivityCover({
   activity,
@@ -14,7 +44,7 @@ export function ActivityCover({
   const images = resolveActivityImages(activity);
   return (
     <div className={cn("relative overflow-hidden bg-muted", className)}>
-      <img src={images[0]} alt="" className="h-full w-full object-cover" />
+      <CoverImage src={images[0]} type={activity.type} className="h-full w-full object-cover" />
       {images.length > 1 ? (
         <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[11px] font-medium text-white">
           <Images className="size-3" />
@@ -33,7 +63,12 @@ export function ActivityGallery({ activity }: { activity: Activity }) {
   return (
     <div className="space-y-2">
       <div className="overflow-hidden rounded-2xl border border-border bg-muted">
-        <img src={current} alt={activity.title} className="aspect-[16/9] w-full object-cover" />
+        <CoverImage
+          src={current}
+          type={activity.type}
+          alt={activity.title}
+          className="aspect-[16/9] w-full object-cover"
+        />
       </div>
       {images.length > 1 ? (
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -47,7 +82,7 @@ export function ActivityGallery({ activity }: { activity: Activity }) {
                 index === active ? "border-primary ring-2 ring-primary/40" : "border-border",
               )}
             >
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <CoverImage src={src} type={activity.type} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
