@@ -26,6 +26,7 @@ export type ActivitiesRepo = {
   getById(id: string): Promise<Activity | null>;
   create(creator: User, input: CreateActivityInput): Promise<Activity>;
   update(id: string, actorId: string, input: UpdateActivityInput): Promise<Activity>;
+  remove(id: string, actorId: string): Promise<void>;
   listCreatedBy(userId: string): Promise<Activity[]>;
   listJoinedBy(userId: string): Promise<Activity[]>;
 };

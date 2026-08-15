@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Calendar, Lock, MapPin, Users } from "lucide-react";
 import { ActivityDiscussion } from "@/components/activity/activity-discussion";
 import { ActivityGallery } from "@/components/activity/activity-gallery";
+import { ActivityOwnerMenu } from "@/components/activity/activity-owner-menu";
 import { JoinButton } from "@/components/activity/join-button";
 import { FollowButton } from "@/components/profile/follow-button";
 import { TypeBadge } from "@/components/activity/type-badge";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 
 export function ActivityDetailPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { id = "" } = useParams<{ id: string }>();
   const { user } = useAuth();
   const activityQuery = useActivity(id);
@@ -105,8 +107,9 @@ export function ActivityDetailPage() {
 
   return (
     <article>
-      <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
-        <h1 className="truncate text-xl font-bold">{activity.title}</h1>
+      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/65 px-4 py-2 backdrop-blur-md">
+        <h1 className="min-w-0 flex-1 truncate text-xl font-bold">{activity.title}</h1>
+        <ActivityOwnerMenu activity={activity} onDeleted={() => navigate("/")} />
       </div>
       <div className="space-y-6 px-4 py-4">
         <ActivityGallery activity={activity} />

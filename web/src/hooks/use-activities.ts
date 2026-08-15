@@ -47,6 +47,21 @@ export function useCreateActivity() {
   });
 }
 
+export function useDeleteActivity() {
+  const backend = getBackend();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, actorId }: { id: string; actorId: string }) =>
+      backend.activities.remove(id, actorId),
+    onSuccess: (_void, { id }) => {
+      queryClient.removeQueries({ queryKey: ["activity", id] });
+      void queryClient.invalidateQueries({ queryKey: ["activities"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["comments"] });
+    },
+  });
+}
+
 export function useUpdateActivity() {
   const backend = getBackend();
   const queryClient = useQueryClient();
