@@ -75,7 +75,7 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
   },
   other: {
     label: "Other",
-    className: "bg-[#71767b33] text-[#e7e9ea]",
+    className: "bg-[#71767b33] text-[#536471] dark:text-[#e7e9ea]",
     stripe: "bg-[#71767b]",
     dot: "bg-[#71767b]",
     defaultImage: "/defaults/other.jpg",
