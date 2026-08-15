@@ -1,12 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app"
 import { getAuth, initializeAuth, type Auth, type Persistence } from "firebase/auth"
-import { getFirestore, type Firestore } from "firebase/firestore"
+import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore"
 import { getStorage, type FirebaseStorage } from "firebase/storage"
 
 import { appEnv, isFirebaseConfigured } from "@/lib/env"
 
 let auth: Auth | null = null
+let db: Firestore | null = null
 
 export { isFirebaseConfigured }
 
@@ -42,7 +43,14 @@ export function getFirebaseAuth(): Auth {
 }
 
 export function getFirebaseDb(): Firestore {
-  return getFirestore(getFirebaseApp())
+  if (db) return db
+  const app = getFirebaseApp()
+  try {
+    db = initializeFirestore(app, { experimentalForceLongPolling: true })
+  } catch {
+    db = getFirestore(app)
+  }
+  return db
 }
 
 export function getFirebaseStorage(): FirebaseStorage {

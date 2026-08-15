@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Images } from "lucide-react";
-import { resolveActivityImages } from "@/lib/activity-meta";
-import { fallbackCoverSrc } from "@/lib/default-covers";
+import { rawActivityImages } from "@/lib/activity-meta";
+import { coverSrcs } from "@/lib/default-covers";
 import type { Activity } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -16,20 +16,20 @@ function CoverImage({
   alt?: string;
   className?: string;
 }) {
-  const [current, setCurrent] = useState(src);
+  const sources = coverSrcs(src, type);
+  const list = sources.length ? sources : [src];
+  const [index, setIndex] = useState(0);
   useEffect(() => {
-    setCurrent(src);
+    setIndex(0);
   }, [src]);
-  const fallback = fallbackCoverSrc(current, type);
+  const current = list[Math.min(index, list.length - 1)];
   return (
     <img
       src={current}
       alt={alt ?? ""}
       className={className}
       referrerPolicy="no-referrer"
-      onError={() => {
-        if (fallback) setCurrent(fallback);
-      }}
+      onError={() => setIndex((i) => Math.min(i + 1, list.length - 1))}
     />
   );
 }
@@ -41,7 +41,7 @@ export function ActivityCover({
   activity: Pick<Activity, "type" | "images" | "title">;
   className?: string;
 }) {
-  const images = resolveActivityImages(activity);
+  const images = rawActivityImages(activity);
   return (
     <div className={cn("relative overflow-hidden bg-muted", className)}>
       <CoverImage src={images[0]} type={activity.type} className="h-full w-full object-cover" />
@@ -56,7 +56,7 @@ export function ActivityCover({
 }
 
 export function ActivityGallery({ activity }: { activity: Activity }) {
-  const images = resolveActivityImages(activity);
+  const images = rawActivityImages(activity);
   const [active, setActive] = useState(0);
   const current = images[active] ?? images[0];
 

@@ -83,11 +83,13 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
   },
 };
 
+export function rawActivityImages(activity: Pick<Activity, "type" | "images">) {
+  if (activity.images?.length) return activity.images;
+  return [ACTIVITY_META[activity.type].defaultImage];
+}
+
 export function resolveActivityImages(activity: Pick<Activity, "type" | "images">) {
-  const images = activity.images?.length
-    ? activity.images
-    : [ACTIVITY_META[activity.type].defaultImage];
-  return images.map((src) => resolveCoverSrc(src, activity.type));
+  return rawActivityImages(activity).map((src) => resolveCoverSrc(src, activity.type));
 }
 
 export const FEED_GRID = "flex flex-col";

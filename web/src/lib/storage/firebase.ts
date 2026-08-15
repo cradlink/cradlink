@@ -1,6 +1,6 @@
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { StorageRepo } from "@/lib/data/types";
-import { isDefaultCoverKey, localDefaultSrc } from "@/lib/default-covers";
+import { isDefaultCoverKey } from "@/lib/default-covers";
 import { AppError, appError } from "@/lib/errors";
 import { getFirebaseStorage } from "@/lib/firebase";
 import { prepareImageFile } from "@/lib/image-file";
@@ -25,15 +25,14 @@ async function uploadImage(path: string, file: File) {
 
 export async function ensureSharedDefault(key: string) {
   if (!isDefaultCoverKey(key)) return;
-  const storageRef = ref(getFirebaseStorage(), `defaults/${key}.jpg`);
+  const storageRef = ref(
+    getFirebaseStorage(),
+    `default-activities/${key}.jpg`,
+  );
   try {
     await getDownloadURL(storageRef);
-    return;
   } catch {
-    const response = await fetch(localDefaultSrc(key));
-    if (!response.ok) return;
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    await uploadBytes(storageRef, bytes, { contentType: "image/jpeg" });
+    /* shared objects are uploaded once; never write a per-user copy */
   }
 }
 
