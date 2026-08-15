@@ -13,7 +13,7 @@ import { useMemberships } from "@/hooks/use-memberships"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
-import type { Activity, JoinRequest } from "@/lib/types"
+import { handleOf, type Activity, type JoinRequest } from "@/lib/types"
 
 const LIST_CAP = 3
 
@@ -196,7 +196,7 @@ function RequestRow({
   subtitle?: string
 }) {
   const theme = useTheme()
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
   const { ask } = useConfirm()
   const { show } = useToast()
   const { messages, tx } = useI18n()
@@ -274,6 +274,9 @@ function RequestRow({
             {row.userName}
           </Text>
         </CreatorPress>
+        <Text style={styles.handle} numberOfLines={1} lightColor="#8b98a5" darkColor="#8b98a5">
+          {handleOf(getUser(row.userId) ?? row.userName)}
+        </Text>
         <Text style={styles.sub} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
           {subtitle ? tx(messages.requests.wantsJoinNamed, { title: subtitle }) : messages.requests.wantsJoin}
         </Text>
@@ -365,6 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
+  },
+  handle: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 16,
   },
   sub: {
     fontSize: 13,

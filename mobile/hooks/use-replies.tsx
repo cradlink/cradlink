@@ -44,7 +44,7 @@ export function threadItems(replies: ActivityReply[], parentId: string | null = 
 }
 
 export function RepliesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
   const { statusOf, isOrganizer } = useMemberships()
   const { show } = useToast()
   const { messages } = useI18n()
@@ -72,8 +72,9 @@ export function RepliesProvider({ children }: { children: React.ReactNode }) {
         deleted: Boolean(row.deleted),
         deletedBy: row.deletedBy === "host" ? ("host" as const) : row.deleted ? ("author" as const) : undefined,
       }
-      return user && next.userId === user.id
-        ? { ...next, userName: user.displayName, userAvatar: user.avatarUrl }
+      const person = getUser(next.userId)
+      return person
+        ? { ...next, userName: person.displayName, userAvatar: person.avatarUrl }
         : next
     })
     const canReply = (activity: Activity) =>
@@ -133,7 +134,7 @@ export function RepliesProvider({ children }: { children: React.ReactNode }) {
       },
       reload: async () => undefined,
     }
-  }, [composing, isOrganizer, items, messages.reply.joinFirst, ready, show, statusOf, user])
+  }, [composing, getUser, isOrganizer, items, messages.reply.joinFirst, ready, show, statusOf, user])
 
   return <RepliesContext.Provider value={value}>{children}</RepliesContext.Provider>
 }

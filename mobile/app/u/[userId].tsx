@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { StyleSheet } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
 
@@ -12,23 +12,45 @@ import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
-import { handleOf } from "@/lib/types"
+import { firebaseAuth } from "@/lib/auth/firebase"
+import { handleOf, type User } from "@/lib/types"
+
+function routeId(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
 
 export default function PublicProfileScreen() {
   const router = useRouter()
-  const { userId } = useLocalSearchParams<{ userId: string }>()
-  const { user, getUser, reload } = useAuth()
+  const { userId: rawId } = useLocalSearchParams<{ userId: string }>()
+  const userId = routeId(rawId)
+  const { user, getUser } = useAuth()
   const { messages } = useI18n()
   const { activities } = useActivities()
   const { canSeeActivities } = useConnections()
-  const person = userId ? getUser(userId) : null
+  const [fetched, setFetched] = useState<User | null>(null)
+  const person = (userId ? getUser(userId) : null) ?? fetched
   const visible = person ? canSeeActivities(person) : false
   const hosted = person && visible ? activities.filter((activity) => activity.creatorId === person.id) : []
   const isSelf = Boolean(person && user?.id === person.id)
 
   useEffect(() => {
-    if (userId && !getUser(userId)) void reload()
-  }, [getUser, reload, userId])
+    if (!userId || getUser(userId)) {
+      setFetched(null)
+      return
+    }
+    let live = true
+    void firebaseAuth
+      .getUser(userId)
+      .then((next) => {
+        if (live) setFetched(next)
+      })
+      .catch(() => {
+        if (live) setFetched(null)
+      })
+    return () => {
+      live = false
+    }
+  }, [getUser, userId])
 
   useEffect(() => {
     if (isSelf) router.replace("/profile")
@@ -45,11 +67,7 @@ export default function PublicProfileScreen() {
           <EmptyState key="missing" title={messages.profile.missingTitle} body={messages.profile.missingBody} />
         ) : (
           [
-            <ProfileView
-              key="hero"
-              user={person}
-              hostedCount={activities.filter((activity) => activity.creatorId === person.id).length}
-            />,
+            <ProfileView key="hero" user={person} />,
             ...(visible
               ? hosted.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
               : [

@@ -1,3 +1,5 @@
+import { normalizeUsername } from "@/lib/username"
+
 export const ACTIVITY_TYPES = [
   "hackathon",
   "workshop",
@@ -37,6 +39,7 @@ export type User = {
   bio: string
   skills: string[]
   avatarUrl: string | null
+  bannerUrl: string | null
   location: string
   visibility: ProfileVisibility
   deactivatedAt: string | null
@@ -183,6 +186,7 @@ export type UpdateProfileInput = {
   skills?: string[]
   location?: string
   avatarUrl?: string | null
+  bannerUrl?: string | null
   visibility?: ProfileVisibility
   deactivatedAt?: string | null
 }
@@ -191,13 +195,14 @@ export function needsUsername(user: Pick<User, "username"> | null | undefined) {
   return Boolean(user && !user.username)
 }
 
-export function handleOf(user: Pick<User, "username" | "displayName">) {
-  const raw = (user.username || user.displayName || "member")
-    .trim()
-    .replace(/^@+/, "")
-    .replace(/\s+/g, "")
-    .toLowerCase()
-  return `@${raw || "member"}`
+export function handleOf(
+  user: Pick<User, "username" | "displayName"> | string | null | undefined,
+) {
+  const source =
+    typeof user === "string"
+      ? user
+      : user?.username || user?.displayName || "member"
+  return `@${normalizeUsername(source) || "member"}`
 }
 
 export type ActivityFilters = {

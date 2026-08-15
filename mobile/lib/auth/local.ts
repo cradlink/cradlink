@@ -25,7 +25,7 @@ function nowIso() {
 
 function publicUser(stored: StoredUser): User {
   const { passwordHash: _, ...user } = stored
-  return { ...user, visibility: user.visibility ?? "public" }
+  return { ...user, visibility: user.visibility ?? "public", bannerUrl: user.bannerUrl ?? null }
 }
 
 async function loadUsers(): Promise<Record<string, StoredUser>> {
@@ -60,6 +60,7 @@ function stub(
     bio,
     skills,
     avatarUrl: null,
+    bannerUrl: null,
     location,
     visibility: "public",
     deactivatedAt: null,
@@ -174,6 +175,7 @@ export const localAuth: AuthRepo = {
       location: input.location !== undefined ? input.location.trim() : stored.location,
       skills: input.skills ?? stored.skills,
       avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl : stored.avatarUrl,
+      bannerUrl: input.bannerUrl !== undefined ? input.bannerUrl : stored.bannerUrl ?? null,
       visibility: input.visibility ?? stored.visibility ?? "public",
       updatedAt: nowIso(),
     }
@@ -205,6 +207,7 @@ export const localAuth: AuthRepo = {
       bio: "",
       skills: [],
       avatarUrl: null,
+      bannerUrl: null,
       location: "",
       visibility: "public",
       deactivatedAt: null,

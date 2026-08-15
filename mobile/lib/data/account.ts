@@ -6,26 +6,111 @@ import {
   getDoc,
   getDocs,
   query,
+  runTransaction,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore"
 
 import { AppError } from "@/lib/errors"
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase"
-import { normalizeUsername, usernameIssue } from "@/lib/username"
+import { handleKey, handleTakenBy, normalizeUsername, usernameIssue } from "@/lib/username"
 import type { User } from "@/lib/types"
 import { nowIso } from "@/lib/utils"
 
-function readUsername(data: Record<string, unknown>) {
-  return String(data.username ?? "").trim().toLowerCase()
+type HandlePerson = { id: string; username?: string | null; displayName?: string | null }
+
+function firebaseCode(err: unknown) {
+  return typeof err === "object" && err && "code" in err ? String((err as { code: string }).code) : ""
 }
 
-export async function usernameTaken(handle: string, exceptUserId?: string) {
-  const snap = await getDocs(collection(getFirebaseDb(), "users"))
-  return snap.docs.some((row) => {
-    if (exceptUserId && row.id === exceptUserId) return false
-    return readUsername(row.data() as Record<string, unknown>) === handle
-  })
+function personFromDoc(id: string, data: Record<string, unknown>): HandlePerson {
+  return {
+    id,
+    username: typeof data.username === "string" ? data.username : null,
+    displayName: typeof data.displayName === "string" ? data.displayName : "",
+  }
+}
+
+async function reservedOwner(handle: string) {
+  try {
+    const snap = await getDoc(doc(getFirebaseDb(), "usernames", handle))
+    if (!snap.exists()) return null
+    const owner = String(snap.data()?.userId ?? "")
+    return owner || null
+  } catch {
+    return undefined
+  }
+}
+
+export async function usernameTaken(handle: string, exceptUserId?: string, known: HandlePerson[] = []) {
+  const key = normalizeUsername(handle)
+  if (!key) return false
+  if (handleTakenBy(known, key, exceptUserId)) return true
+
+  const owner = await reservedOwner(key)
+  if (owner && owner !== exceptUserId) return true
+
+  const db = getFirebaseDb()
+  try {
+    const exact = await getDocs(query(collection(db, "users"), where("username", "==", key)))
+    if (exact.docs.some((row) => row.id !== exceptUserId)) return true
+  } catch {
+    /* fall through to a full scan */
+  }
+
+  try {
+    const prefixed = await getDocs(query(collection(db, "users"), where("username", "==", `@${key}`)))
+    if (prefixed.docs.some((row) => row.id !== exceptUserId)) return true
+  } catch {
+    /* same */
+  }
+
+  try {
+    const snap = await getDocs(collection(db, "users"))
+    return snap.docs.some((row) => {
+      if (exceptUserId && row.id === exceptUserId) return false
+      return handleKey(personFromDoc(row.id, row.data() as Record<string, unknown>)) === key
+    })
+  } catch {
+    throw new AppError("usernameTaken")
+  }
+}
+
+async function reserveHandle(userId: string, handle: string) {
+  const ref = doc(getFirebaseDb(), "usernames", handle)
+  try {
+    const snap = await getDoc(ref)
+    if (snap.exists()) {
+      if (String(snap.data()?.userId ?? "") !== userId) throw new AppError("usernameTaken")
+      return true
+    }
+    await setDoc(ref, { userId, createdAt: nowIso() })
+    return true
+  } catch (err) {
+    if (err instanceof AppError) throw err
+    const code = firebaseCode(err)
+    if (code.includes("already-exists") || code.includes("permission-denied")) {
+      const owner = await reservedOwner(handle)
+      if (owner && owner !== userId) throw new AppError("usernameTaken")
+      if (owner === userId) return true
+    }
+    return false
+  }
+}
+
+async function releaseHandle(handle: string | null | undefined, userId: string) {
+  const key = normalizeUsername(handle ?? "")
+  if (!key) return
+  try {
+    const ref = doc(getFirebaseDb(), "usernames", key)
+    const snap = await getDoc(ref)
+    if (snap.exists() && String(snap.data()?.userId ?? "") === userId) {
+      await deleteDoc(ref)
+    }
+  } catch {
+    /* reservation collection may be unpublished */
+  }
 }
 
 export async function claimUsername(userId: string, raw: string) {
@@ -39,12 +124,49 @@ export async function claimUsername(userId: string, raw: string) {
   const userRef = doc(getFirebaseDb(), "users", userId)
   const userSnap = await getDoc(userRef)
   if (!userSnap.exists()) throw new AppError("accountNotFound")
+
+  const data = userSnap.data() as Record<string, unknown>
+  const previous = normalizeUsername(String(data.username ?? ""))
+  if (previous === handle) {
+    await reserveHandle(userId, handle)
+    return handle
+  }
+
   if (await usernameTaken(handle, userId)) throw new AppError("usernameTaken")
+
+  const db = getFirebaseDb()
+  const nameRef = doc(db, "usernames", handle)
+  try {
+    await runTransaction(db, async (tx) => {
+      const reserved = await tx.get(nameRef)
+      if (reserved.exists() && String(reserved.data()?.userId ?? "") !== userId) {
+        throw new AppError("usernameTaken")
+      }
+      tx.set(nameRef, { userId, createdAt: nowIso() })
+      tx.update(userRef, { username: handle, updatedAt: nowIso() })
+    })
+    if (previous && previous !== handle) await releaseHandle(previous, userId)
+    return handle
+  } catch (err) {
+    if (err instanceof AppError) throw err
+  }
+
+  const reserved = await reserveHandle(userId, handle)
   await updateDoc(userRef, { username: handle, updatedAt: nowIso() })
-  if (await usernameTaken(handle, userId)) {
-    await updateDoc(userRef, { username: null, updatedAt: nowIso() })
+
+  let stolen = false
+  try {
+    stolen = await usernameTaken(handle, userId)
+  } catch {
+    stolen = !reserved
+  }
+  if (stolen) {
+    await updateDoc(userRef, { username: previous || null, updatedAt: nowIso() })
+    if (reserved) await releaseHandle(handle, userId)
     throw new AppError("usernameTaken")
   }
+
+  if (previous && previous !== handle) await releaseHandle(previous, userId)
   return handle
 }
 
@@ -76,6 +198,7 @@ async function safeDocs(run: () => ReturnType<typeof getDocs>) {
 export async function deleteAccount(user: User) {
   const db = getFirebaseDb()
   const uid = user.id
+  await releaseHandle(user.username, uid)
 
   const [outgoing, incoming, notes, memberships, created] = await Promise.all([
     safeDocs(() => getDocs(query(collection(db, "follows"), where("followerId", "==", uid)))),

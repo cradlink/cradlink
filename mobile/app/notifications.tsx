@@ -15,6 +15,7 @@ import { useI18n } from "@/hooks/use-i18n"
 import { useNotifications } from "@/hooks/use-notifications"
 import { formatRelative } from "@/lib/format"
 import { formatShortWhen } from "@/lib/schedule"
+import { personLook } from "@/lib/person-look"
 import type { Activity, AppNotification } from "@/lib/types"
 import type { Messages } from "@/lib/i18n"
 import { tx } from "@/lib/i18n"
@@ -149,6 +150,10 @@ function NotificationRow({
   unreadColor: string
   border: string
 }) {
+  const { getUser, people } = useAuth()
+  const actorId =
+    item.actorId || people.find((person) => person.displayName === item.actorName)?.id || null
+  const look = personLook(getUser, actorId, item.actorName, item.actorAvatar)
   const ref = useRef<RNView>(null)
   return (
     <RNView ref={ref} collapsable={false}>
@@ -164,7 +169,7 @@ function NotificationRow({
       ]}
     >
       <Pressable onPress={onPerson} hitSlop={6}>
-        <Avatar name={item.actorName} src={item.actorAvatar} size={40} />
+        <Avatar name={look.name} src={look.avatar} size={40} />
       </Pressable>
       <View style={styles.body} lightColor="transparent" darkColor="transparent">
         <Text style={[styles.title, !item.read && styles.unread]}>{copy.title}</Text>

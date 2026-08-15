@@ -1,6 +1,8 @@
 import { Image, StyleSheet, View, type ImageSourcePropType } from "react-native"
 
+import { GeneratedArt } from "@/components/GeneratedArt"
 import { Text, useTheme } from "@/components/Themed"
+import { isGeneratedArt } from "@/lib/generated-art"
 import { initials } from "@/lib/initials"
 
 const LOCAL_AVATARS: Record<string, ImageSourcePropType> = {
@@ -33,6 +35,8 @@ export function Avatar({
     >
       {local ? (
         <Image source={local} style={{ width: size, height: size, borderRadius: size / 2 }} />
+      ) : src && isGeneratedArt(src) ? (
+        <GeneratedArt uri={src} iconSize={Math.round(size * 0.58)} style={{ width: size, height: size }} />
       ) : src ? (
         <Image source={{ uri: src }} style={{ width: size, height: size, borderRadius: size / 2 }} />
       ) : (

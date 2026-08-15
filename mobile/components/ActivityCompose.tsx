@@ -27,6 +27,7 @@ import { ACTIVITY_META } from "@/lib/activity-meta"
 import { getDateLocale, tx } from "@/lib/i18n"
 import { canRemoveActivity } from "@/lib/schedule"
 import { presetsForType, resolveBannerKey } from "@/lib/banners"
+import { isLocalImage, uploadActivityImage } from "@/lib/storage"
 import {
   ACTIVITY_TYPES,
   type Activity,
@@ -165,7 +166,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
     if (!permission.granted) return
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      quality: 0.85,
+      quality: 0.65,
     })
     if (!result.canceled && result.assets[0]?.uri) {
       setImage(result.assets[0].uri)
@@ -177,6 +178,9 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
     if (!canPost) return
     setBusy(true)
     try {
+      const cover =
+        image && user && isLocalImage(image) ? await uploadActivityImage(user.id, image) : image
+      if (cover && cover !== image) setImage(cover)
       const input = {
         title: title.trim(),
         description: description.trim(),
@@ -194,7 +198,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
         joinPolicy,
         headcount: activity?.headcount,
         visibility: activity?.visibility,
-        images: image ? [image] : [],
+        images: cover ? [cover] : [],
       }
       if (editing && activity) {
         await update(activity.id, input)

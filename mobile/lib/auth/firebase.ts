@@ -49,6 +49,7 @@ function mapUser(id: string, data: Record<string, unknown>, fallback?: Partial<U
     bio: asString(data.bio),
     skills: Array.isArray(data.skills) ? (data.skills as string[]) : [],
     avatarUrl: (data.avatarUrl as string | null | undefined) ?? fallback?.avatarUrl ?? null,
+    bannerUrl: (data.bannerUrl as string | null | undefined) ?? fallback?.bannerUrl ?? null,
     location: asString(data.location),
     visibility: data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
     deactivatedAt: asString(data.deactivatedAt) || null,
@@ -74,6 +75,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       bio: "",
       skills: [],
       avatarUrl: fbUser.photoURL,
+      bannerUrl: null,
       location: "",
       visibility: "public",
       deactivatedAt: null,
@@ -98,7 +100,26 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
 
 async function fromFirebase(fbUser: FirebaseUser | null): Promise<User | null> {
   if (!fbUser) return null
-  return upsertUserDoc(fbUser)
+  try {
+    return await upsertUserDoc(fbUser)
+  } catch {
+    const timestamp = nowIso()
+    return {
+      id: fbUser.uid,
+      displayName: fbUser.displayName || fbUser.email?.split("@")[0] || "Member",
+      email: fbUser.email ?? "",
+      username: null,
+      bio: "",
+      skills: [],
+      avatarUrl: fbUser.photoURL,
+      bannerUrl: null,
+      location: "",
+      visibility: "public",
+      deactivatedAt: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }
+  }
 }
 
 export const firebaseAuth: AuthRepo = {
@@ -173,7 +194,7 @@ export const firebaseAuth: AuthRepo = {
 
   onAuthChange(cb) {
     return onAuthStateChanged(getFirebaseAuth(), (fbUser) => {
-      void fromFirebase(fbUser).then(cb)
+      void fromFirebase(fbUser).then(cb).catch(() => cb(null))
     })
   },
 }
@@ -182,6 +203,6 @@ export function watchUsers(onData: (users: User[]) => void): Unsubscribe {
   return onSnapshot(
     collection(getFirebaseDb(), "users"),
     (snap) => onData(snap.docs.map((row) => mapUser(row.id, row.data() as Record<string, unknown>))),
-    () => onData([]),
+    () => undefined,
   )
 }

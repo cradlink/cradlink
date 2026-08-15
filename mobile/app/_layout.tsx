@@ -10,6 +10,7 @@ import "react-native-reanimated"
 void SplashScreen.preventAutoHideAsync()
 
 import { ActivityPreview } from "@/components/ActivityPreview"
+import { ArtRasterHost } from "@/components/ArtRasterHost"
 import { BootScreen } from "@/components/BootScreen"
 import { ParticleField } from "@/components/ParticleField"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
@@ -140,11 +141,13 @@ function RootNav() {
           <Stack.Screen name="reactivate" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="settings-deactivate" options={{ headerShown: false }} />
           <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
+          <Stack.Screen name="connections" options={{ headerShown: false }} />
           <Stack.Screen name="activities/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="activities/replies/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="u/[userId]" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
+      <ArtRasterHost />
       <ActivityPreview />
       <ConfirmModalHost active={!previewOpen} />
       <ReplyComposeHost />

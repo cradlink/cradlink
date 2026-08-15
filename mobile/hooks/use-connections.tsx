@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
 import { useAuth } from "@/hooks/use-auth"
+import { isDeactivated } from "@/lib/account"
 import {
   deleteFollow,
   followId,
@@ -24,6 +25,9 @@ type ConnectionsValue = {
   inbox: () => FollowRequest[]
   followerCount: (userId: string) => number
   followingCount: (userId: string) => number
+  followersOf: (userId: string) => User[]
+  followingPeopleOf: (userId: string) => User[]
+  followsYou: (userId: string) => boolean
   reload: () => Promise<void>
 }
 
@@ -39,6 +43,9 @@ const fallback: ConnectionsValue = {
   inbox: () => [],
   followerCount: () => 0,
   followingCount: () => 0,
+  followersOf: () => [],
+  followingPeopleOf: () => [],
+  followsYou: () => false,
   reload: async () => undefined,
 }
 
@@ -69,6 +76,26 @@ export function ConnectionsProvider({ children }: { children: React.ReactNode })
     const mine = user?.id
     const accepted = rows.filter((row) => row.status === "accepted")
     const followingOf = (id: string) => accepted.filter((row) => row.fromId === id).map((row) => row.toId)
+    const asUser = (id: string, name?: string, avatar?: string | null): User | null => {
+      const known = getUser(id)
+      if (known) return isDeactivated(known) ? null : known
+      if (!name) return null
+      return {
+        id,
+        displayName: name,
+        email: "",
+        username: null,
+        bio: "",
+        skills: [],
+        avatarUrl: avatar ?? null,
+        bannerUrl: null,
+        location: "",
+        visibility: "public",
+        deactivatedAt: null,
+        createdAt: "",
+        updatedAt: "",
+      }
+    }
 
     return {
       ready,
@@ -127,6 +154,17 @@ export function ConnectionsProvider({ children }: { children: React.ReactNode })
       },
       followerCount: (userId) => accepted.filter((row) => row.toId === userId).length,
       followingCount: (userId) => followingOf(userId).length,
+      followersOf: (userId) =>
+        accepted
+          .filter((row) => row.toId === userId)
+          .map((row) => asUser(row.fromId, row.fromName, row.fromAvatar))
+          .filter((person): person is User => Boolean(person)),
+      followingPeopleOf: (userId) =>
+        accepted
+          .filter((row) => row.fromId === userId)
+          .map((row) => asUser(row.toId))
+          .filter((person): person is User => Boolean(person)),
+      followsYou: (userId) => Boolean(mine && accepted.some((row) => row.fromId === userId && row.toId === mine)),
       reload: async () => undefined,
     }
   }, [getUser, ready, rows, user])

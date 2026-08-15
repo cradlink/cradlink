@@ -6,9 +6,10 @@ import { Button } from "@/components/Button"
 import { Logo } from "@/components/Logo"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
+import { useHandleAvailability } from "@/hooks/use-handle-availability"
 import { useI18n } from "@/hooks/use-i18n"
 import { usernameTaken } from "@/lib/data/account"
-import { normalizeUsername, suggestUsername, usernameIssue } from "@/lib/username"
+import { handleKey, normalizeUsername, suggestUsername, usernameIssue } from "@/lib/username"
 
 export default function UsernameScreen() {
   const theme = useTheme()
@@ -16,39 +17,39 @@ export default function UsernameScreen() {
   const { user, people, setUsername } = useAuth()
   const { messages } = useI18n()
   const seed = user?.displayName || user?.email?.split("@")[0] || ""
-  const [value, setValue] = useState(suggestUsername(seed))
+  const takenKeys = people.filter((person) => person.id !== user?.id).map((person) => handleKey(person))
+  const [value, setValue] = useState(suggestUsername(seed, takenKeys))
   const [pending, setPending] = useState(false)
-  const [unavailable, setUnavailable] = useState(false)
-  const handle = normalizeUsername(value)
+  const [blocked, setBlocked] = useState(false)
+  const { handle, taken: remoteTaken, checking } = useHandleAvailability(value, user?.id)
+  const taken = remoteTaken || blocked
   const issue = usernameIssue(handle)
 
   const hint = useMemo(() => {
-    if (unavailable) return messages.username.taken
+    if (taken) return messages.username.taken
     if (!handle) return messages.username.hint
     if (issue === "tooShort") return messages.username.tooShort
     if (issue === "tooLong") return messages.username.tooLong
     if (issue === "invalid" || issue === "unavailable") return messages.username.invalid
+    if (checking) return messages.username.hint
     return messages.username.available
-  }, [handle, issue, messages.username, unavailable])
+  }, [checking, handle, issue, messages.username, taken])
 
-  const ok = !issue && handle.length >= 3
-  const hintColor = unavailable || issue ? "#f4212e" : ok ? "#00ba7c" : "#71767b"
+  const ok = !issue && handle.length >= 3 && !taken && !checking
+  const hintColor = taken || issue ? "#f4212e" : ok ? "#00ba7c" : "#71767b"
 
   async function save() {
     if (!ok || pending) return
     setPending(true)
-    setUnavailable(false)
     try {
-      const localHit = people.some((person) => person.id !== user?.id && person.username === handle)
-      const remoteHit = await usernameTaken(handle, user?.id)
-      if (localHit || remoteHit) {
-        setUnavailable(true)
+      if (await usernameTaken(handle, user?.id, people)) {
+        setBlocked(true)
         return
       }
       await setUsername(handle)
       router.replace("/")
     } catch {
-      setUnavailable(true)
+      setBlocked(true)
     } finally {
       setPending(false)
     }
@@ -69,7 +70,7 @@ export default function UsernameScreen() {
             <TextInput
               value={value}
               onChangeText={(text) => {
-                setUnavailable(false)
+                setBlocked(false)
                 setValue(normalizeUsername(text))
               }}
               autoCapitalize="none"
@@ -90,12 +91,12 @@ export default function UsernameScreen() {
         <Button
           label={pending ? messages.username.saving : messages.username.continue}
           variant="ink"
-          disabled={!ok || pending || unavailable}
+          disabled={!ok || pending}
           onPress={() => void save()}
         />
         <Pressable
           disabled={pending}
-          onPress={() => setValue(suggestUsername(`${seed}${Math.floor(Math.random() * 90 + 10)}`))}
+          onPress={() => setValue(suggestUsername(`${seed}${Math.floor(Math.random() * 90 + 10)}`, takenKeys))}
         >
           <Text style={styles.skip} lightColor="#536471" darkColor="#71767b">
             {messages.username.shuffle}

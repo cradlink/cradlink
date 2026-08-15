@@ -38,7 +38,7 @@ function toastFor(item: AppNotification, fallback: string) {
 }
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, getUser, people } = useAuth()
   const { show } = useToast()
   const { messages } = useI18n()
   const [items, setItems] = useState<AppNotification[]>([])
@@ -106,15 +106,28 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [generation, user])
 
   const value = useMemo<NotificationsValue>(() => {
+    const live = items.map((item) => {
+      const actor =
+        (item.actorId ? getUser(item.actorId) : null) ??
+        people.find((person) => person.displayName === item.actorName) ??
+        null
+      if (!actor) return item
+      return {
+        ...item,
+        actorId: actor.id,
+        actorName: actor.displayName,
+        actorAvatar: actor.avatarUrl,
+      }
+    })
     return {
       ready,
-      items,
+      items: live,
       unread: items.filter((item) => !item.read).length,
       markRead: async (id) => {
         await markNotificationRead(id)
       },
       markAllRead: async () => {
-        await markNotificationsRead(items.filter((item) => !item.read).map((item) => item.id))
+        await markNotificationsRead(live.filter((item) => !item.read).map((item) => item.id))
       },
       notifyUser: async (userId, input) => {
         await writeNotification({ userId, ...input })
@@ -140,7 +153,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         setGeneration((value) => value + 1)
       },
     }
-  }, [items, ready, user])
+  }, [getUser, items, people, ready, user])
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>
 }
