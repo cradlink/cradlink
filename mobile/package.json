@@ -6,9 +6,13 @@
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.12",
+    "expo-auth-session": "~57.0.7",
     "expo-blur": "~57.0.2",
     "expo-constants": "~57.0.10",
+    "expo-crypto": "~57.0.1",
+    "expo-file-system": "~57.0.2",
     "expo-font": "~57.0.1",
+    "expo-image-manipulator": "~57.0.10",
     "expo-image-picker": "~57.0.9",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.5",
@@ -20,6 +24,7 @@
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.2",
     "expo-web-browser": "~57.0.2",
+    "firebase": "^12.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
@@ -38,7 +43,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:apk": "eas build -p android --profile preview"
   },
   "private": true
 }

@@ -66,6 +66,7 @@ export function subscribeLocale(listen: () => void) {
 }
 
 export function tx(template: string, vars?: Record<string, string | number>) {
+  if (!template) return ""
   if (!vars) return template
   return template.replace(/\{(\w+)\}/g, (_, key: string) =>
     vars[key] == null ? `{${key}}` : String(vars[key]),

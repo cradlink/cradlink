@@ -3,13 +3,19 @@ import { Appearance } from "react-native"
 import { DarkTheme, Stack, ThemeProvider, usePathname, useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { NavigationBar } from "expo-navigation-bar"
+import * as SplashScreen from "expo-splash-screen"
 import * as SystemUI from "expo-system-ui"
 import "react-native-reanimated"
+import "@/lib/firebase"
+
+void SplashScreen.preventAutoHideAsync()
 
 import { ActivityPreview } from "@/components/ActivityPreview"
+import { ArtRasterHost } from "@/components/ArtRasterHost"
 import { BootScreen } from "@/components/BootScreen"
 import { ParticleField } from "@/components/ParticleField"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
+import { ReplyComposeHost } from "@/components/ReplyCompose"
 import { ToastHost } from "@/components/ToastHost"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
@@ -23,6 +29,7 @@ import { useFireflies } from "@/hooks/use-fireflies"
 import { I18nProvider, useI18n } from "@/hooks/use-i18n"
 import { MembershipProvider } from "@/hooks/use-memberships"
 import { NotificationsProvider } from "@/hooks/use-notifications"
+import { RepliesProvider } from "@/hooks/use-replies"
 import { ToastProvider } from "@/hooks/use-toast"
 
 Appearance.setColorScheme("dark")
@@ -63,9 +70,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ready) return
     const inAuth = pathname === "/login" || pathname === "/signup"
-    if (!user && !inAuth) {
+    const picking = pathname === "/username"
+    const recovering = pathname === "/reactivate"
+    if (!user && (picking || recovering || !inAuth)) {
       router.replace("/login")
-    } else if (user && inAuth) {
+    } else if (user?.deactivatedAt && !recovering) {
+      router.replace("/reactivate")
+    } else if (user && !user.deactivatedAt && !user.username && !picking) {
+      router.replace("/username")
+    } else if (user && !user.deactivatedAt && user.username && (inAuth || picking || recovering)) {
       router.replace("/")
     }
   }, [user, ready, pathname, router])
@@ -125,13 +138,20 @@ function RootNav() {
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="search" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="username" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="reactivate" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="settings-deactivate" options={{ headerShown: false }} />
           <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
+          <Stack.Screen name="connections" options={{ headerShown: false }} />
           <Stack.Screen name="activities/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="activities/replies/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="u/[userId]" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
+      <ArtRasterHost />
       <ActivityPreview />
       <ConfirmModalHost active={!previewOpen} />
+      <ReplyComposeHost />
       <ToastHost />
       <StatusBar style="light" />
       <NavigationBar style="dark" />
@@ -147,15 +167,17 @@ export default function RootLayout() {
         <ActivitiesProvider>
           <ConnectionsProvider>
           <MembershipProvider>
+            <ToastProvider>
+            <RepliesProvider>
             <NotificationsProvider>
               <ActivityPreviewProvider>
                 <ConfirmProvider>
-                  <ToastProvider>
                     <RootNav />
-                  </ToastProvider>
                 </ConfirmProvider>
               </ActivityPreviewProvider>
             </NotificationsProvider>
+            </RepliesProvider>
+            </ToastProvider>
           </MembershipProvider>
           </ConnectionsProvider>
         </ActivitiesProvider>

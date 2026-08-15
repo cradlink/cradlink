@@ -1,4 +1,5 @@
 import { defaultHeadcount } from "@/lib/headcount";
+import { handleFromName } from "@/lib/format";
 import type { Activity, ActivityMember } from "@/lib/types";
 import { hashPassword } from "@/lib/utils";
 import {
@@ -21,6 +22,7 @@ function buildUsers(passwordHash: string): Record<string, StoredUser> {
     user_maya: {
       id: "user_maya",
       displayName: "Maya Chen",
+      username: "mayachen",
       email: "maya@gmail.com",
       bio: "Product designer who would rather make things with people than stare at Figma alone.",
       skills: ["Product design", "Facilitation", "Illustration"],
@@ -34,6 +36,7 @@ function buildUsers(passwordHash: string): Record<string, StoredUser> {
     user_luka: {
       id: "user_luka",
       displayName: "Luka Petrović",
+      username: "lukapetrovic",
       email: "luka@example.com",
       bio: "CS PhD student. I organize things so I have to show up to them.",
       skills: ["Python", "Research", "Backend"],
@@ -47,6 +50,7 @@ function buildUsers(passwordHash: string): Record<string, StoredUser> {
     user_ana: {
       id: "user_ana",
       displayName: "Ana Kovač",
+      username: "anakovac",
       email: "ana@example.com",
       bio: "If it involves moving or being outside, I'm in.",
       skills: ["Climbing", "Football", "Coaching"],
@@ -60,6 +64,7 @@ function buildUsers(passwordHash: string): Record<string, StoredUser> {
     user_sam: {
       id: "user_sam",
       displayName: "Sam Okonkwo",
+      username: "samokonkwo",
       email: "sam@example.com",
       bio: "Narrative designer. Always looking for a table, a jam, or a strange idea.",
       skills: ["Game design", "Writing", "Unity"],
@@ -73,6 +78,7 @@ function buildUsers(passwordHash: string): Record<string, StoredUser> {
     user_marko: {
       id: "user_marko",
       displayName: "Marko Njegomir",
+      username: "markonjegomir",
       email: "marko@cradlink.com",
       bio: "Doctoral student. I start things so other people have a place to show up.",
       skills: ["AI", "Research", "Building"],
@@ -86,6 +92,7 @@ function buildUsers(passwordHash: string): Record<string, StoredUser> {
     user_bogdan: {
       id: "user_bogdan",
       displayName: "Bogdan Ljubinkovic",
+      username: "bogdanljubinkovic",
       email: "bogdan@cradlink.com",
       bio: "I like projects that make it easier for people to find each other.",
       skills: ["Product", "Community", "Software"],
@@ -103,7 +110,8 @@ function decorateActivity(activity: Omit<Activity, "joinPolicy" | "headcount"> |
   const row = activity as Activity;
   return {
     ...row,
-    tags: row.tags ?? [],
+    lookingFor: [],
+    tags: [],
     joinPolicy: row.joinPolicy ?? "auto",
     headcount: row.headcount ?? defaultHeadcount(row.capacity),
   };
@@ -738,6 +746,7 @@ function ghostUsers(): Record<string, StoredUser> {
       const user: StoredUser = {
         id: userId,
         displayName: names[i],
+        username: handleFromName(names[i]),
         email: `${id}@ghost.local`,
         bio: "",
         skills: [],
@@ -792,8 +801,8 @@ async function seedInternal() {
             title: fresh.title,
             description: fresh.description,
             type: fresh.type,
-            lookingFor: fresh.lookingFor,
-            tags: fresh.tags,
+            lookingFor: [],
+            tags: [],
             images: fresh.images,
           }
         : fresh;
@@ -806,9 +815,23 @@ async function seedInternal() {
 
   for (const activity of Object.values(db.activities)) {
     if (!Array.isArray(activity.images)) activity.images = [];
-    if (!Array.isArray(activity.tags)) activity.tags = [];
+    activity.lookingFor = [];
+    activity.tags = [];
     if (!activity.joinPolicy) activity.joinPolicy = "auto";
     if (!activity.headcount) activity.headcount = defaultHeadcount(activity.capacity);
+  }
+  const used = new Set<string>();
+  for (const user of Object.values(db.users)) {
+    let handle = user.username || handleFromName(user.displayName);
+    if (handle.length < 3) handle = `user${user.id.replace(/\W/g, "").slice(-6) || "x"}`;
+    let candidate = handle;
+    let n = 2;
+    while (used.has(candidate)) {
+      candidate = `${handle}${n}`;
+      n += 1;
+    }
+    user.username = candidate;
+    used.add(candidate);
   }
   saveDb(db);
   localStorage.setItem(STORAGE_KEYS.seed, SEED_VERSION);

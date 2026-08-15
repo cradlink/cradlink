@@ -25,7 +25,7 @@ function nowIso() {
 
 function publicUser(stored: StoredUser): User {
   const { passwordHash: _, ...user } = stored
-  return { ...user, visibility: user.visibility ?? "public" }
+  return { ...user, visibility: user.visibility ?? "public", bannerUrl: user.bannerUrl ?? null }
 }
 
 async function loadUsers(): Promise<Record<string, StoredUser>> {
@@ -56,11 +56,14 @@ function stub(
     id,
     displayName,
     email,
+    username: null,
     bio,
     skills,
     avatarUrl: null,
+    bannerUrl: null,
     location,
     visibility: "public",
+    deactivatedAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
     passwordHash: hashPassword(password),
@@ -172,6 +175,7 @@ export const localAuth: AuthRepo = {
       location: input.location !== undefined ? input.location.trim() : stored.location,
       skills: input.skills ?? stored.skills,
       avatarUrl: input.avatarUrl !== undefined ? input.avatarUrl : stored.avatarUrl,
+      bannerUrl: input.bannerUrl !== undefined ? input.bannerUrl : stored.bannerUrl ?? null,
       visibility: input.visibility ?? stored.visibility ?? "public",
       updatedAt: nowIso(),
     }
@@ -199,11 +203,14 @@ export const localAuth: AuthRepo = {
       id: createId("user"),
       displayName: name,
       email: trimmedEmail,
+      username: null,
       bio: "",
       skills: [],
       avatarUrl: null,
+      bannerUrl: null,
       location: "",
       visibility: "public",
+      deactivatedAt: null,
       createdAt: timestamp,
       updatedAt: timestamp,
       passwordHash: hashPassword(password),
@@ -229,7 +236,7 @@ export const localAuth: AuthRepo = {
     return user
   },
 
-  async signInAsDemo() {
+  async signInWithGoogle(_idToken?: string | null) {
     return localAuth.signIn({
       email: DEMO_ACCOUNT_EMAIL,
       password: DEMO_ACCOUNT_PASSWORD,

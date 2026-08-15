@@ -16,21 +16,24 @@ service cloud.firestore {
           == request.auth.uid;
     }
 
-    function isJoinedMember(activityId) {
-      return signedIn()
-        && exists(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid))
-        && get(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid)).data.status
-          == "joined";
-    }
-
     function canDiscuss(activityId) {
-      return isActivityOrganizer(activityId) || isJoinedMember(activityId);
+      return signedIn();
     }
 
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if isSelf(userId);
-      allow delete: if false;
+      allow delete: if isSelf(userId);
+    }
+
+    match /usernames/{handle} {
+      allow get: if true;
+      allow list: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && handle.matches('^[a-z0-9_]{3,30}$');
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /config/{docId} {

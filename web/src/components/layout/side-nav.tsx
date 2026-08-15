@@ -1,5 +1,5 @@
 import { Home, Search, Bell, CalendarDays, UserRound, Settings, PenSquare } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Logo } from "@/components/layout/logo";
 import { NotificationBadge } from "@/components/notifications/notification-badge";
@@ -7,13 +7,13 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { userHandle } from "@/lib/username";
 import { cn } from "@/lib/utils";
 
 export function SideNav() {
   const { t } = useTranslation();
   const pathname = useLocation().pathname;
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const unread = useUnreadCount(user?.id);
   const items = [
     { href: "/", label: t("nav.home"), icon: Home },
@@ -75,20 +75,18 @@ export function SideNav() {
           <ThemeToggle />
         </div>
         {user ? (
-          <button
-            type="button"
-            onClick={async () => {
-              await signOut();
-              navigate("/login");
-            }}
+          <Link
+            to="/profile"
             className="flex w-full items-center gap-3 rounded-full px-3 py-3 text-left hover:bg-hover"
           >
             <Avatar name={user.displayName} src={user.avatarUrl} />
             <span className="hidden min-w-0 flex-1 xl:block">
               <span className="block truncate text-[15px] font-bold leading-5">{user.displayName}</span>
-              <span className="block truncate text-[13px] leading-4 text-muted-foreground">{t("nav.signOut")}</span>
+              <span className="block truncate text-[13px] leading-4 text-muted-foreground">
+                @{userHandle(user)}
+              </span>
             </span>
-          </button>
+          </Link>
         ) : null}
       </div>
     </aside>

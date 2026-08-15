@@ -6,7 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useFollow, useFollowActions } from "@/hooks/use-follows";
 import { errorMessage } from "@/lib/errors";
-import { handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function FollowButton({
@@ -28,7 +28,7 @@ export function FollowButton({
   const out = outgoing.data;
   const theyFollow = incoming.data?.status === "accepted";
   const busy = follow.isPending || unfollow.isPending || accept.isPending || outgoing.isLoading;
-  const handle = handleFromName(user.displayName);
+  const handle = userHandle(user);
 
   async function sendFollow() {
     try {

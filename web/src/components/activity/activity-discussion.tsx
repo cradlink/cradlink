@@ -92,9 +92,11 @@ function Composer({
 }) {
   const { t } = useTranslation();
   const [body, setBody] = useState("");
+  const [focused, setFocused] = useState(Boolean(autoFocus));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const remaining = COMMENT_MAX_LENGTH - body.length;
   const canPost = Boolean(body.trim()) && remaining >= 0 && !busy && !disabled;
+  const expanded = focused || Boolean(body.trim()) || Boolean(autoFocus) || Boolean(replyToName);
 
   useEffect(() => {
     if (!autoFocus) return;
@@ -108,12 +110,17 @@ function Composer({
     el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
   }
 
+  useEffect(() => {
+    requestAnimationFrame(resize);
+  }, [expanded, body]);
+
   async function submit() {
     if (!canPost) return;
     const next = body.trim();
     try {
       await onSubmit(next);
       setBody("");
+      setFocused(false);
       requestAnimationFrame(resize);
     } catch (err) {
       toast.error(errorMessage(err));
@@ -124,56 +131,84 @@ function Composer({
     <div className="flex gap-3 px-4 py-3">
       <Avatar name={user.displayName} src={user.avatarUrl} />
       <div className="min-w-0 flex-1">
-        {replyToName ? (
-          <p className="mb-1 text-[13px] text-muted-foreground">
-            <Trans
-              i18nKey="discussion.replyingTo"
-              values={{ handle: handleFromName(replyToName) }}
-              components={{ handle: <span className="text-primary" /> }}
-            />
-          </p>
-        ) : null}
-        <textarea
-          ref={textareaRef}
-          value={body}
-          maxLength={COMMENT_MAX_LENGTH}
-          disabled={disabled || busy}
-          placeholder={placeholder}
-          rows={1}
-          onChange={(event) => {
-            setBody(event.target.value);
-            requestAnimationFrame(resize);
-          }}
-          onInput={resize}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-              event.preventDefault();
-              void submit();
-            }
-            if (event.key === "Escape" && onCancel) onCancel();
-          }}
-          className="max-h-[220px] min-h-[52px] w-full resize-none bg-transparent text-[17px] leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-50"
-        />
-        <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-3">
-          <div className="flex items-center gap-3">
-            {onCancel ? (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="text-[13px] text-muted-foreground hover:text-foreground"
-              >
-                {t("common.cancel")}
-              </button>
-            ) : null}
-            {body.length > 200 ? (
-              <span className={cn("text-[13px]", remaining < 20 ? "text-red-500" : "text-muted-foreground")}>
-                {remaining}
-              </span>
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out",
+            expanded && replyToName ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+          )}
+        >
+          <div className="overflow-hidden">
+            {replyToName ? (
+              <p className="mb-1 text-[13px] text-muted-foreground">
+                <Trans
+                  i18nKey="discussion.replyingTo"
+                  values={{ handle: handleFromName(replyToName) }}
+                  components={{ handle: <span className="text-primary" /> }}
+                />
+              </p>
             ) : null}
           </div>
-          <Button size="sm" disabled={!canPost} onClick={() => void submit()}>
-            {busy ? t("discussion.posting") : t("discussion.reply")}
-          </Button>
+        </div>
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={body}
+            maxLength={COMMENT_MAX_LENGTH}
+            disabled={disabled || busy}
+            placeholder={placeholder}
+            rows={1}
+            onFocus={() => setFocused(true)}
+            onBlur={() => {
+              if (!body.trim()) setFocused(false);
+            }}
+            onChange={(event) => {
+              setBody(event.target.value);
+              requestAnimationFrame(resize);
+            }}
+            onInput={resize}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                void submit();
+              }
+              if (event.key === "Escape" && onCancel) onCancel();
+            }}
+            className={cn(
+              "w-full resize-none bg-transparent text-[17px] leading-6 text-foreground outline-none placeholder:text-muted-foreground transition-[min-height,padding] duration-200 ease-out disabled:opacity-50",
+              expanded ? "max-h-[220px] min-h-[52px] pb-1 pr-0" : "max-h-10 min-h-10 pr-24",
+            )}
+          />
+          <div
+            className={cn(
+              "flex items-center gap-3 transition-all duration-200 ease-out",
+              expanded ? "relative mt-1 justify-between" : "absolute right-0 top-1/2 -translate-y-1/2 justify-end",
+            )}
+          >
+            <div
+              className={cn(
+                "flex items-center gap-3 overflow-hidden transition-all duration-200 ease-out",
+                expanded ? "max-w-40 opacity-100" : "max-w-0 opacity-0",
+              )}
+            >
+              {onCancel ? (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="text-[13px] text-muted-foreground hover:text-foreground"
+                >
+                  {t("common.cancel")}
+                </button>
+              ) : null}
+              {body.length > 200 ? (
+                <span className={cn("text-[13px]", remaining < 20 ? "text-red-500" : "text-muted-foreground")}>
+                  {remaining}
+                </span>
+              ) : null}
+            </div>
+            <Button size="sm" disabled={!canPost} onClick={() => void submit()}>
+              {busy ? t("discussion.posting") : t("discussion.reply")}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -460,13 +495,11 @@ export function ActivityDiscussion({
   user,
   canDiscuss,
   isOrganizer,
-  membershipStatus,
 }: {
   activity: Activity;
   user: User | null;
   canDiscuss: boolean;
   isOrganizer: boolean;
-  membershipStatus?: "joined" | "pending" | null;
 }) {
   const { t } = useTranslation();
   const commentsQuery = useActivityComments(activity.id);
@@ -519,8 +552,7 @@ export function ActivityDiscussion({
 
   const busy = createComment.isPending || removeComment.isPending;
 
-  const lockCopy =
-    membershipStatus === "pending" ? t("discussion.lockPending") : t("discussion.lockJoin");
+  const lockCopy = t("discussion.lockSignIn");
 
   return (
     <section id="discussion" className="border-t border-border">

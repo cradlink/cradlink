@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { ActivityCover } from "@/components/activity/activity-gallery";
 import { JoinButton } from "@/components/activity/join-button";
-import { LookingForChips } from "@/components/activity/looking-for-chips";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { locationLabel } from "@/lib/activity-meta";
@@ -45,13 +44,6 @@ export function ActivityCard({
               {activity.description}
             </p>
           </Link>
-
-          {activity.tags?.length ? (
-            <LookingForChips items={activity.tags} limit={5} className="mt-2" />
-          ) : null}
-          {activity.lookingFor.length > 0 ? (
-            <LookingForChips items={activity.lookingFor} limit={4} className="mt-1.5" />
-          ) : null}
 
           <div className="mt-2 flex flex-col gap-1 text-[13px] leading-4 text-muted-foreground">
             <p className="flex items-start gap-1.5">

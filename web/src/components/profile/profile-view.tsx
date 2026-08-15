@@ -15,7 +15,7 @@ import { useFollow, useFollowers, useFollowing } from "@/hooks/use-follows";
 import { FEED_GRID } from "@/lib/activity-meta";
 import { connectionsPath } from "@/lib/connections";
 import { canSeeProfileActivities } from "@/lib/follow";
-import { handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 import { formatJoined, isActivityPast } from "@/lib/search";
 import { isPrivateProfile, type Activity, type User } from "@/lib/types";
 
@@ -42,7 +42,7 @@ export function ProfileView({
   const followers = useFollowers(user.id);
   const following = useFollowing(user.id);
   const [tab, setTab] = useState("active");
-  const handle = handleFromName(user.displayName);
+  const handle = userHandle(user);
   const joined = formatJoined(user.createdAt);
   const privateAccount = isPrivateProfile(user);
   const locked =

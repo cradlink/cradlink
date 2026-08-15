@@ -9,7 +9,6 @@ import {
   revokeDraftImage,
   type DraftImage,
 } from "@/components/activity/image-picker";
-import { TagInput } from "@/components/activity/tag-input";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,11 @@ import { useCreateActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
 import { useUploadActivityImages } from "@/hooks/use-profile";
 import { activityTypeLabel, locationLabel } from "@/lib/activity-meta";
+import { getBackendName } from "@/lib/config";
+import { persistCoverValue, presetsForType } from "@/lib/default-covers";
 import { errorMessage } from "@/lib/errors";
+import { isFirebaseConfigured } from "@/lib/firebase";
+import { ensureSharedDefault } from "@/lib/storage/firebase";
 import { datetimeLocalToIso, isoToDatetimeLocal } from "@/lib/format";
 import { ACTIVITY_TYPES, type Activity, type ActivityType, type LocationType } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -30,8 +33,6 @@ type FormState = {
   title: string;
   type: ActivityType;
   description: string;
-  lookingFor: string[];
-  tags: string[];
   locationType: LocationType;
   city: string;
   venue: string;
@@ -47,8 +48,6 @@ function formFromActivity(activity: Activity): FormState {
     title: activity.title,
     type: activity.type,
     description: activity.description,
-    lookingFor: activity.lookingFor,
-    tags: activity.tags ?? [],
     locationType: activity.location.type,
     city: activity.location.city ?? "",
     venue: activity.location.venue ?? "",
@@ -64,8 +63,6 @@ const empty: FormState = {
   title: "",
   type: "other",
   description: "",
-  lookingFor: [],
-  tags: [],
   locationType: "in-person",
   city: "",
   venue: "",
@@ -104,8 +101,8 @@ function ActivityForm({ activity }: { activity?: Activity }) {
       title: form.title.trim() || t("activity.untitled"),
       description: form.description,
       type: form.type,
-      lookingFor: form.lookingFor,
-      tags: form.tags,
+      lookingFor: [],
+      tags: [],
       location: {
         type: form.locationType,
         city: form.city || undefined,
@@ -133,16 +130,37 @@ function ActivityForm({ activity }: { activity?: Activity }) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  function setType(next: ActivityType) {
+    const allowed = new Set(presetsForType(next));
+    setForm((prev) => ({
+      ...prev,
+      type: next,
+      images: prev.images.filter((image) => !image.key || allowed.has(image.key)),
+    }));
+  }
+
   function setImages(next: DraftImage[]) {
     set("images", next);
   }
 
   async function resolveImages() {
     if (!user) return [];
-    const files = form.images.filter((image) => image.file).map((image) => image.file!);
+    const files = form.images.filter((image) => image.file && !image.key).map((image) => image.file!);
     const uploaded = files.length ? await upload.mutateAsync({ userId: user.id, files }) : [];
     let uploadIndex = 0;
-    return form.images.map((image) => (image.file ? uploaded[uploadIndex++] : image.src));
+    const images = form.images
+      .map((image) => {
+        if (image.key) return image.key;
+        if (image.file) return uploaded[uploadIndex++];
+        return persistCoverValue(image.src);
+      })
+      .filter((src): src is string => Boolean(src));
+    if (getBackendName() === "firebase" && isFirebaseConfigured()) {
+      await Promise.all(
+        images.map((src) => ensureSharedDefault(src).catch(() => undefined)),
+      );
+    }
+    return images;
   }
 
   async function onSubmit(event: React.FormEvent) {
@@ -152,7 +170,6 @@ function ActivityForm({ activity }: { activity?: Activity }) {
     const description = form.description.trim();
     if (title.length < 3) return setError(t("activity.form.errorTitle"));
     if (description.length < 10) return setError(t("activity.form.errorDescription"));
-    if (form.lookingFor.length === 0) return setError(t("activity.form.errorLookingFor"));
     if (form.locationType !== "online" && !form.city.trim()) {
       return setError(t("activity.form.errorCity"));
     }
@@ -169,8 +186,6 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         title,
         description,
         type: form.type,
-        lookingFor: form.lookingFor,
-        tags: form.tags,
         location: {
           type: form.locationType,
           city: form.city.trim() || undefined,
@@ -211,7 +226,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
               <button
                 key={type}
                 type="button"
-                onClick={() => set("type", type)}
+                onClick={() => setType(type)}
                 className={cn(
                   "rounded-full ring-offset-background",
                   form.type === type && "ring-2 ring-primary ring-offset-2 ring-offset-background",
@@ -228,22 +243,6 @@ function ActivityForm({ activity }: { activity?: Activity }) {
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             placeholder={t("activity.form.descriptionPlaceholder")}
-          />
-        </Field>
-
-        <Field label={t("activity.form.tags")} hint={t("activity.form.tagsHint")}>
-          <TagInput
-            value={form.tags}
-            onChange={(next) => set("tags", next)}
-            placeholder={t("activity.form.tagsPlaceholder")}
-          />
-        </Field>
-
-        <Field label={t("activity.form.lookingFor")} hint={t("activity.form.lookingForHint")}>
-          <TagInput
-            value={form.lookingFor}
-            onChange={(next) => set("lookingFor", next)}
-            placeholder={t("activity.form.lookingForPlaceholder")}
           />
         </Field>
 
@@ -317,7 +316,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         ) : null}
 
         <Field label={t("activity.form.photos")} hint={t("activity.form.photosHint")}>
-          <ImagePicker value={form.images} onChange={setImages} />
+          <ImagePicker value={form.images} onChange={setImages} type={form.type} />
         </Field>
 
         <Field label={t("activity.form.capacity")} hint={t("activity.form.capacityHint")}>

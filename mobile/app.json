@@ -12,6 +12,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.cradlink.app",
+      "versionCode": 1,
       "backgroundColor": "#000000",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
@@ -24,7 +26,10 @@
       "navigationBar": {
         "backgroundColor": "#000000",
         "barStyle": "light-content"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -44,6 +49,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
+          "imageWidth": 56,
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
@@ -51,6 +57,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b8203940-4f15-4a47-9ae1-626e85b16fd1"
+      }
     }
   }
 }

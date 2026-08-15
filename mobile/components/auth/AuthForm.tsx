@@ -7,24 +7,26 @@ import {
   StyleSheet,
 } from "react-native"
 import { Link, useRouter } from "expo-router"
+import Svg, { Path } from "react-native-svg"
 
 import { Button } from "@/components/Button"
 import { Logo } from "@/components/Logo"
 import { Text, View, useTheme } from "@/components/Themed"
 import { TextField } from "@/components/TextField"
-import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/constants/config"
 import { useAuth } from "@/hooks/use-auth"
+import { useGoogleAuth } from "@/hooks/use-google-auth"
 import { useI18n } from "@/hooks/use-i18n"
 import { errorMessage } from "@/lib/i18n"
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const theme = useTheme()
   const router = useRouter()
-  const { signIn, signUp, signInAsDemo } = useAuth()
+  const { signIn, signUp } = useAuth()
+  const google = useGoogleAuth()
   const { messages } = useI18n()
   const [displayName, setDisplayName] = useState("")
-  const [email, setEmail] = useState(DEMO_ACCOUNT_EMAIL)
-  const [password, setPassword] = useState(DEMO_ACCOUNT_PASSWORD)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,11 +47,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     }
   }
 
-  async function onDemo() {
+  async function onGoogle() {
     setPending(true)
     setError(null)
     try {
-      await signInAsDemo()
+      await google.prompt()
       router.replace("/")
     } catch (err) {
       setError(errorMessage(err))
@@ -118,12 +120,20 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <View style={[styles.rule, { backgroundColor: theme.border }]} />
         </View>
 
-        <Button
-          label={messages.auth.continueAsDemo}
-          variant="outline"
-          disabled={pending}
-          onPress={() => void onDemo()}
-        />
+        <Pressable
+          disabled={pending || !google.ready}
+          onPress={() => void onGoogle()}
+          style={({ pressed }) => [
+            styles.google,
+            {
+              borderColor: theme.border,
+              opacity: pending || !google.ready ? 0.55 : pressed ? 0.75 : 1,
+            },
+          ]}
+        >
+          <GoogleMark />
+          <Text style={styles.googleLabel}>{messages.auth.continueWithGoogle}</Text>
+        </Pressable>
 
         <View style={styles.footer} lightColor="transparent" darkColor="transparent">
           {mode === "login" ? (
@@ -218,4 +228,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
+  google: {
+    minHeight: 52,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  googleLabel: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
 })
+
+function GoogleMark() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24">
+      <Path
+        fill="#4285F4"
+        d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.4c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.7z"
+      />
+      <Path
+        fill="#34A853"
+        d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3.1 0-5.7-2.1-6.6-4.9H1.4v3.1C3.4 21.3 7.4 24 12 24z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M5.4 14.4c-.2-.7-.4-1.4-.4-2.4s.1-1.7.4-2.4V6.5H1.4C.5 8.3 0 10.1 0 12s.5 3.7 1.4 5.5l4-3.1z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.7 1.4 6.5l4 3.1C6.3 6.8 8.9 4.8 12 4.8z"
+      />
+    </Svg>
+  )
+}

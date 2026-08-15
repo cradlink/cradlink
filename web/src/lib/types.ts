@@ -44,6 +44,7 @@ export type User = {
   profileVisibility?: ProfileVisibility;
   locale?: string | null;
   deactivatedAt?: string | null;
+  username?: string | null;
 };
 
 export function isPrivateProfile(user: Pick<User, "profileVisibility">) {
@@ -110,7 +111,7 @@ export type CreateActivityInput = {
   title: string;
   description: string;
   type: ActivityType;
-  lookingFor: string[];
+  lookingFor?: string[];
   tags?: string[];
   location: ActivityLocation;
   startAt: string | null;
@@ -127,6 +128,7 @@ export type UpdateActivityInput = CreateActivityInput;
 
 export type UpdateProfileInput = {
   displayName?: string;
+  username?: string;
   bio?: string;
   skills?: string[];
   location?: string;

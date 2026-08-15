@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { StyleSheet } from "react-native"
 import { SpaceGrotesk_500Medium, useFonts } from "@expo-google-fonts/space-grotesk"
+import * as SplashScreen from "expo-splash-screen"
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated"
 
 import { Logo } from "@/components/Logo"
@@ -33,6 +34,10 @@ export function BootScreen({
   const caret = useSharedValue(1)
   readyRef.current = ready
   onDoneRef.current = onDone
+
+  useEffect(() => {
+    void SplashScreen.hideAsync()
+  }, [])
 
   useEffect(() => {
     if (!fontsLoaded) return

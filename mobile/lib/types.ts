@@ -1,3 +1,5 @@
+import { normalizeUsername } from "@/lib/username"
+
 export const ACTIVITY_TYPES = [
   "hackathon",
   "workshop",
@@ -33,11 +35,14 @@ export type User = {
   id: string
   displayName: string
   email: string
+  username: string | null
   bio: string
   skills: string[]
   avatarUrl: string | null
+  bannerUrl: string | null
   location: string
   visibility: ProfileVisibility
+  deactivatedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -114,6 +119,30 @@ export type JoinRequest = {
   createdAt: string
 }
 
+export type ActivityReply = {
+  id: string
+  activityId: string
+  parentId: string | null
+  userId: string
+  userName: string
+  userAvatar: string | null
+  body: string
+  createdAt: string
+  deleted?: boolean
+  deletedBy?: "author" | "host"
+}
+
+export type ReplyComposeTarget = {
+  activity: Activity
+  parent: ActivityReply | null
+}
+
+export type ReplyThreadItem = {
+  reply: ActivityReply
+  parent: ActivityReply | null
+  depth: number
+}
+
 export type FollowRequest = {
   id: string
   fromId: string
@@ -134,6 +163,7 @@ export type NotificationType =
   | "follow"
   | "follow_request"
   | "follow_accepted"
+  | "reply"
 
 export type AppNotification = {
   id: string
@@ -151,11 +181,28 @@ export type AppNotification = {
 
 export type UpdateProfileInput = {
   displayName?: string
+  username?: string | null
   bio?: string
   skills?: string[]
   location?: string
   avatarUrl?: string | null
+  bannerUrl?: string | null
   visibility?: ProfileVisibility
+  deactivatedAt?: string | null
+}
+
+export function needsUsername(user: Pick<User, "username"> | null | undefined) {
+  return Boolean(user && !user.username)
+}
+
+export function handleOf(
+  user: Pick<User, "username" | "displayName"> | string | null | undefined,
+) {
+  const source =
+    typeof user === "string"
+      ? user
+      : user?.username || user?.displayName || "member"
+  return `@${normalizeUsername(source) || "member"}`
 }
 
 export type ActivityFilters = {

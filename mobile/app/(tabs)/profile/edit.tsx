@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import {
   BackHandler,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,12 +13,18 @@ import { useRouter } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
 
 import { Avatar } from "@/components/Avatar"
+import { GeneratedArt } from "@/components/GeneratedArt"
 import { TopBar } from "@/components/TopBar"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
+import { useHandleAvailability } from "@/hooks/use-handle-availability"
 import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
+import { isGeneratedArt, makeGeneratedArt } from "@/lib/generated-art"
+import { errorMessage } from "@/lib/i18n"
+import { isLocalImage, uploadAvatar, uploadBanner } from "@/lib/storage"
+import { normalizeUsername, usernameIssue } from "@/lib/username"
 
 export default function EditProfileScreen() {
   const theme = useTheme()
@@ -28,22 +35,37 @@ export default function EditProfileScreen() {
   const { messages } = useI18n()
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? "")
+  const [username, setUsername] = useState(user?.username ?? "")
   const [bio, setBio] = useState(user?.bio ?? "")
   const [location, setLocation] = useState(user?.location ?? "")
   const [skills, setSkills] = useState(user?.skills ?? [])
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? null)
+  const [bannerUrl, setBannerUrl] = useState(user?.bannerUrl ?? null)
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
+  const handle = normalizeUsername(username)
+  const handleChanged = handle !== normalizeUsername(user?.username ?? "")
+  const { taken, checking } = useHandleAvailability(handleChanged ? handle : "", user?.id)
+  const handleProblem = handleChanged ? usernameIssue(handle) || (taken ? "unavailable" : null) : null
 
   const dirty = Boolean(
     user &&
       (displayName !== user.displayName ||
+        username !== (user.username ?? "") ||
         bio !== user.bio ||
         location !== user.location ||
         avatarUrl !== user.avatarUrl ||
+        bannerUrl !== (user.bannerUrl ?? null) ||
         skills.join("\0") !== user.skills.join("\0")),
   )
-  const canSave = Boolean(user) && displayName.trim().length >= 2 && dirty && !busy
+  const canSave =
+    Boolean(user) &&
+    displayName.trim().length >= 2 &&
+    dirty &&
+    !busy &&
+    !checking &&
+    !handleProblem &&
+    handle.length >= 3
 
   function close() {
     if (!dirty) {
@@ -85,28 +107,52 @@ export default function EditProfileScreen() {
     if (!permission.granted) return
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      quality: 0.85,
+      quality: 0.7,
     })
     if (!result.canceled && result.assets[0]?.uri) {
       setAvatarUrl(result.assets[0].uri)
     }
   }
 
+  async function pickBanner() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) return
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    })
+    if (!result.canceled && result.assets[0]?.uri) {
+      setBannerUrl(result.assets[0].uri)
+    }
+  }
+
   async function save() {
-    if (!canSave) return
+    if (!canSave || !user) return
     setBusy(true)
     try {
+      const nextAvatar =
+        avatarUrl && (isLocalImage(avatarUrl) || isGeneratedArt(avatarUrl))
+          ? await uploadAvatar(user.id, avatarUrl)
+          : avatarUrl
+      const nextBanner =
+        bannerUrl && (isLocalImage(bannerUrl) || isGeneratedArt(bannerUrl))
+          ? await uploadBanner(user.id, bannerUrl)
+          : bannerUrl
+      setAvatarUrl(nextAvatar)
+      setBannerUrl(nextBanner)
       await updateProfile({
         displayName: displayName.trim(),
+        username: handle,
         bio: bio.trim(),
         location: location.trim(),
         skills,
-        avatarUrl,
+        avatarUrl: nextAvatar,
+        bannerUrl: nextBanner,
       })
       show({ title: messages.profile.saved })
       router.back()
-    } catch {
-      show({ title: messages.compose.couldntSave, tone: "error" })
+    } catch (err) {
+      show({ title: errorMessage(err), tone: "error" })
     } finally {
       setBusy(false)
     }
@@ -131,10 +177,82 @@ export default function EditProfileScreen() {
           keyboardDismissMode="on-drag"
           contentContainerStyle={styles.body}
         >
-          <Pressable onPress={() => void pickAvatar()} style={styles.avatarWrap}>
-            <Avatar name={displayName || user.displayName} src={avatarUrl} size={80} />
-            <Text style={[styles.change, { color: theme.primary }]}>{messages.profile.changePhoto}</Text>
-          </Pressable>
+          <View style={styles.photos}>
+            <Pressable onPress={() => void pickBanner()} style={styles.bannerTap}>
+              {bannerUrl && isGeneratedArt(bannerUrl) ? (
+                <GeneratedArt uri={bannerUrl} iconSize={52} style={styles.bannerImage} />
+              ) : bannerUrl ? (
+                <Image source={{ uri: bannerUrl }} style={styles.bannerImage} />
+              ) : (
+                <View style={styles.bannerEmpty} />
+              )}
+            </Pressable>
+            <View style={styles.photoActions}>
+              <Pressable onPress={() => void pickBanner()}>
+                <Text style={[styles.change, { color: theme.primary }]}>
+                  {bannerUrl ? messages.profile.changeBanner : messages.profile.addBanner}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => setBannerUrl(makeGeneratedArt())}>
+                <Text style={[styles.change, { color: theme.primary }]}>{messages.profile.generateBanner}</Text>
+              </Pressable>
+              {bannerUrl ? (
+                <Pressable onPress={() => setBannerUrl(null)}>
+                  <Text style={styles.remove} lightColor="#536471" darkColor="#71767b">
+                    {messages.profile.removeBanner}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <View style={styles.avatarWrap}>
+              <Pressable onPress={() => void pickAvatar()}>
+                <Avatar name={displayName || user.displayName} src={avatarUrl} size={80} />
+              </Pressable>
+              <Pressable onPress={() => void pickAvatar()}>
+                <Text style={[styles.change, { color: theme.primary }]}>{messages.profile.changePhoto}</Text>
+              </Pressable>
+              <Pressable onPress={() => setAvatarUrl(makeGeneratedArt())}>
+                <Text style={[styles.change, { color: theme.primary }]}>{messages.profile.generatePhoto}</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <Field label={messages.username.label}>
+            <View style={styles.handleRow}>
+              <Text style={styles.at}>@</Text>
+              <TextInput
+                value={username}
+                onChangeText={(text) => setUsername(normalizeUsername(text))}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={20}
+                placeholder={messages.username.placeholder}
+                placeholderTextColor={theme.mutedForeground}
+                keyboardAppearance="dark"
+                selectionColor={theme.primary}
+                style={[styles.input, styles.handleInput, { color: theme.foreground, borderBottomColor: theme.border }]}
+              />
+            </View>
+            {handleChanged ? (
+              <Text
+                style={styles.handleHint}
+                lightColor={handleProblem ? "#f4212e" : "#00ba7c"}
+                darkColor={handleProblem ? "#f4212e" : "#00ba7c"}
+              >
+                {handleProblem === "tooShort"
+                  ? messages.username.tooShort
+                  : handleProblem === "tooLong"
+                    ? messages.username.tooLong
+                    : handleProblem === "invalid"
+                      ? messages.username.invalid
+                      : handleProblem === "unavailable"
+                        ? messages.username.taken
+                        : checking
+                          ? messages.username.hint
+                          : messages.username.available}
+              </Text>
+            ) : null}
+          </Field>
 
           <Field label={messages.auth.name}>
             <TextInput
@@ -228,13 +346,38 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     gap: 22,
   },
+  photos: {
+    gap: 10,
+  },
+  bannerTap: {
+    height: 120,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#333639",
+  },
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  bannerEmpty: {
+    flex: 1,
+    backgroundColor: "#333639",
+  },
+  photoActions: {
+    gap: 8,
+  },
   avatarWrap: {
     alignItems: "flex-start",
     gap: 10,
+    marginTop: 6,
   },
   change: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  remove: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   field: {
     gap: 8,
@@ -242,6 +385,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  handleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  at: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  handleInput: {
+    flex: 1,
+  },
+  handleHint: {
+    marginTop: 8,
+    fontSize: 13,
   },
   input: {
     fontSize: 17,

@@ -1,4 +1,6 @@
+import { isDeactivated } from "@/lib/account"
 import type { Activity, User } from "@/lib/types"
+import { handleKey } from "@/lib/username"
 
 const PEOPLE_LIMIT = 7
 
@@ -15,7 +17,10 @@ export function matchesQuery(hay: string[], query: string) {
 function peopleScore(person: User, query: string) {
   const q = normalize(query)
   const name = normalize(person.displayName ?? "")
-  if (!q || !name) return 0
+  const handle = handleKey(person)
+  if (!q || (!name && !handle)) return 0
+  if (handle && (`@${handle}` === q || handle === q.replace(/^@/, ""))) return 420
+  if (handle && handle.startsWith(q.replace(/^@/, ""))) return 360
   if (name === q) return 400
   if (name.startsWith(q)) return 300
   if (name.split(/\s+/).some((part) => part.startsWith(q))) return 220
@@ -29,6 +34,7 @@ function peopleScore(person: User, query: string) {
 
 export function searchPeople(people: User[], query: string) {
   return people
+    .filter((person) => !isDeactivated(person))
     .map((person) => ({ person, score: peopleScore(person, query) }))
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || a.person.displayName.localeCompare(b.person.displayName))
@@ -43,6 +49,7 @@ export function searchActivities(activities: Activity[], query: string) {
         activity.title ?? "",
         activity.description ?? "",
         activity.creatorName ?? "",
+        (activity.creatorName ?? "").replace(/\s+/g, ""),
         ...(activity.tags ?? []),
         activity.location?.city ?? "",
         activity.location?.venue ?? "",

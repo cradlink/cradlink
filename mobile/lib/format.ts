@@ -1,6 +1,19 @@
 import { getDateLocale, getMessages, tx } from "@/lib/i18n"
 import type { Activity, Headcount, JoinPolicy } from "@/lib/types"
 
+export function formatCompactAgo(value: string) {
+  const then = new Date(value).getTime()
+  if (Number.isNaN(then)) return getMessages().common.now
+  const minutes = Math.max(0, Math.floor((Date.now() - then) / 60_000))
+  if (minutes < 1) return getMessages().common.now
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d`
+  return new Date(value).toLocaleDateString(getDateLocale(), { day: "numeric", month: "short" })
+}
+
 export function formatActivityWhen(activity: Pick<Activity, "isFlexible" | "startAt" | "endAt">) {
   const m = getMessages()
   if (activity.isFlexible || !activity.startAt) return m.schedule.flexibleDates

@@ -1,7 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 
-import { localAuth } from "@/lib/auth/local"
+import { firebaseAuth, watchUsers } from "@/lib/auth/firebase"
 import type { SignInInput, SignUpInput } from "@/lib/auth/types"
+import { claimUsername, deleteAccount } from "@/lib/data/account"
+import { syncCreatorLook } from "@/lib/data/firebase"
+import { AppError } from "@/lib/errors"
+import { isFirebaseConfigured } from "@/lib/env"
 import type { UpdateProfileInput, User } from "@/lib/types"
 
 type AuthContextValue = {
@@ -11,8 +15,10 @@ type AuthContextValue = {
   getUser: (id: string) => User | null
   signIn: (input: SignInInput) => Promise<User>
   signUp: (input: SignUpInput) => Promise<User>
-  signInAsDemo: () => Promise<User>
+  signInWithGoogle: (idToken?: string | null, accessToken?: string | null) => Promise<User>
   updateProfile: (input: UpdateProfileInput) => Promise<User>
+  setUsername: (username: string) => Promise<User>
+  deleteAccount: () => Promise<void>
   signOut: () => Promise<void>
   reload: () => Promise<void>
 }
@@ -24,43 +30,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [directory, setDirectory] = useState<User[]>([])
   const [ready, setReady] = useState(false)
 
-  useEffect(() => {
-    return localAuth.onAuthChange((next) => {
+  const loadPeople = useCallback(async () => {
+    try {
+      setDirectory(await firebaseAuth.listUsers())
+    } catch {
+      setDirectory([])
+    }
+  }, [])
+
+  const getUser = useCallback(
+    (id: string) => {
+      if (user?.id === id) return user
+      return directory.find((entry) => entry.id === id) ?? null
+    },
+    [directory, user],
+  )
+
+  const reload = useCallback(async () => {
+    try {
+      const next = await firebaseAuth.getCurrentUser()
       setUser(next)
-      void localAuth.listUsers().then((list) => {
-        setDirectory(list)
+      if (next) await loadPeople()
+      else setDirectory([])
+    } catch {
+      /* keep the last known user */
+    }
+  }, [loadPeople])
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) {
+      setReady(true)
+      return
+    }
+    let unsubUsers: (() => void) | undefined
+    const unsubAuth = firebaseAuth.onAuthChange((next) => {
+      setUser(next)
+      unsubUsers?.()
+      unsubUsers = undefined
+      if (!next) {
+        setDirectory([])
+        setReady(true)
+        return
+      }
+      unsubUsers = watchUsers((people) => {
+        setDirectory(people)
         setReady(true)
       })
     })
+    return () => {
+      unsubAuth()
+      unsubUsers?.()
+    }
   }, [])
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
+  const value = useMemo<AuthContextValue>(() => {
+    const me = user
+    return {
+      user: me,
       ready,
       people: directory,
-      getUser: (id) => {
-        if (user?.id === id) return user
-        return directory.find((entry) => entry.id === id) ?? null
+      getUser,
+      signIn: (input) => {
+        if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
+        return firebaseAuth.signIn(input)
       },
-      signIn: (input) => localAuth.signIn(input),
-      signUp: (input) => localAuth.signUp(input),
-      signInAsDemo: () => localAuth.signInAsDemo(),
+      signUp: (input) => {
+        if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
+        return firebaseAuth.signUp(input)
+      },
+      signInWithGoogle: (idToken, accessToken) => {
+        if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
+        return firebaseAuth.signInWithGoogle(idToken, accessToken)
+      },
       updateProfile: async (input) => {
-        const next = await localAuth.updateProfile(input)
+        if (input.username) {
+          const handle = await claimUsername(me!.id, input.username)
+          input = { ...input, username: handle }
+        }
+        const next = await firebaseAuth.updateProfile(input)
         setUser(next)
-        setDirectory(await localAuth.listUsers())
+        if (input.avatarUrl !== undefined || input.displayName) {
+          void syncCreatorLook(next)
+        }
+        await loadPeople()
         return next
       },
-      signOut: () => localAuth.signOut(),
-      reload: async () => {
-        const next = await localAuth.getCurrentUser()
+      setUsername: async (username) => {
+        if (!me) throw new AppError("signInFirst")
+        const handle = await claimUsername(me.id, username)
+        const next = { ...me, username: handle }
         setUser(next)
-        setDirectory(await localAuth.listUsers())
+        await loadPeople()
+        return next
       },
-    }),
-    [directory, user, ready],
-  )
+      deleteAccount: async () => {
+        if (!me) throw new AppError("signInFirst")
+        await deleteAccount(me)
+        setUser(null)
+        setDirectory([])
+      },
+      signOut: () => firebaseAuth.signOut(),
+      reload,
+    }
+  }, [directory, getUser, loadPeople, ready, reload, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

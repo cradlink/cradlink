@@ -13,7 +13,7 @@ import { useMemberships } from "@/hooks/use-memberships"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
-import type { Activity, JoinRequest } from "@/lib/types"
+import { handleOf, type Activity, type JoinRequest } from "@/lib/types"
 
 const LIST_CAP = 3
 
@@ -89,8 +89,7 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
   const many = pending.length > 1
   const [open, setOpen] = useState(reviewOpen)
   const [panelH, setPanelH] = useState(0)
-  const visible = pending.slice(0, LIST_CAP)
-  const extra = pending.length - visible.length
+  const extra = pending.length - 1
   const height = useSharedValue(0)
   const opacity = useSharedValue(0)
   const restore = useRef(reviewOpen)
@@ -118,48 +117,32 @@ function CompactRequests({ activity, pending }: { activity: Activity; pending: J
 
   return (
     <View style={styles.compact} lightColor="transparent" darkColor="transparent">
-      {many ? (
-        <Pressable
-          onPress={() => {
-            const next = !open
-            setOpen(next)
-            setReviewOpen(next)
-          }}
-          style={styles.summary}
-        >
-          <AvatarStack people={pending} ring="#16181c" />
-          <Text style={styles.summaryLabel}>
-            {pending.length === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: pending.length })}
-          </Text>
-          <Text style={styles.summaryAction} lightColor="#536471" darkColor="#71767b">
-            {open ? messages.common.hide : messages.common.review}
-          </Text>
-        </Pressable>
-      ) : null}
-      <View
-        pointerEvents="none"
-        style={styles.measure}
-        onLayout={(event) => {
-          const next = Math.round(event.nativeEvent.layout.height)
-          if (next > 0 && next !== panelH) setPanelH(next)
+      <Pressable
+        onPress={() => {
+          const next = !open
+          setOpen(next)
+          setReviewOpen(next)
         }}
+        style={styles.summary}
       >
-        <View style={styles.panelInner}>
-          {visible.map((row) => (
-            <RequestRow key={row.id} row={row} activity={activity} />
-          ))}
-          {extra > 0 ? (
-            <Text style={[styles.more, styles.morePad]} lightColor="#536471" darkColor="#71767b">
-              {tx(messages.requests.moreOnMine, { count: extra })}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-      <Animated.View style={panel}>
-        <View style={styles.panelInner}>
-          {visible.map((row) => (
-            <RequestRow key={row.id} row={row} activity={activity} />
-          ))}
+        <AvatarStack people={pending} ring="#16181c" />
+        <Text style={styles.summaryLabel}>
+          {pending.length === 1 ? messages.requests.oneWaiting : tx(messages.requests.manyWaiting, { count: pending.length })}
+        </Text>
+        <Text style={styles.summaryAction} lightColor="#536471" darkColor="#71767b">
+          {open ? messages.common.hide : messages.common.review}
+        </Text>
+      </Pressable>
+      <Animated.View style={panel} pointerEvents={open ? "auto" : "none"}>
+        <View
+          collapsable={false}
+          style={styles.panelInner}
+          onLayout={(event) => {
+            const next = Math.round(event.nativeEvent.layout.height)
+            if (next > 0 && next !== panelH) setPanelH(next)
+          }}
+        >
+          <RequestRow row={pending[0]} activity={activity} />
           {extra > 0 ? (
             <Text style={[styles.more, styles.morePad]} lightColor="#536471" darkColor="#71767b">
               {tx(messages.requests.moreOnMine, { count: extra })}
@@ -213,7 +196,7 @@ function RequestRow({
   subtitle?: string
 }) {
   const theme = useTheme()
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
   const { ask } = useConfirm()
   const { show } = useToast()
   const { messages, tx } = useI18n()
@@ -291,6 +274,9 @@ function RequestRow({
             {row.userName}
           </Text>
         </CreatorPress>
+        <Text style={styles.handle} numberOfLines={1} lightColor="#8b98a5" darkColor="#8b98a5">
+          {handleOf(getUser(row.userId) ?? row.userName)}
+        </Text>
         <Text style={styles.sub} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
           {subtitle ? tx(messages.requests.wantsJoinNamed, { title: subtitle }) : messages.requests.wantsJoin}
         </Text>
@@ -334,13 +320,6 @@ const styles = StyleSheet.create({
   },
   compact: {
     gap: 0,
-  },
-  measure: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    opacity: 0,
-    zIndex: -1,
   },
   panelInner: {
     paddingTop: 10,
@@ -389,6 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
+  },
+  handle: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 16,
   },
   sub: {
     fontSize: 13,

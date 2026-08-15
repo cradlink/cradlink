@@ -1,5 +1,5 @@
 import type { CommentsRepo } from "@/lib/data/types";
-import { localActivities, localMembers, localUsers } from "@/lib/data/local";
+import { localActivities, localUsers } from "@/lib/data/local";
 import { localNotifications } from "@/lib/data/notifications-local";
 import { notifyDiscussion } from "@/lib/data/notify";
 import { appError } from "@/lib/errors";
@@ -20,14 +20,9 @@ function save(rows: Record<string, ActivityComment>) {
   localStorage.setItem(KEY, JSON.stringify(rows));
 }
 
-async function assertCanDiscuss(activityId: string, userId: string) {
+async function assertCanDiscuss(activityId: string) {
   const activity = await localActivities.getById(activityId);
   if (!activity) throw appError("errors.activityNotFound");
-  if (activity.creatorId === userId) return activity;
-  const membership = await localMembers.getMembership(activityId, userId);
-  if (membership?.status !== "joined") {
-    throw appError("errors.joinToDiscuss");
-  }
   return activity;
 }
 
@@ -53,7 +48,7 @@ export const localComments: CommentsRepo = {
       throw appError("errors.commentTooLong", { max: COMMENT_MAX_LENGTH });
     }
 
-    const activity = await assertCanDiscuss(input.activityId, input.authorId);
+    const activity = await assertCanDiscuss(input.activityId);
     const author = await localUsers.getById(input.authorId);
     if (!author) throw appError("errors.userNotFound");
 

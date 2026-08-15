@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet } from "react-native"
+import { useRouter } from "expo-router"
 
 import { Button } from "@/components/Button"
 import { Refreshable, Stagger } from "@/components/Refreshable"
@@ -12,6 +13,7 @@ import { LOCALES, type Locale } from "@/lib/i18n"
 
 export default function SettingsScreen() {
   const theme = useTheme()
+  const router = useRouter()
   const { user, signOut, updateProfile } = useAuth()
   const { locale, setLocale, messages } = useI18n()
   const { on: fireflies, setEnabled } = useFireflies()
@@ -98,6 +100,13 @@ export default function SettingsScreen() {
         <View key="action" style={styles.action}>
           <Button label={messages.settings.signOut} variant="outline" onPress={() => void signOut()} />
         </View>
+        <Pressable
+          key="delete"
+          onPress={() => router.push("/settings-deactivate")}
+          style={({ pressed }) => [styles.danger, { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Text style={styles.dangerLabel}>{messages.settings.deactivate}</Text>
+        </Pressable>
       </Stagger>
       </Refreshable>
     </ScreenBlurTarget>
@@ -195,5 +204,16 @@ const styles = StyleSheet.create({
   action: {
     marginTop: 28,
     backgroundColor: "transparent",
+  },
+  danger: {
+    marginTop: 22,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dangerLabel: {
+    color: "#f4212e",
+    fontSize: 16,
+    fontWeight: "700",
   },
 })

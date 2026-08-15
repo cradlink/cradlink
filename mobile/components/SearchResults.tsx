@@ -1,30 +1,23 @@
 import { useMemo } from "react"
-import { Pressable, StyleSheet } from "react-native"
-import { useRouter } from "expo-router"
+import { StyleSheet } from "react-native"
 
 import { ActivityCard } from "@/components/ActivityCard"
-import { Avatar } from "@/components/Avatar"
 import { EmptyState } from "@/components/EmptyState"
 import { Refreshable, Stagger } from "@/components/Refreshable"
-import { Text, View, useTheme } from "@/components/Themed"
+import { Text } from "@/components/Themed"
+import { UserRow } from "@/components/UserRow"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 import { searchActivities, searchPeople } from "@/lib/search"
-import type { User } from "@/lib/types"
 
 export function SearchResults({ query }: { query: string }) {
-  const { user, people, getUser } = useAuth()
+  const { people } = useAuth()
   const { activities } = useActivities()
-  const { canSeeActivities } = useConnections()
   const { messages } = useI18n()
   const q = query.trim()
   const foundPeople = useMemo(() => (q ? searchPeople(people, q) : []), [people, q])
-  const foundActivities = useMemo(() => {
-    if (!q) return []
-    return searchActivities(activities, q).filter((activity) => canSeeActivities(getUser(activity.creatorId)))
-  }, [activities, canSeeActivities, getUser, q])
+  const foundActivities = useMemo(() => (q ? searchActivities(activities, q) : []), [activities, q])
   const empty = q.length > 0 && foundPeople.length === 0 && foundActivities.length === 0
 
   return (
@@ -49,7 +42,7 @@ export function SearchResults({ query }: { query: string }) {
               </Text>
             ) : null,
             ...foundPeople.map((person) => (
-              <PersonRow key={person.id} person={person} isSelf={person.id === user?.id} />
+              <UserRow key={person.id} person={person} />
             )),
             foundActivities.length > 0 ? (
               <Text key="acts-h" style={styles.section}>
@@ -61,32 +54,6 @@ export function SearchResults({ query }: { query: string }) {
         )}
       </Stagger>
     </Refreshable>
-  )
-}
-
-function PersonRow({ person, isSelf }: { person: User; isSelf?: boolean }) {
-  const router = useRouter()
-  const theme = useTheme()
-  const { messages } = useI18n()
-
-  return (
-    <Pressable
-      onPress={() => (isSelf ? router.push("/profile") : router.push(`/u/${person.id}`))}
-      style={({ pressed }) => [
-        styles.person,
-        { borderBottomColor: theme.border, backgroundColor: pressed ? theme.hover : "transparent" },
-      ]}
-    >
-      <Avatar name={person.displayName} src={person.avatarUrl} size={40} />
-      <View style={styles.personText} lightColor="transparent" darkColor="transparent">
-        <Text style={styles.personName} numberOfLines={1}>
-          {person.displayName}
-        </Text>
-        <Text style={styles.personMeta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-          {person.location || (isSelf ? messages.common.you : messages.common.somewhere)}
-        </Text>
-      </View>
-    </Pressable>
   )
 }
 
@@ -102,26 +69,5 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "800",
     letterSpacing: -0.4,
-  },
-  person: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  personText: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  personName: {
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-  },
-  personMeta: {
-    fontSize: 13,
   },
 })

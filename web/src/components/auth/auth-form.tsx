@@ -11,6 +11,7 @@ import { getBackendName } from "@/lib/config";
 import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/lib/data/seed";
 import { errorMessage } from "@/lib/errors";
 import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
+import { assertUsernameAvailable } from "@/lib/username";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const { t } = useTranslation();
@@ -19,6 +20,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [search] = useSearchParams();
   const next = search.get("next") || "/";
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const local = getBackendName() === "local";
   const [email, setEmail] = useState(local ? DEMO_ACCOUNT_EMAIL : "");
   const [password, setPassword] = useState(local ? DEMO_ACCOUNT_PASSWORD : "");
@@ -42,10 +44,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         const nameIssue = nameFilterReason(displayName);
         if (nameIssue === "tooShort") throw new Error(t("errors.addName"));
         if (nameIssue === "unavailable") throw new Error(t("errors.nameUnavailable"));
+        await assertUsernameAvailable(username);
       }
       const signedIn =
         mode === "signup"
-          ? await signUp({ email, password, displayName })
+          ? await signUp({ email, password, displayName, username })
           : await signIn({ email, password });
       if (signedIn.emailVerified === false) {
         navigate("/verify-email", { replace: true });
@@ -92,6 +95,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={t("auth.namePlaceholder")}
+              required
+            />
+          </div>
+        ) : null}
+        {mode === "signup" ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="username">{t("auth.username")}</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder={t("auth.usernamePlaceholder")}
+              autoComplete="username"
               required
             />
           </div>

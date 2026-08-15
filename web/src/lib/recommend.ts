@@ -14,7 +14,6 @@ export type RecommendContext = {
 export type RecommendReason = {
   key:
     | "recommend.matchesJoin"
-    | "recommend.similarTags"
     | "recommend.matchesSkills"
     | "recommend.nearCity"
     | "recommend.nearYou"
@@ -35,11 +34,6 @@ const DAY = 24 * 60 * 60 * 1000;
 
 function token(value: string) {
   return value.trim().toLowerCase();
-}
-
-function overlap(left: string[], right: string[]) {
-  const set = new Set(right.map(token).filter(Boolean));
-  return left.map(token).filter((item) => item && set.has(item)).length;
 }
 
 function cityOf(activity: Activity) {
@@ -67,30 +61,18 @@ export function scoreActivity(activity: Activity, ctx: RecommendContext): Scored
   let score = 0;
   const taste = ctx.tasteActivities;
   const types = new Set(taste.map((item) => item.type));
-  const tags = taste.flatMap((item) => item.tags ?? []);
-  const looking = taste.flatMap((item) => item.lookingFor);
   const skills = ctx.user.skills ?? [];
+  const text = `${activity.title} ${activity.description}`;
 
   if (types.has(activity.type)) {
     score += 3;
     reasons.push({ key: "recommend.matchesJoin" });
   }
 
-  const tagHits = overlap(activity.tags ?? [], tags);
-  if (tagHits > 0) {
-    score += Math.min(2, tagHits);
-    reasons.push({ key: "recommend.similarTags" });
-  }
-
-  const skillHits = overlap(activity.lookingFor, skills) + overlap(activity.tags ?? [], skills);
+  const skillHits = skills.filter((skill) => text.toLowerCase().includes(token(skill))).length;
   if (skillHits > 0) {
     score += Math.min(2, skillHits);
     reasons.push({ key: "recommend.matchesSkills" });
-  }
-
-  const lookingHits = overlap(activity.lookingFor, looking);
-  if (lookingHits > 0) {
-    score += 1;
   }
 
   if (samePlace(ctx.user.location, activity)) {

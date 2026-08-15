@@ -15,6 +15,7 @@ import { useI18n } from "@/hooks/use-i18n"
 import { useNotifications } from "@/hooks/use-notifications"
 import { formatRelative } from "@/lib/format"
 import { formatShortWhen } from "@/lib/schedule"
+import { personLook } from "@/lib/person-look"
 import type { Activity, AppNotification } from "@/lib/types"
 import type { Messages } from "@/lib/i18n"
 import { tx } from "@/lib/i18n"
@@ -23,7 +24,7 @@ export default function NotificationsScreen() {
   const theme = useTheme()
   const router = useRouter()
   const { items, markRead } = useNotifications()
-  const { get } = useActivities()
+  const { get, ensure } = useActivities()
   const { open } = useActivityPreview()
   const { user, people } = useAuth()
   const { messages } = useI18n()
@@ -46,8 +47,13 @@ export default function NotificationsScreen() {
     void markRead(item.id)
     if (!item.activityId) return
     const activity = get(item.activityId)
-    if (!activity) return
-    open(activity, origin)
+    if (activity) {
+      open(activity, origin)
+      return
+    }
+    void ensure(item.activityId).then((next) => {
+      if (next) open(next, origin)
+    })
   }
 
   return (
@@ -70,8 +76,16 @@ export default function NotificationsScreen() {
                 copy={notificationCopy(item, messages, item.activityId ? get(item.activityId) : null)}
                 onPerson={() => openProfile(item)}
                 onOpen={(origin) => {
-                  if (item.type === "reminder") openActivity(item, origin)
-                  else openProfile(item)
+                  if (
+                    item.activityId &&
+                    item.type !== "follow" &&
+                    item.type !== "follow_request" &&
+                    item.type !== "follow_accepted"
+                  ) {
+                    openActivity(item, origin)
+                  } else {
+                    openProfile(item)
+                  }
                 }}
                 unreadColor={theme.primary}
                 border={theme.border}
@@ -104,6 +118,8 @@ function notificationCopy(item: AppNotification, m: Messages, activity: Activity
       return { title: tx(m.notifications.followRequestTitle, { name }), body: m.notifications.followRequestBody }
     case "follow_accepted":
       return { title: tx(m.notifications.followAcceptedTitle, { name }), body: m.notifications.followAcceptedBody }
+    case "reply":
+      return { title: tx(m.notifications.replyTitle, { name, title }), body: m.notifications.replyBody }
     case "reminder":
       return {
         title,
@@ -134,6 +150,10 @@ function NotificationRow({
   unreadColor: string
   border: string
 }) {
+  const { getUser, people } = useAuth()
+  const actorId =
+    item.actorId || people.find((person) => person.displayName === item.actorName)?.id || null
+  const look = personLook(getUser, actorId, item.actorName, item.actorAvatar)
   const ref = useRef<RNView>(null)
   return (
     <RNView ref={ref} collapsable={false}>
@@ -149,7 +169,7 @@ function NotificationRow({
       ]}
     >
       <Pressable onPress={onPerson} hitSlop={6}>
-        <Avatar name={item.actorName} src={item.actorAvatar} size={40} />
+        <Avatar name={look.name} src={look.avatar} size={40} />
       </Pressable>
       <View style={styles.body} lightColor="transparent" darkColor="transparent">
         <Text style={[styles.title, !item.read && styles.unread]}>{copy.title}</Text>

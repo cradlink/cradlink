@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Image, StyleSheet } from "react-native"
 
 import { ActivityCover } from "@/components/ActivityCover"
@@ -8,7 +9,7 @@ import { Text, View, useTheme } from "@/components/Themed"
 import { useI18n } from "@/hooks/use-i18n"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import { formatHeadcount } from "@/lib/format"
-import { resolveActivityBanner } from "@/lib/banners"
+import { activityBannerSources } from "@/lib/banners"
 import { formatClock, formatDateParts, formatPlace, formatShortWhen } from "@/lib/schedule"
 import type { Activity } from "@/lib/types"
 
@@ -107,9 +108,26 @@ export function AgendaRow({
       </View>
 
       <View style={[styles.thumb, { borderColor: theme.border, backgroundColor: theme.background }]}>
-        <Image source={resolveActivityBanner(activity)} resizeMode="cover" style={styles.thumbImage} />
+        <AgendaThumb activity={activity} />
       </View>
     </ActivityPressable>
+  )
+}
+
+function AgendaThumb({ activity }: { activity: Pick<Activity, "type" | "images"> }) {
+  const sources = activityBannerSources(activity)
+  const [index, setIndex] = useState(0)
+  useEffect(() => {
+    setIndex(0)
+  }, [activity.images[0], activity.type])
+  const source = sources[Math.min(index, sources.length - 1)]
+  return (
+    <Image
+      source={source}
+      resizeMode="cover"
+      style={styles.thumbImage}
+      onError={() => setIndex((current) => Math.min(current + 1, sources.length - 1))}
+    />
   )
 }
 

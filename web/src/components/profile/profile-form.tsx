@@ -17,9 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile, useUploadAvatar, useUploadBanner } from "@/hooks/use-profile";
 import { getBackend } from "@/lib/backend";
-import { errorMessage } from "@/lib/errors";
+import { AppError, errorMessage } from "@/lib/errors";
+import { isStorageUrl } from "@/lib/image-file";
 import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
 import { isPrivateProfile, type User } from "@/lib/types";
+import { assertUsernameAvailable, normalizeUsername, userHandle } from "@/lib/username";
 
 export function ProfileForm({ user }: { user: User }) {
   const { t } = useTranslation();
@@ -31,6 +33,7 @@ export function ProfileForm({ user }: { user: User }) {
   const avatarInput = useRef<HTMLInputElement>(null);
   const bannerInput = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState(user.displayName);
+  const [username, setUsername] = useState(userHandle(user));
   const [bio, setBio] = useState(user.bio);
   const [location, setLocation] = useState(user.location);
   const [skills, setSkills] = useState(user.skills);
@@ -86,15 +89,26 @@ export function ProfileForm({ user }: { user: User }) {
       setError(t("errors.nameUnavailable"));
       return;
     }
+    try {
+      await assertUsernameAvailable(username, user.id);
+    } catch (err) {
+      setError(
+        err instanceof AppError && err.key === "errors.usernameTooShort"
+          ? t("errors.usernameTooShort")
+          : errorMessage(err),
+      );
+      return;
+    }
     setError(null);
     try {
       await update.mutateAsync({
         displayName: displayName.trim(),
+        username: normalizeUsername(username),
         bio: bio.trim(),
         location: location.trim(),
         skills,
-        avatarUrl,
-        bannerUrl,
+        avatarUrl: isStorageUrl(avatarUrl) ? avatarUrl : user.avatarUrl,
+        bannerUrl: isStorageUrl(bannerUrl) ? bannerUrl : user.bannerUrl ?? null,
         profileVisibility: isPrivate ? "private" : "public",
       });
       if (!isPrivate && isPrivateProfile(user)) {
@@ -177,6 +191,17 @@ export function ProfileForm({ user }: { user: User }) {
         <div className="space-y-1.5">
           <Label htmlFor="displayName">{t("profile.name")}</Label>
           <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="username">{t("profile.username")}</Label>
+          <Input
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={t("profile.usernamePlaceholder")}
+            autoComplete="username"
+          />
+          <p className="text-[13px] text-muted-foreground">{t("profile.usernameHint")}</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="location">{t("profile.location")}</Label>

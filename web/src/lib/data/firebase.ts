@@ -14,6 +14,7 @@ import {
 import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
 import { appError } from "@/lib/errors";
+import { assertUsernameAvailable, claimUsername, normalizeUsername } from "@/lib/username";
 import { getFirebaseDb } from "@/lib/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyActivityEdited, notifyDecision, notifyJoin, notifyKicked } from "@/lib/data/notify";
@@ -53,6 +54,7 @@ function mapUser(id: string, data: DocumentData): User {
       data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
+    username: typeof data.username === "string" ? data.username : null,
   };
 }
 
@@ -127,6 +129,15 @@ export const firebaseUsers: UsersRepo = {
     const ref = doc(getFirebaseDb(), "users", id);
     const snap = await getDoc(ref);
     if (!snap.exists()) throw appError("errors.userNotFound");
+    if (patch.username !== undefined) {
+      const current = typeof snap.data().username === "string" ? snap.data().username : "";
+      const nextHandle = normalizeUsername(patch.username);
+      if (nextHandle !== current) {
+        await assertUsernameAvailable(patch.username, id);
+        await claimUsername(id, patch.username);
+      }
+      patch = { ...patch, username: nextHandle };
+    }
     const next = mapUser(id, { ...snap.data(), ...patch, updatedAt: nowIso() });
     await updateDoc(ref, stripUndefined({ ...patch, updatedAt: nowIso() }));
 
@@ -187,8 +198,8 @@ export const firebaseActivities: ActivitiesRepo = {
       title: input.title.trim(),
       description: input.description.trim(),
       type: input.type,
-      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
-      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      lookingFor: [],
+      tags: [],
       location: input.location,
       startAt: input.isFlexible ? null : input.startAt,
       endAt: input.isFlexible ? null : input.endAt,
@@ -207,7 +218,7 @@ export const firebaseActivities: ActivitiesRepo = {
       images: input.images ?? [],
     };
 
-    if (activity.images.some((src) => src.startsWith("data:"))) {
+    if (activity.images.some((src) => src.startsWith("data:") || src.startsWith("blob:"))) {
       throw appError("errors.photosTooLarge");
     }
 
@@ -232,7 +243,7 @@ export const firebaseActivities: ActivitiesRepo = {
     const existing = await firebaseActivities.getById(id);
     if (!existing) throw appError("errors.activityNotFound");
     if (existing.creatorId !== actorId) throw appError("errors.onlyOrganizerEdit");
-    if ((input.images ?? []).some((src) => src.startsWith("data:"))) {
+    if ((input.images ?? []).some((src) => src.startsWith("data:") || src.startsWith("blob:"))) {
       throw appError("errors.photosTooLarge");
     }
 
@@ -241,8 +252,8 @@ export const firebaseActivities: ActivitiesRepo = {
       title: input.title.trim(),
       description: input.description.trim(),
       type: input.type,
-      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
-      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      lookingFor: [],
+      tags: [],
       location: input.location,
       startAt: input.isFlexible ? null : input.startAt,
       endAt: input.isFlexible ? null : input.endAt,

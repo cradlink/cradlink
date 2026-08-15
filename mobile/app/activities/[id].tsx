@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { StyleSheet } from "react-native"
 import { useLocalSearchParams } from "expo-router"
 
@@ -15,36 +16,28 @@ import { TopBar } from "@/components/TopBar"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
-import { useAuth } from "@/hooks/use-auth"
-import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { formatActivityWhen, formatHeadcount, formatJoinPolicy, formatLocation } from "@/lib/format"
 
 export default function ActivityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { get } = useActivities()
-  const { getUser } = useAuth()
-  const { canSeeActivities } = useConnections()
+  const { get, ensure } = useActivities()
   const { decorate, isOrganizer } = useMemberships()
   const { messages } = useI18n()
   const activity = id ? get(id) : null
   const viewed = activity ? decorate(activity) : null
-  const locked = Boolean(activity && !canSeeActivities(getUser(activity.creatorId)))
+
+  useEffect(() => {
+    if (id && !activity) void ensure(id)
+  }, [activity, ensure, id])
 
   return (
     <ScreenBlurTarget style={styles.screen}>
       <TopBar title={messages.common.activity} back hideBell />
       <Refreshable contentContainerStyle={styles.content}>
       <Stagger>
-        {locked ? (
-          <EmptyState
-            key="private"
-            title={messages.profile.privateTitle}
-            body={messages.profile.privateBody}
-            icon={{ ios: "lock.fill", android: "lock", web: "lock" }}
-          />
-        ) : !activity || !viewed ? (
+        {!activity || !viewed ? (
           <EmptyState
             key="missing"
             title={messages.activity.notFoundTitle}

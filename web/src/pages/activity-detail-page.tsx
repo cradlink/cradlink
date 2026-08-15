@@ -5,7 +5,6 @@ import { Calendar, Lock, MapPin, Users } from "lucide-react";
 import { ActivityDiscussion } from "@/components/activity/activity-discussion";
 import { ActivityGallery } from "@/components/activity/activity-gallery";
 import { JoinButton } from "@/components/activity/join-button";
-import { LookingForChips } from "@/components/activity/looking-for-chips";
 import { FollowButton } from "@/components/profile/follow-button";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -40,7 +39,7 @@ export function ActivityDetailPage() {
   const membershipStatus = membershipQuery.data?.status === "joined" || membershipQuery.data?.status === "pending"
     ? membershipQuery.data.status
     : null;
-  const canDiscuss = Boolean(user && activity && (isOrganizer || membershipStatus === "joined"));
+  const canDiscuss = Boolean(user && activity);
   const creatorQuery = useUser(activity?.creatorId);
   const followQuery = useFollow(user?.id, activity?.creatorId);
   const canSeePrivate = Boolean(
@@ -154,20 +153,6 @@ export function ActivityDetailPage() {
           <p className="whitespace-pre-wrap text-base leading-relaxed">{activity.description}</p>
         </div>
 
-        {activity.tags?.length ? (
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold">{t("activity.tags")}</h2>
-            <LookingForChips items={activity.tags} limit={12} />
-          </div>
-        ) : null}
-
-        {activity.lookingFor.length > 0 ? (
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold">{t("activity.lookingFor")}</h2>
-            <LookingForChips items={activity.lookingFor} limit={12} />
-          </div>
-        ) : null}
-
         {isOrganizer && pending.length > 0 ? (
           <div className="space-y-3">
             <h2 className="text-2xl font-bold">{t("activity.requests")}</h2>
@@ -258,7 +243,6 @@ export function ActivityDetailPage() {
         user={user}
         canDiscuss={canDiscuss}
         isOrganizer={isOrganizer}
-        membershipStatus={membershipStatus}
       />
 
       <Dialog open={Boolean(kickUserId)} onOpenChange={(open) => !open && setKickUserId(null)}>

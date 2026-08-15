@@ -1,14 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { AppState } from "react-native"
 
-import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { formatShortWhen } from "@/lib/schedule"
+import { useI18n } from "@/hooks/use-i18n"
+import { useToast } from "@/hooks/use-toast"
+import { markNotificationRead, markNotificationsRead, watchNotifications, writeNotification } from "@/lib/data/social"
+import { isFirebaseConfigured } from "@/lib/env"
 import type { Activity, AppNotification, NotificationType } from "@/lib/types"
-
-const KEY = "cl.notifications"
-
-type Store = Record<string, AppNotification[]>
 
 type NotificationsValue = {
   ready: boolean
@@ -34,136 +32,113 @@ type NotificationsValue = {
 
 const NotificationsContext = createContext<NotificationsValue | null>(null)
 
-function createId() {
-  return `ntf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
-}
-
-function seedFor(userId: string, hosted: Activity[]): AppNotification[] {
-  const now = Date.now()
-  const first = hosted[0]
-  const requested = hosted.find((activity) => activity.joinPolicy === "manual") ?? hosted[1]
-  const items: AppNotification[] = []
-
-  if (first) {
-    items.push({
-      id: `seed_joined_${first.id}`,
-      userId,
-      type: "joined",
-      activityId: first.id,
-      actorId: "user_ana",
-      actorName: "Ana Kovač",
-      actorAvatar: null,
-      title: `Ana Kovač joined ${first.title}`,
-      body: "They’re on the list.",
-      createdAt: new Date(now - 2 * 3600_000).toISOString(),
-      read: false,
-    })
-    items.push({
-      id: `seed_soon_${first.id}`,
-      userId,
-      type: "reminder",
-      activityId: first.id,
-      actorId: first.creatorId,
-      actorName: first.creatorName,
-      actorAvatar: first.creatorAvatar,
-      title: first.title,
-      body: first.isFlexible || !first.startAt ? "Coming up — flexible date." : `Up next · ${formatShortWhen(first)}`,
-      createdAt: new Date(now - 20 * 3600_000).toISOString(),
-      read: false,
-    })
-  }
-
-  if (requested && requested.id !== first?.id) {
-    items.push({
-      id: `seed_req_${requested.id}`,
-      userId,
-      type: "request",
-      activityId: requested.id,
-      actorId: "user_luka",
-      actorName: "Luka Ilić",
-      actorAvatar: null,
-      title: `Luka Ilić requested to join ${requested.title}`,
-      body: "Open the activity to review.",
-      createdAt: new Date(now - 28 * 3600_000).toISOString(),
-      read: false,
-    })
-  }
-
-  return items
+function toastFor(item: AppNotification, fallback: string) {
+  if (item.type === "reply" && item.actorName) return `${item.actorName} · ${item.title || fallback}`
+  return item.title || item.actorName || fallback
 }
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
-  const { activities, ready: activitiesReady } = useActivities()
-  const [store, setStore] = useState<Store>({})
+  const { user, getUser, people } = useAuth()
+  const { show } = useToast()
+  const { messages } = useI18n()
+  const [items, setItems] = useState<AppNotification[]>([])
   const [ready, setReady] = useState(false)
+  const [generation, setGeneration] = useState(0)
+  const known = useRef(new Set<string>())
+  const booted = useRef(false)
+  const showRef = useRef(show)
+  const titleRef = useRef(messages.notifications.title)
+  showRef.current = show
+  titleRef.current = messages.notifications.title
 
   useEffect(() => {
-    void AsyncStorage.getItem(KEY).then((raw) => {
-      if (raw) {
-        try {
-          setStore(JSON.parse(raw) as Store)
-        } catch {
-          setStore({})
-        }
-      }
+    known.current = new Set()
+    booted.current = false
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.username || !isFirebaseConfigured()) {
+      setItems([])
       setReady(true)
+      return
+    }
+
+    let active = true
+    let stop: (() => void) | undefined
+
+    function attach() {
+      if (!user || !active) return
+      stop?.()
+      stop = watchNotifications(
+        user.id,
+        (next) => {
+          if (!active) return
+          if (!booted.current) {
+            next.forEach((item) => known.current.add(item.id))
+            booted.current = true
+          } else {
+            for (const item of next) {
+              if (item.read || known.current.has(item.id)) continue
+              known.current.add(item.id)
+              if (item.actorId && item.actorId === user.id) continue
+              showRef.current({ title: toastFor(item, titleRef.current) })
+            }
+          }
+          setItems(next)
+          setReady(true)
+        },
+        () => {
+          if (active) setReady(true)
+        },
+      )
+    }
+
+    attach()
+    const app = AppState.addEventListener("change", (state) => {
+      if (state === "active") attach()
     })
-  }, [])
 
-  const persist = useCallback(async (next: Store) => {
-    setStore(next)
-    await AsyncStorage.setItem(KEY, JSON.stringify(next))
-  }, [])
-
-  useEffect(() => {
-    if (!ready || !activitiesReady || !user) return
-    if (store[user.id]) return
-    const hosted = activities.filter((activity) => activity.creatorId === user.id)
-    void persist({ ...store, [user.id]: seedFor(user.id, hosted) })
-  }, [activities, activitiesReady, persist, ready, store, user])
-
-  const items = useMemo(() => {
-    if (!user) return []
-    return [...(store[user.id] ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  }, [store, user])
+    return () => {
+      active = false
+      stop?.()
+      app.remove()
+    }
+  }, [generation, user])
 
   const value = useMemo<NotificationsValue>(() => {
+    const live = items.map((item) => {
+      const actor =
+        (item.actorId ? getUser(item.actorId) : null) ??
+        people.find((person) => person.displayName === item.actorName) ??
+        null
+      if (!actor) return item
+      return {
+        ...item,
+        actorId: actor.id,
+        actorName: actor.displayName,
+        actorAvatar: actor.avatarUrl,
+      }
+    })
     return {
       ready,
-      items,
+      items: live,
       unread: items.filter((item) => !item.read).length,
       markRead: async (id) => {
-        if (!user) return
-        await persist({
-          ...store,
-          [user.id]: (store[user.id] ?? []).map((item) => (item.id === id ? { ...item, read: true } : item)),
-        })
+        await markNotificationRead(id)
       },
       markAllRead: async () => {
-        if (!user) return
-        await persist({
-          ...store,
-          [user.id]: (store[user.id] ?? []).map((item) => ({ ...item, read: true })),
-        })
+        await markNotificationsRead(live.filter((item) => !item.read).map((item) => item.id))
       },
       notifyUser: async (userId, input) => {
-        const next: AppNotification = {
-          id: createId(),
-          userId,
-          createdAt: new Date().toISOString(),
-          read: false,
-          ...input,
-        }
-        await persist({ ...store, [userId]: [next, ...(store[userId] ?? [])] })
+        await writeNotification({ userId, ...input })
       },
       notifyHost: async (activity, type) => {
         if (!user || user.id === activity.creatorId) return
-        const next: AppNotification = {
-          id: createId(),
+        await writeNotification({
           userId: activity.creatorId,
           type,
           activityId: activity.id,
+          activityTitle: activity.title,
           actorId: user.id,
           actorName: user.displayName,
           actorAvatar: user.avatarUrl,
@@ -172,26 +147,13 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
               ? `${user.displayName} requested to join ${activity.title}`
               : `${user.displayName} joined ${activity.title}`,
           body: type === "request" ? "Open the activity to review." : "They’re on the list.",
-          createdAt: new Date().toISOString(),
-          read: false,
-        }
-        const hostList = store[activity.creatorId] ?? []
-        await persist({ ...store, [activity.creatorId]: [next, ...hostList] })
+        })
       },
       reload: async () => {
-        const raw = await AsyncStorage.getItem(KEY)
-        if (!raw) {
-          setStore({})
-          return
-        }
-        try {
-          setStore(JSON.parse(raw) as Store)
-        } catch {
-          setStore({})
-        }
+        setGeneration((value) => value + 1)
       },
     }
-  }, [items, persist, ready, store, user])
+  }, [getUser, items, people, ready, user])
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>
 }

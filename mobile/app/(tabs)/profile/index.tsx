@@ -8,13 +8,12 @@ import { TopBar } from "@/components/TopBar"
 import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { useI18n } from "@/hooks/use-i18n"
+import { handleOf } from "@/lib/types"
 
 export default function ProfileScreen() {
   const router = useRouter()
   const { user } = useAuth()
   const { activities } = useActivities()
-  const { messages } = useI18n()
 
   if (!user) return null
 
@@ -22,10 +21,10 @@ export default function ProfileScreen() {
 
   return (
     <ScreenBlurTarget style={styles.screen}>
-      <TopBar title={messages.profile.title} onSettings={() => router.push("/settings")} />
+      <TopBar title={handleOf(user)} onSettings={() => router.push("/settings")} />
       <Refreshable contentContainerStyle={styles.list}>
         <Stagger>
-          <ProfileView key="hero" user={user} isSelf hostedCount={hosted.length} />
+          <ProfileView key="hero" user={user} isSelf />
           {hosted.map((activity) => (
             <ActivityCard key={activity.id} activity={activity} />
           ))}
