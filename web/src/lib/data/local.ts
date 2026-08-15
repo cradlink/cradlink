@@ -196,6 +196,35 @@ export const localActivities: ActivitiesRepo = {
     return next;
   },
 
+  async remove(id, actorId) {
+    await ensureSeed();
+    const db = loadDb();
+    const existing = db.activities[id];
+    if (!existing) throw appError("errors.activityNotFound");
+    if (existing.creatorId !== actorId) throw appError("errors.onlyOrganizerDelete");
+    delete db.activities[id];
+    for (const mid of Object.keys(db.members)) {
+      if (db.members[mid].activityId === id) delete db.members[mid];
+    }
+    saveDb(db);
+    try {
+      const comments = JSON.parse(localStorage.getItem("cl_comments") || "{}") as Record<
+        string,
+        { activityId?: string }
+      >;
+      let changed = false;
+      for (const commentId of Object.keys(comments)) {
+        if (comments[commentId]?.activityId === id) {
+          delete comments[commentId];
+          changed = true;
+        }
+      }
+      if (changed) localStorage.setItem("cl_comments", JSON.stringify(comments));
+    } catch {
+      // Local comments are optional.
+    }
+  },
+
   async listCreatedBy(userId) {
     await ensureSeed();
     return Object.values(loadDb().activities)
