@@ -1,6 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
 import { isFirebaseConfigured, getFirebaseDb } from "@/lib/firebase";
-import { displayNameKey, handleFromName } from "@/lib/format";
+import { displayNameKey } from "@/lib/format";
 
 export type NameFilterReason = "tooShort" | "unavailable";
 
@@ -66,19 +66,19 @@ export async function ensureNameFilter() {
   return loadOnce;
 }
 
+export function handleBlockedReason(handle: string) {
+  const compact = displayNameKey(handle);
+  if (lists.reserved.has(compact) || tokens(handle).some((word) => lists.reserved.has(word))) {
+    return "unavailable" as const;
+  }
+  if (looksBlocked(handle) || looksBlocked(compact)) return "unavailable" as const;
+  return null;
+}
+
 export function nameFilterReason(name: string): NameFilterReason | null {
   const trimmed = name.trim();
-  const handle = displayNameKey(trimmed);
-  if (trimmed.length < 2 || handle.length < 3) return "tooShort";
-  const foldedHandle = fold(handleFromName(trimmed)).replace(/[^a-z]/g, "");
-  if (
-    lists.reserved.has(handle) ||
-    lists.reserved.has(foldedHandle) ||
-    tokens(trimmed).some((word) => lists.reserved.has(word))
-  ) {
-    return "unavailable";
-  }
-  if (looksBlocked(trimmed) || looksBlocked(handle) || looksBlocked(foldedHandle)) return "unavailable";
+  if (trimmed.length < 2) return "tooShort";
+  if (looksBlocked(trimmed)) return "unavailable";
   return null;
 }
 

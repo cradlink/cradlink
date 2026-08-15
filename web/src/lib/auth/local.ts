@@ -7,8 +7,9 @@ import {
   setSessionUserId,
   type StoredUser,
 } from "@/lib/data/store";
-import { assertDisplayNameAvailable } from "@/lib/display-name";
 import { appError } from "@/lib/errors";
+import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
+import { assertUsernameAvailable, normalizeUsername } from "@/lib/username";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
 import type { User } from "@/lib/types";
 import { createId, hashPassword, nowIso } from "@/lib/utils";
@@ -36,12 +37,16 @@ export const localAuth: AuthRepo = {
     return currentUserFromDb();
   },
 
-  async signUp({ email, password, displayName }: SignUpInput) {
+  async signUp({ email, password, displayName, username }: SignUpInput) {
     await ensureSeed();
     const trimmedEmail = email.trim().toLowerCase();
     const name = displayName.trim();
     if (!name) throw appError("errors.addName");
-    await assertDisplayNameAvailable(name);
+    await ensureNameFilter();
+    const nameIssue = nameFilterReason(name);
+    if (nameIssue === "tooShort") throw appError("errors.addName");
+    if (nameIssue === "unavailable") throw appError("errors.nameUnavailable");
+    await assertUsernameAvailable(username);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       throw appError("errors.invalidEmail");
     }
@@ -56,6 +61,7 @@ export const localAuth: AuthRepo = {
     const stored: StoredUser = {
       id: createId("user"),
       displayName: name,
+      username: normalizeUsername(username),
       email: trimmedEmail,
       bio: "",
       skills: [],

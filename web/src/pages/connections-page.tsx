@@ -9,7 +9,7 @@ import { useFollow, useFollowers, useFollowing } from "@/hooks/use-follows";
 import { useUser } from "@/hooks/use-profile";
 import { isDeactivated } from "@/lib/account";
 import { connectionsPath, profilePath, type ConnectionsTab } from "@/lib/connections";
-import { handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 
 export function ConnectionsPage({ tab }: { tab: ConnectionsTab }) {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ export function ConnectionsPage({ tab }: { tab: ConnectionsTab }) {
   const followsYou = new Set(
     (myFollowers.data ?? []).filter((row) => row.status === "accepted").map((row) => row.followerId),
   );
-  const handle = user ? handleFromName(user.displayName) : "";
+  const handle = user ? userHandle(user) : "";
 
   function setTab(value: string) {
     if (!id || (value !== "followers" && value !== "following")) return;

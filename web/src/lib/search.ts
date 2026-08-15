@@ -1,7 +1,7 @@
 import { format, isValid, parseISO } from "date-fns";
 import i18n from "@/i18n";
 import { getDateLocale } from "@/i18n/dates";
-import { handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 import type { Activity, User } from "@/lib/types";
 
 export function normalizeQuery(value: string) {
@@ -20,7 +20,7 @@ export function matchesUser(user: User, query: string) {
   if (!q) return false;
   return haystack(
     user.displayName,
-    handleFromName(user.displayName),
+    userHandle(user),
     user.location,
     user.bio,
     user.skills.join(" "),
@@ -37,8 +37,6 @@ export function matchesActivity(activity: Activity, query: string) {
     activity.type,
     activity.location.city,
     activity.location.venue,
-    ...(activity.tags ?? []),
-    ...activity.lookingFor,
   ).includes(q);
 }
 

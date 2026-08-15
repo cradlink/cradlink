@@ -2,9 +2,8 @@ import { PAGE_SIZE } from "@/lib/config";
 import { ensureSeed } from "@/lib/data/seed";
 import { loadDb, publicUser, saveDb } from "@/lib/data/store";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
-import { assertDisplayNameAvailable } from "@/lib/display-name";
-import { displayNameKey } from "@/lib/format";
 import { appError } from "@/lib/errors";
+import { assertUsernameAvailable, normalizeUsername } from "@/lib/username";
 import type {
   Activity,
   ActivityMember,
@@ -57,11 +56,12 @@ export const localUsers: UsersRepo = {
     const db = loadDb();
     const existing = db.users[id];
     if (!existing) throw appError("errors.userNotFound");
-    if (
-      patch.displayName !== undefined &&
-      displayNameKey(patch.displayName) !== displayNameKey(existing.displayName)
-    ) {
-      await assertDisplayNameAvailable(patch.displayName, id);
+    if (patch.username !== undefined) {
+      const handle = normalizeUsername(patch.username);
+      if (handle !== existing.username) {
+        await assertUsernameAvailable(handle, id);
+      }
+      patch = { ...patch, username: handle };
     }
     const next = {
       ...existing,
@@ -120,8 +120,8 @@ export const localActivities: ActivitiesRepo = {
       title: input.title.trim(),
       description: input.description.trim(),
       type: input.type,
-      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
-      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      lookingFor: [],
+      tags: [],
       location: input.location,
       startAt: input.isFlexible ? null : input.startAt,
       endAt: input.isFlexible ? null : input.endAt,
@@ -164,8 +164,8 @@ export const localActivities: ActivitiesRepo = {
       title: input.title.trim(),
       description: input.description.trim(),
       type: input.type,
-      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
-      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      lookingFor: [],
+      tags: [],
       location: input.location,
       startAt: input.isFlexible ? null : input.startAt,
       endAt: input.isFlexible ? null : input.endAt,

@@ -3,13 +3,13 @@ import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { SettingsHeader } from "@/components/settings/settings-header";
 import { useAuth } from "@/hooks/use-auth";
-import { handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 
 export function SettingsAccountPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   if (!user) return null;
-  const handle = handleFromName(user.displayName);
+  const handle = userHandle(user);
 
   return (
     <div>

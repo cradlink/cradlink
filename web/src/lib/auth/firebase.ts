@@ -11,17 +11,18 @@ import {
 } from "firebase/auth";
 import { deleteDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import type { AuthRepo } from "@/lib/auth/types";
-import {
-  assertDisplayNameAvailable,
-  claimDisplayName,
-  releaseDisplayName,
-  uniqueDisplayName,
-} from "@/lib/display-name";
 import { AppError, appError } from "@/lib/errors";
 import { appEnv } from "@/lib/env";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
-import { ensureNameFilter, sanitizeDisplayName } from "@/lib/name-filter";
+import { ensureNameFilter, nameFilterReason, sanitizeDisplayName } from "@/lib/name-filter";
+import {
+  assertUsernameAvailable,
+  claimUsername,
+  normalizeUsername,
+  releaseUsername,
+  uniqueUsername,
+} from "@/lib/username";
 import type { User } from "@/lib/types";
 import { nowIso } from "@/lib/utils";
 
@@ -99,9 +100,9 @@ async function sendVerification(fbUser: FirebaseUser) {
   localStorage.setItem(VERIFY_COOLDOWN_KEY, String(Date.now()));
 }
 
-async function abandonSignup(fbUser: FirebaseUser, displayName: string) {
+async function abandonSignup(fbUser: FirebaseUser, username?: string) {
   const db = getFirebaseDb();
-  await releaseDisplayName(fbUser.uid, displayName);
+  await releaseUsername(fbUser.uid, username);
   await deleteDoc(doc(db, "users", fbUser.uid)).catch(() => undefined);
   await fbUser.delete().catch(() => undefined);
 }
@@ -109,25 +110,22 @@ async function abandonSignup(fbUser: FirebaseUser, displayName: string) {
 async function upsertUserDoc(
   fbUser: FirebaseUser,
   displayName?: string,
-  options?: { requireExactName?: boolean },
+  options?: { username?: string },
 ): Promise<User> {
   const db = getFirebaseDb();
   const ref = doc(db, "users", fbUser.uid);
   const snap = await getDoc(ref);
   await ensureNameFilter();
-  const preferred = sanitizeDisplayName(
+  const name = sanitizeDisplayName(
     displayName?.trim() || fbUser.displayName || "",
     fbUser.email?.split("@")[0] || "Member",
   );
   const email = fbUser.email ?? "";
 
   if (!snap.exists()) {
-    let name = preferred;
-    if (options?.requireExactName) {
-      await assertDisplayNameAvailable(preferred, fbUser.uid);
-    } else {
-      name = await uniqueDisplayName(preferred, fbUser.uid);
-    }
+    const handle = options?.username
+      ? (await assertUsernameAvailable(options.username, fbUser.uid), normalizeUsername(options.username))
+      : await uniqueUsername(name, fbUser.uid);
     const timestamp = nowIso();
     const user = toUser(fbUser, {
       displayName: name,
@@ -135,20 +133,23 @@ async function upsertUserDoc(
       createdAt: timestamp,
       updatedAt: timestamp,
       profileVisibility: "public",
+      username: handle,
     });
     const { emailVerified: _verified, ...stored } = user;
-    const handle = await claimDisplayName(fbUser.uid, name, {
+    await claimUsername(fbUser.uid, handle, {
       ...stored,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return { ...user, username: handle };
+    return user;
   }
 
   const data = snap.data();
-  const currentName = (data.displayName as string) || preferred;
-  if (!data.username) {
-    await claimDisplayName(fbUser.uid, currentName).catch(() => undefined);
+  const currentName = (data.displayName as string) || name;
+  let username = typeof data.username === "string" ? data.username : null;
+  if (!username) {
+    username = await uniqueUsername(currentName, fbUser.uid).catch(() => null);
+    if (username) await claimUsername(fbUser.uid, username).catch(() => undefined);
   }
   return toUser(fbUser, {
     displayName: currentName,
@@ -163,7 +164,7 @@ async function upsertUserDoc(
     profileVisibility: data.profileVisibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
-    username: typeof data.username === "string" ? data.username : null,
+    username,
   });
 }
 
@@ -183,14 +184,18 @@ export const firebaseAuth: AuthRepo = {
     return fromFirebase(current);
   },
 
-  async signUp({ email, password, displayName }) {
+  async signUp({ email, password, displayName, username }) {
     const name = displayName.trim();
-    await assertDisplayNameAvailable(name);
+    await ensureNameFilter();
+    const nameIssue = nameFilterReason(name);
+    if (nameIssue === "tooShort") throw appError("errors.addName");
+    if (nameIssue === "unavailable") throw appError("errors.nameUnavailable");
+    await assertUsernameAvailable(username);
     try {
       const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
       await updateProfile(cred.user, { displayName: name });
       try {
-        const user = await upsertUserDoc(cred.user, name, { requireExactName: true });
+        const user = await upsertUserDoc(cred.user, name, { username });
         setSessionCookie(user.id);
         try {
           await sendVerification(cred.user);
@@ -199,7 +204,7 @@ export const firebaseAuth: AuthRepo = {
         }
         return user;
       } catch (err) {
-        await abandonSignup(cred.user, name);
+        await abandonSignup(cred.user, username);
         throw err;
       }
     } catch (err) {

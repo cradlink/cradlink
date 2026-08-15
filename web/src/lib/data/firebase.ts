@@ -13,9 +13,8 @@ import {
 } from "firebase/firestore";
 import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
-import { assertDisplayNameAvailable, claimDisplayName } from "@/lib/display-name";
-import { displayNameKey } from "@/lib/format";
 import { appError } from "@/lib/errors";
+import { assertUsernameAvailable, claimUsername, normalizeUsername } from "@/lib/username";
 import { getFirebaseDb } from "@/lib/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyActivityEdited, notifyDecision, notifyJoin, notifyKicked } from "@/lib/data/notify";
@@ -130,28 +129,17 @@ export const firebaseUsers: UsersRepo = {
     const ref = doc(getFirebaseDb(), "users", id);
     const snap = await getDoc(ref);
     if (!snap.exists()) throw appError("errors.userNotFound");
-    if (patch.displayName !== undefined) {
-      const current = snap.data();
-      const currentKey =
-        typeof current.username === "string" && current.username
-          ? current.username
-          : displayNameKey(asString(current.displayName));
-      if (displayNameKey(patch.displayName) !== currentKey) {
-        await assertDisplayNameAvailable(patch.displayName, id);
-        await claimDisplayName(id, patch.displayName);
+    if (patch.username !== undefined) {
+      const current = typeof snap.data().username === "string" ? snap.data().username : "";
+      const nextHandle = normalizeUsername(patch.username);
+      if (nextHandle !== current) {
+        await assertUsernameAvailable(patch.username, id);
+        await claimUsername(id, patch.username);
       }
+      patch = { ...patch, username: nextHandle };
     }
     const next = mapUser(id, { ...snap.data(), ...patch, updatedAt: nowIso() });
-    await updateDoc(
-      ref,
-      stripUndefined({
-        ...patch,
-        ...(patch.displayName !== undefined
-          ? { username: displayNameKey(patch.displayName), displayNameKey: displayNameKey(patch.displayName) }
-          : {}),
-        updatedAt: nowIso(),
-      }),
-    );
+    await updateDoc(ref, stripUndefined({ ...patch, updatedAt: nowIso() }));
 
     const created = await getDocs(
       query(collection(getFirebaseDb(), "activities"), where("creatorId", "==", id)),
@@ -210,8 +198,8 @@ export const firebaseActivities: ActivitiesRepo = {
       title: input.title.trim(),
       description: input.description.trim(),
       type: input.type,
-      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
-      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      lookingFor: [],
+      tags: [],
       location: input.location,
       startAt: input.isFlexible ? null : input.startAt,
       endAt: input.isFlexible ? null : input.endAt,
@@ -264,8 +252,8 @@ export const firebaseActivities: ActivitiesRepo = {
       title: input.title.trim(),
       description: input.description.trim(),
       type: input.type,
-      lookingFor: input.lookingFor.map((s) => s.trim()).filter(Boolean),
-      tags: (input.tags ?? []).map((s) => s.trim()).filter(Boolean),
+      lookingFor: [],
+      tags: [],
       location: input.location,
       startAt: input.isFlexible ? null : input.startAt,
       endAt: input.isFlexible ? null : input.endAt,

@@ -9,7 +9,6 @@ import {
   revokeDraftImage,
   type DraftImage,
 } from "@/components/activity/image-picker";
-import { TagInput } from "@/components/activity/tag-input";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +29,6 @@ type FormState = {
   title: string;
   type: ActivityType;
   description: string;
-  lookingFor: string[];
-  tags: string[];
   locationType: LocationType;
   city: string;
   venue: string;
@@ -47,8 +44,6 @@ function formFromActivity(activity: Activity): FormState {
     title: activity.title,
     type: activity.type,
     description: activity.description,
-    lookingFor: activity.lookingFor,
-    tags: activity.tags ?? [],
     locationType: activity.location.type,
     city: activity.location.city ?? "",
     venue: activity.location.venue ?? "",
@@ -64,8 +59,6 @@ const empty: FormState = {
   title: "",
   type: "other",
   description: "",
-  lookingFor: [],
-  tags: [],
   locationType: "in-person",
   city: "",
   venue: "",
@@ -104,8 +97,8 @@ function ActivityForm({ activity }: { activity?: Activity }) {
       title: form.title.trim() || t("activity.untitled"),
       description: form.description,
       type: form.type,
-      lookingFor: form.lookingFor,
-      tags: form.tags,
+      lookingFor: [],
+      tags: [],
       location: {
         type: form.locationType,
         city: form.city || undefined,
@@ -152,7 +145,6 @@ function ActivityForm({ activity }: { activity?: Activity }) {
     const description = form.description.trim();
     if (title.length < 3) return setError(t("activity.form.errorTitle"));
     if (description.length < 10) return setError(t("activity.form.errorDescription"));
-    if (form.lookingFor.length === 0) return setError(t("activity.form.errorLookingFor"));
     if (form.locationType !== "online" && !form.city.trim()) {
       return setError(t("activity.form.errorCity"));
     }
@@ -169,8 +161,6 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         title,
         description,
         type: form.type,
-        lookingFor: form.lookingFor,
-        tags: form.tags,
         location: {
           type: form.locationType,
           city: form.city.trim() || undefined,
@@ -228,22 +218,6 @@ function ActivityForm({ activity }: { activity?: Activity }) {
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             placeholder={t("activity.form.descriptionPlaceholder")}
-          />
-        </Field>
-
-        <Field label={t("activity.form.tags")} hint={t("activity.form.tagsHint")}>
-          <TagInput
-            value={form.tags}
-            onChange={(next) => set("tags", next)}
-            placeholder={t("activity.form.tagsPlaceholder")}
-          />
-        </Field>
-
-        <Field label={t("activity.form.lookingFor")} hint={t("activity.form.lookingForHint")}>
-          <TagInput
-            value={form.lookingFor}
-            onChange={(next) => set("lookingFor", next)}
-            placeholder={t("activity.form.lookingForPlaceholder")}
           />
         </Field>
 

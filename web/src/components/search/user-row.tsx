@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
 import { FollowButton } from "@/components/profile/follow-button";
 import { Avatar } from "@/components/ui/avatar";
-import { handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function UserRow({ user, followsYou }: { user: User; followsYou?: boolean }) {
   const { t } = useTranslation();
-  const handle = handleFromName(user.displayName);
+  const handle = userHandle(user);
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-hover">
       <Link to={`/u/${user.id}`} className="shrink-0">

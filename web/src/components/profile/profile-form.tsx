@@ -18,7 +18,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile, useUploadAvatar, useUploadBanner } from "@/hooks/use-profile";
 import { getBackend } from "@/lib/backend";
 import { AppError, errorMessage } from "@/lib/errors";
-import { assertDisplayNameAvailable } from "@/lib/display-name";
+import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
+import { assertUsernameAvailable, normalizeUsername, userHandle } from "@/lib/username";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
@@ -31,6 +32,7 @@ export function ProfileForm({ user }: { user: User }) {
   const avatarInput = useRef<HTMLInputElement>(null);
   const bannerInput = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState(user.displayName);
+  const [username, setUsername] = useState(userHandle(user));
   const [bio, setBio] = useState(user.bio);
   const [location, setLocation] = useState(user.location);
   const [skills, setSkills] = useState(user.skills);
@@ -76,16 +78,31 @@ export function ProfileForm({ user }: { user: User }) {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    await ensureNameFilter();
+    const nameIssue = nameFilterReason(displayName);
+    if (nameIssue === "tooShort") {
+      setError(t("profile.nameTooShort"));
+      return;
+    }
+    if (nameIssue === "unavailable") {
+      setError(t("errors.nameUnavailable"));
+      return;
+    }
     try {
-      await assertDisplayNameAvailable(displayName, user.id);
+      await assertUsernameAvailable(username, user.id);
     } catch (err) {
-      setError(err instanceof AppError && err.key === "errors.addName" ? t("profile.nameTooShort") : errorMessage(err));
+      setError(
+        err instanceof AppError && err.key === "errors.usernameTooShort"
+          ? t("errors.usernameTooShort")
+          : errorMessage(err),
+      );
       return;
     }
     setError(null);
     try {
       await update.mutateAsync({
         displayName: displayName.trim(),
+        username: normalizeUsername(username),
         bio: bio.trim(),
         location: location.trim(),
         skills,
@@ -173,6 +190,17 @@ export function ProfileForm({ user }: { user: User }) {
         <div className="space-y-1.5">
           <Label htmlFor="displayName">{t("profile.name")}</Label>
           <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="username">{t("profile.username")}</Label>
+          <Input
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={t("profile.usernamePlaceholder")}
+            autoComplete="username"
+          />
+          <p className="text-[13px] text-muted-foreground">{t("profile.usernameHint")}</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="location">{t("profile.location")}</Label>

@@ -8,7 +8,7 @@ export const STORAGE_KEYS = {
   seed: "cl_seeded",
 } as const;
 
-export const SEED_VERSION = "7";
+export const SEED_VERSION = "8";
 
 export type StoredUser = User & { passwordHash?: string };
 
