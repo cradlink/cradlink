@@ -61,18 +61,10 @@ export function scoreActivity(activity: Activity, ctx: RecommendContext): Scored
   let score = 0;
   const taste = ctx.tasteActivities;
   const types = new Set(taste.map((item) => item.type));
-  const skills = ctx.user.skills ?? [];
-  const text = `${activity.title} ${activity.description}`;
 
   if (types.has(activity.type)) {
     score += 3;
     reasons.push({ key: "recommend.matchesJoin" });
-  }
-
-  const skillHits = skills.filter((skill) => text.toLowerCase().includes(token(skill))).length;
-  if (skillHits > 0) {
-    score += Math.min(2, skillHits);
-    reasons.push({ key: "recommend.matchesSkills" });
   }
 
   if (samePlace(ctx.user.location, activity)) {

@@ -26,7 +26,7 @@ export function ActivityCard({
           <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
         </Link>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 text-[15px] leading-5">
               <Link to={`/u/${activity.creatorId}`} className="font-bold hover:underline">

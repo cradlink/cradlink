@@ -48,9 +48,9 @@ export function NotificationsPage() {
   return (
     <div>
       <div className="sticky top-0 z-20 border-b border-border bg-background/65 backdrop-blur-md">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold">{t("notifications.title")}</h1>
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <h1 className="min-w-0 truncate text-xl font-bold">{t("notifications.title")}</h1>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {!alertsOn ? (
               <button type="button" onClick={() => void enableAlerts()} className="text-[13px] text-primary">
                 {t("notifications.turnOnAlerts")}

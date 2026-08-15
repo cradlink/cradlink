@@ -23,7 +23,6 @@ export function matchesUser(user: User, query: string) {
     userHandle(user),
     user.location,
     user.bio,
-    user.skills.join(" "),
   ).includes(q);
 }
 

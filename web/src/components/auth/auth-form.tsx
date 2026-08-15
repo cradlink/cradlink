@@ -79,7 +79,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
+    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 sm:p-8">
       <Logo />
       <h1 className="mt-6 font-display text-3xl leading-tight">
         {mode === "login" ? t("auth.welcomeBack") : t("auth.comeIn")}
