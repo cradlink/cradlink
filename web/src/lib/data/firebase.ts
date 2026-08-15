@@ -218,7 +218,7 @@ export const firebaseActivities: ActivitiesRepo = {
       images: input.images ?? [],
     };
 
-    if (activity.images.some((src) => src.startsWith("data:"))) {
+    if (activity.images.some((src) => src.startsWith("data:") || src.startsWith("blob:"))) {
       throw appError("errors.photosTooLarge");
     }
 
@@ -243,7 +243,7 @@ export const firebaseActivities: ActivitiesRepo = {
     const existing = await firebaseActivities.getById(id);
     if (!existing) throw appError("errors.activityNotFound");
     if (existing.creatorId !== actorId) throw appError("errors.onlyOrganizerEdit");
-    if ((input.images ?? []).some((src) => src.startsWith("data:"))) {
+    if ((input.images ?? []).some((src) => src.startsWith("data:") || src.startsWith("blob:"))) {
       throw appError("errors.photosTooLarge");
     }
 

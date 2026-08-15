@@ -40,6 +40,22 @@ const NAMED: Record<string, ImageSourcePropType> = {
   "other-3": require("../assets/banners/other-3.jpg"),
 }
 
+const STORAGE_BUCKET = "cradlink.firebasestorage.app"
+const SHARED_DEFAULTS_PREFIX = "default-activities"
+const LEGACY_DEFAULTS_PREFIX = "activities/Z97HyhHyaognvPqhnWpFS2o5F083/defaults"
+
+function storageObjectUrl(path: string) {
+  return `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodeURIComponent(path)}?alt=media`
+}
+
+export function storageDefaultSrc(key: string) {
+  return storageObjectUrl(`${SHARED_DEFAULTS_PREFIX}/${key}.jpg`)
+}
+
+export function legacyStorageDefaultSrc(key: string) {
+  return storageObjectUrl(`${LEGACY_DEFAULTS_PREFIX}/${key}.jpg`)
+}
+
 const DEFAULTS: Record<ActivityType, ImageSourcePropType> = {
   hackathon: NAMED["hackathon-1"],
   workshop: NAMED["workshop-1"],
@@ -57,15 +73,47 @@ export function presetsForType(type: ActivityType): string[] {
   return [`${type}-1`, `${type}-2`, `${type}-3`]
 }
 
+function keyFromStored(value: string) {
+  if (NAMED[value]) return value
+  try {
+    const path = value.startsWith("http") ? new URL(value).pathname : value
+    const match = decodeURIComponent(path).match(/([^/?#]+)$/i)
+    const candidate = match?.[1]?.replace(/\.jpg$/i, "")
+    if (candidate && NAMED[candidate]) return candidate
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
 export function resolveBannerKey(key: string | undefined): ImageSourcePropType | null {
   if (!key) return null
+  const named = keyFromStored(key)
+  if (named) return NAMED[named]
   if (key.startsWith("file:") || key.startsWith("content:") || key.startsWith("http") || key.startsWith("data:")) {
     return { uri: key }
   }
-  return NAMED[key] ?? null
+  return null
+}
+
+export function localActivityBanner(activity: Pick<Activity, "type" | "images">): ImageSourcePropType {
+  return resolveBannerKey(activity.images[0]) ?? DEFAULTS[activity.type]
+}
+
+export function activityBannerSources(activity: Pick<Activity, "type" | "images">): ImageSourcePropType[] {
+  const stored = activity.images[0]
+  const named = stored ? keyFromStored(stored) : `${activity.type}-1`
+  if (named) {
+    return [
+      { uri: storageDefaultSrc(named) },
+      { uri: legacyStorageDefaultSrc(named) },
+      NAMED[named] ?? DEFAULTS[activity.type],
+    ]
+  }
+  if (stored && (stored.startsWith("http") || stored.startsWith("data:"))) return [{ uri: stored }]
+  return [localActivityBanner(activity)]
 }
 
 export function resolveActivityBanner(activity: Pick<Activity, "type" | "images">): ImageSourcePropType {
-  const key = activity.images[0]
-  return resolveBannerKey(key) ?? DEFAULTS[activity.type]
+  return activityBannerSources(activity)[0]
 }

@@ -1,22 +1,20 @@
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { StorageRepo } from "@/lib/data/types";
-import { appError } from "@/lib/errors";
+import { isDefaultCoverKey } from "@/lib/default-covers";
+import { AppError, appError } from "@/lib/errors";
 import { getFirebaseStorage } from "@/lib/firebase";
+import { prepareImageFile } from "@/lib/image-file";
 import { createId } from "@/lib/utils";
-
-const MAX_BYTES = 1.5 * 1024 * 1024;
-
-function assertImage(file: File, label: string) {
-  if (!file.type.startsWith("image/")) throw appError("errors.chooseImage");
-  if (file.size > MAX_BYTES) throw appError("errors.imageTooLarge", { label });
-}
 
 async function uploadImage(path: string, file: File) {
   try {
+    const jpeg = await prepareImageFile(file);
+    const bytes = new Uint8Array(await jpeg.arrayBuffer());
     const storageRef = ref(getFirebaseStorage(), path);
-    await uploadBytes(storageRef, file, { contentType: file.type });
+    await uploadBytes(storageRef, bytes, { contentType: "image/jpeg" });
     return await getDownloadURL(storageRef);
   } catch (err) {
+    if (err instanceof AppError) throw err;
     const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
     if (code.includes("unauthorized") || code.includes("permission")) {
       throw appError("errors.uploadFailedRules");
@@ -25,22 +23,29 @@ async function uploadImage(path: string, file: File) {
   }
 }
 
+export async function ensureSharedDefault(key: string) {
+  if (!isDefaultCoverKey(key)) return;
+  const storageRef = ref(
+    getFirebaseStorage(),
+    `default-activities/${key}.jpg`,
+  );
+  try {
+    await getDownloadURL(storageRef);
+  } catch {
+    /* shared objects are uploaded once; never write a per-user copy */
+  }
+}
+
 export const firebaseStorageRepo: StorageRepo = {
   async uploadAvatar(userId, file) {
-    assertImage(file, "avatars");
-    const ext = file.name.split(".").pop() || "jpg";
-    return uploadImage(`avatars/${userId}/avatar.${ext}`, file);
+    return uploadImage(`avatars/${userId}/avatar.jpg`, file);
   },
 
   async uploadBanner(userId, file) {
-    assertImage(file, "banners");
-    const ext = file.name.split(".").pop() || "jpg";
-    return uploadImage(`banners/${userId}/banner.${ext}`, file);
+    return uploadImage(`banners/${userId}/banner.jpg`, file);
   },
 
   async uploadActivityImage(userId, file) {
-    assertImage(file, "each photo");
-    const ext = file.name.split(".").pop() || "jpg";
-    return uploadImage(`activities/${userId}/${createId("img")}.${ext}`, file);
+    return uploadImage(`activities/${userId}/${createId("img")}.jpg`, file);
   },
 };

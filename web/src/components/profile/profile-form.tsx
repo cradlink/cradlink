@@ -18,9 +18,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile, useUploadAvatar, useUploadBanner } from "@/hooks/use-profile";
 import { getBackend } from "@/lib/backend";
 import { AppError, errorMessage } from "@/lib/errors";
+import { isStorageUrl } from "@/lib/image-file";
 import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
-import { assertUsernameAvailable, normalizeUsername, userHandle } from "@/lib/username";
 import { isPrivateProfile, type User } from "@/lib/types";
+import { assertUsernameAvailable, normalizeUsername, userHandle } from "@/lib/username";
 
 export function ProfileForm({ user }: { user: User }) {
   const { t } = useTranslation();
@@ -106,8 +107,8 @@ export function ProfileForm({ user }: { user: User }) {
         bio: bio.trim(),
         location: location.trim(),
         skills,
-        avatarUrl,
-        bannerUrl,
+        avatarUrl: isStorageUrl(avatarUrl) ? avatarUrl : user.avatarUrl,
+        bannerUrl: isStorageUrl(bannerUrl) ? bannerUrl : user.bannerUrl ?? null,
         profileVisibility: isPrivate ? "private" : "public",
       });
       if (!isPrivate && isPrivateProfile(user)) {

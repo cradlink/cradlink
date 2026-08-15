@@ -1,4 +1,5 @@
 import i18n from "@/i18n";
+import { resolveCoverSrc } from "@/lib/default-covers";
 import type { Activity, ActivityType, LocationType } from "@/lib/types";
 
 export type ActivityMeta = {
@@ -15,76 +16,80 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
     className: "bg-[#1d9bf01a] text-[#1d9bf0]",
     stripe: "bg-[#1d9bf0]",
     dot: "bg-[#1d9bf0]",
-    defaultImage: "/defaults/hackathon.jpg",
+    defaultImage: "hackathon-1",
   },
   workshop: {
     label: "Workshop",
     className: "bg-[#ffd4001a] text-[#ffd400]",
     stripe: "bg-[#ffd400]",
     dot: "bg-[#ffd400]",
-    defaultImage: "/defaults/workshop.jpg",
+    defaultImage: "workshop-1",
   },
   research: {
     label: "Research",
     className: "bg-[#7856ff1a] text-[#7856ff]",
     stripe: "bg-[#7856ff]",
     dot: "bg-[#7856ff]",
-    defaultImage: "/defaults/research.jpg",
+    defaultImage: "research-1",
   },
   software: {
     label: "Software",
     className: "bg-[#00ba7c1a] text-[#00ba7c]",
     stripe: "bg-[#00ba7c]",
     dot: "bg-[#00ba7c]",
-    defaultImage: "/defaults/software.jpg",
+    defaultImage: "software-1",
   },
   game: {
     label: "Game",
     className: "bg-[#f918801a] text-[#f91880]",
     stripe: "bg-[#f91880]",
     dot: "bg-[#f91880]",
-    defaultImage: "/defaults/game.jpg",
+    defaultImage: "game-1",
   },
   sports: {
     label: "Sports",
     className: "bg-[#00ba7c1a] text-[#00ba7c]",
     stripe: "bg-[#00ba7c]",
     dot: "bg-[#00ba7c]",
-    defaultImage: "/defaults/sports.jpg",
+    defaultImage: "sports-1",
   },
   boardgames: {
     label: "Board games",
     className: "bg-[#ff7a001a] text-[#ff7a00]",
     stripe: "bg-[#ff7a00]",
     dot: "bg-[#ff7a00]",
-    defaultImage: "/defaults/boardgames.jpg",
+    defaultImage: "boardgames-1",
   },
   film: {
     label: "Film",
     className: "bg-[#f918801a] text-[#f91880]",
     stripe: "bg-[#f91880]",
     dot: "bg-[#f91880]",
-    defaultImage: "/activities/imagine.jpg",
+    defaultImage: "film-1",
   },
   social: {
     label: "Hangout",
     className: "bg-[#1d9bf01a] text-[#1d9bf0]",
     stripe: "bg-[#1d9bf0]",
     dot: "bg-[#1d9bf0]",
-    defaultImage: "/activities/spacex.jpg",
+    defaultImage: "social-1",
   },
   other: {
     label: "Other",
     className: "bg-[#71767b33] text-[#536471] dark:text-[#e7e9ea]",
     stripe: "bg-[#71767b]",
     dot: "bg-[#71767b]",
-    defaultImage: "/defaults/other.jpg",
+    defaultImage: "other-1",
   },
 };
 
-export function resolveActivityImages(activity: Pick<Activity, "type" | "images">) {
+export function rawActivityImages(activity: Pick<Activity, "type" | "images">) {
   if (activity.images?.length) return activity.images;
   return [ACTIVITY_META[activity.type].defaultImage];
+}
+
+export function resolveActivityImages(activity: Pick<Activity, "type" | "images">) {
+  return rawActivityImages(activity).map((src) => resolveCoverSrc(src, activity.type));
 }
 
 export const FEED_GRID = "flex flex-col";

@@ -18,7 +18,11 @@ import { useCreateActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
 import { useUploadActivityImages } from "@/hooks/use-profile";
 import { activityTypeLabel, locationLabel } from "@/lib/activity-meta";
+import { getBackendName } from "@/lib/config";
+import { persistCoverValue, presetsForType } from "@/lib/default-covers";
 import { errorMessage } from "@/lib/errors";
+import { isFirebaseConfigured } from "@/lib/firebase";
+import { ensureSharedDefault } from "@/lib/storage/firebase";
 import { datetimeLocalToIso, isoToDatetimeLocal } from "@/lib/format";
 import { ACTIVITY_TYPES, type Activity, type ActivityType, type LocationType } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -126,16 +130,37 @@ function ActivityForm({ activity }: { activity?: Activity }) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  function setType(next: ActivityType) {
+    const allowed = new Set(presetsForType(next));
+    setForm((prev) => ({
+      ...prev,
+      type: next,
+      images: prev.images.filter((image) => !image.key || allowed.has(image.key)),
+    }));
+  }
+
   function setImages(next: DraftImage[]) {
     set("images", next);
   }
 
   async function resolveImages() {
     if (!user) return [];
-    const files = form.images.filter((image) => image.file).map((image) => image.file!);
+    const files = form.images.filter((image) => image.file && !image.key).map((image) => image.file!);
     const uploaded = files.length ? await upload.mutateAsync({ userId: user.id, files }) : [];
     let uploadIndex = 0;
-    return form.images.map((image) => (image.file ? uploaded[uploadIndex++] : image.src));
+    const images = form.images
+      .map((image) => {
+        if (image.key) return image.key;
+        if (image.file) return uploaded[uploadIndex++];
+        return persistCoverValue(image.src);
+      })
+      .filter((src): src is string => Boolean(src));
+    if (getBackendName() === "firebase" && isFirebaseConfigured()) {
+      await Promise.all(
+        images.map((src) => ensureSharedDefault(src).catch(() => undefined)),
+      );
+    }
+    return images;
   }
 
   async function onSubmit(event: React.FormEvent) {
@@ -201,7 +226,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
               <button
                 key={type}
                 type="button"
-                onClick={() => set("type", type)}
+                onClick={() => setType(type)}
                 className={cn(
                   "rounded-full ring-offset-background",
                   form.type === type && "ring-2 ring-primary ring-offset-2 ring-offset-background",
@@ -291,7 +316,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         ) : null}
 
         <Field label={t("activity.form.photos")} hint={t("activity.form.photosHint")}>
-          <ImagePicker value={form.images} onChange={setImages} />
+          <ImagePicker value={form.images} onChange={setImages} type={form.type} />
         </Field>
 
         <Field label={t("activity.form.capacity")} hint={t("activity.form.capacityHint")}>
