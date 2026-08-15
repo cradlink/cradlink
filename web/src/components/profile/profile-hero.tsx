@@ -13,7 +13,7 @@ export function ProfileBanner({
   children?: ReactNode;
 }) {
   return (
-    <div className={cn("relative h-[133px] overflow-hidden bg-transparent sm:h-[200px]", className)}>
+    <div className={cn("relative h-[120px] overflow-hidden bg-transparent sm:h-[200px]", className)}>
       {src ? <img src={src} alt="" className="h-full w-full object-cover" /> : null}
       {children}
     </div>
@@ -69,7 +69,12 @@ export function ProfileAvatarFrame({
 }) {
   return (
     <span className="relative inline-flex rounded-full bg-background p-1">
-      <Avatar name={name} src={src} size="2xl" />
+      <Avatar
+        name={name}
+        src={src}
+        size="2xl"
+        className="h-[86px] w-[86px] text-2xl sm:h-[112px] sm:w-[112px] sm:text-3xl"
+      />
       {children}
     </span>
   );

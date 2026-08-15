@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, CalendarDays, Lock, MapPin } from "lucide-react";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
-import { LookingForChips } from "@/components/activity/looking-for-chips";
 import { FollowButton } from "@/components/profile/follow-button";
 import { ProfileAvatarFrame, ProfileBanner } from "@/components/profile/profile-hero";
 import { Button } from "@/components/ui/button";
@@ -154,12 +153,6 @@ export function ProfileView({
             <span className="text-muted-foreground">{t("connections.followers")}</span>
           </Link>
         </p>
-
-        {user.skills.length > 0 ? (
-          <div className="mt-3">
-            <LookingForChips items={user.skills} limit={12} />
-          </div>
-        ) : null}
       </div>
 
       {locked ? (
