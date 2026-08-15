@@ -117,11 +117,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [])
 
   useEffect(() => {
-    if (!ready || !activitiesReady || !user) return
+    if (!ready || !user) return
     if (store[user.id]) return
-    const hosted = activities.filter((activity) => activity.creatorId === user.id)
-    void persist({ ...store, [user.id]: seedFor(user.id, hosted) })
-  }, [activities, activitiesReady, persist, ready, store, user])
+    void persist({ ...store, [user.id]: [] })
+  }, [persist, ready, store, user])
 
   const items = useMemo(() => {
     if (!user) return []

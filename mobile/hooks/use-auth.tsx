@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
-import { localAuth } from "@/lib/auth/local"
+import { firebaseAuth } from "@/lib/auth/firebase"
 import type { SignInInput, SignUpInput } from "@/lib/auth/types"
+import { AppError } from "@/lib/errors"
+import { isFirebaseConfigured } from "@/lib/env"
 import type { UpdateProfileInput, User } from "@/lib/types"
 
 type AuthContextValue = {
@@ -11,7 +13,7 @@ type AuthContextValue = {
   getUser: (id: string) => User | null
   signIn: (input: SignInInput) => Promise<User>
   signUp: (input: SignUpInput) => Promise<User>
-  signInAsDemo: () => Promise<User>
+  signInWithGoogle: (idToken: string) => Promise<User>
   updateProfile: (input: UpdateProfileInput) => Promise<User>
   signOut: () => Promise<void>
   reload: () => Promise<void>
@@ -24,20 +26,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [directory, setDirectory] = useState<User[]>([])
   const [ready, setReady] = useState(false)
 
+  async function loadPeople() {
+    try {
+      setDirectory(await firebaseAuth.listUsers())
+    } catch {
+      setDirectory([])
+    }
+  }
+
   useEffect(() => {
-    return localAuth.onAuthChange((next) => {
+    if (!isFirebaseConfigured()) {
+      setReady(true)
+      return
+    }
+    return firebaseAuth.onAuthChange((next) => {
       setUser(next)
-      void localAuth.listUsers().then((list) => {
-        setDirectory(list)
+      if (next) {
+        void loadPeople().finally(() => setReady(true))
+      } else {
+        setDirectory([])
         setReady(true)
-      })
+      }
     })
   }, [])
 
-  const value = useMemo<AuthContextValue>(
-    () => {
-      const me = user ? { ...user, avatarUrl: user.avatarUrl || "local:self" } : null
-      return {
+  const value = useMemo<AuthContextValue>(() => {
+    const me = user
+    return {
       user: me,
       ready,
       people: directory,
@@ -45,25 +60,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (me?.id === id) return me
         return directory.find((entry) => entry.id === id) ?? null
       },
-      signIn: (input) => localAuth.signIn(input),
-      signUp: (input) => localAuth.signUp(input),
-      signInAsDemo: () => localAuth.signInAsDemo(),
+      signIn: (input) => {
+        if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
+        return firebaseAuth.signIn(input)
+      },
+      signUp: (input) => {
+        if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
+        return firebaseAuth.signUp(input)
+      },
+      signInWithGoogle: (idToken) => {
+        if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
+        return firebaseAuth.signInWithGoogle(idToken)
+      },
       updateProfile: async (input) => {
-        const next = await localAuth.updateProfile(input)
+        const next = await firebaseAuth.updateProfile(input)
         setUser(next)
-        setDirectory(await localAuth.listUsers())
+        await loadPeople()
         return next
       },
-      signOut: () => localAuth.signOut(),
+      signOut: () => firebaseAuth.signOut(),
       reload: async () => {
-        const next = await localAuth.getCurrentUser()
+        const next = await firebaseAuth.getCurrentUser()
         setUser(next)
-        setDirectory(await localAuth.listUsers())
+        if (next) await loadPeople()
+        else setDirectory([])
       },
     }
-    },
-    [directory, user, ready],
-  )
+  }, [directory, user, ready])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

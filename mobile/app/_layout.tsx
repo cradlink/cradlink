@@ -13,6 +13,7 @@ import { ActivityPreview } from "@/components/ActivityPreview"
 import { BootScreen } from "@/components/BootScreen"
 import { ParticleField } from "@/components/ParticleField"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
+import { ReplyComposeHost } from "@/components/ReplyCompose"
 import { ToastHost } from "@/components/ToastHost"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
@@ -26,6 +27,7 @@ import { useFireflies } from "@/hooks/use-fireflies"
 import { I18nProvider, useI18n } from "@/hooks/use-i18n"
 import { MembershipProvider } from "@/hooks/use-memberships"
 import { NotificationsProvider } from "@/hooks/use-notifications"
+import { RepliesProvider } from "@/hooks/use-replies"
 import { ToastProvider } from "@/hooks/use-toast"
 
 Appearance.setColorScheme("dark")
@@ -130,11 +132,13 @@ function RootNav() {
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
           <Stack.Screen name="activities/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="activities/replies/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="u/[userId]" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
       <ActivityPreview />
       <ConfirmModalHost active={!previewOpen} />
+      <ReplyComposeHost />
       <ToastHost />
       <StatusBar style="light" />
       <NavigationBar style="dark" />
@@ -150,6 +154,7 @@ export default function RootLayout() {
         <ActivitiesProvider>
           <ConnectionsProvider>
           <MembershipProvider>
+            <RepliesProvider>
             <NotificationsProvider>
               <ActivityPreviewProvider>
                 <ConfirmProvider>
@@ -159,6 +164,7 @@ export default function RootLayout() {
                 </ConfirmProvider>
               </ActivityPreviewProvider>
             </NotificationsProvider>
+            </RepliesProvider>
           </MembershipProvider>
           </ConnectionsProvider>
         </ActivitiesProvider>

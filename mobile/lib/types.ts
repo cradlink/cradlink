@@ -114,6 +114,30 @@ export type JoinRequest = {
   createdAt: string
 }
 
+export type ActivityReply = {
+  id: string
+  activityId: string
+  parentId: string | null
+  userId: string
+  userName: string
+  userAvatar: string | null
+  body: string
+  createdAt: string
+  deleted?: boolean
+  deletedBy?: "author" | "host"
+}
+
+export type ReplyComposeTarget = {
+  activity: Activity
+  parent: ActivityReply | null
+}
+
+export type ReplyThreadItem = {
+  reply: ActivityReply
+  parent: ActivityReply | null
+  depth: number
+}
+
 export type FollowRequest = {
   id: string
   fromId: string

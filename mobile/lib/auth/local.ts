@@ -229,7 +229,7 @@ export const localAuth: AuthRepo = {
     return user
   },
 
-  async signInAsDemo() {
+  async signInWithGoogle(_idToken: string) {
     return localAuth.signIn({
       email: DEMO_ACCOUNT_EMAIL,
       password: DEMO_ACCOUNT_PASSWORD,

@@ -23,7 +23,10 @@ export function SearchResults({ query }: { query: string }) {
   const foundPeople = useMemo(() => (q ? searchPeople(people, q) : []), [people, q])
   const foundActivities = useMemo(() => {
     if (!q) return []
-    return searchActivities(activities, q).filter((activity) => canSeeActivities(getUser(activity.creatorId)))
+    return searchActivities(activities, q).filter((activity) => {
+      const creator = getUser(activity.creatorId)
+      return !creator || canSeeActivities(creator)
+    })
   }, [activities, canSeeActivities, getUser, q])
   const empty = q.length > 0 && foundPeople.length === 0 && foundActivities.length === 0
 

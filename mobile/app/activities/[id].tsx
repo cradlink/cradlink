@@ -30,7 +30,8 @@ export default function ActivityDetailScreen() {
   const { messages } = useI18n()
   const activity = id ? get(id) : null
   const viewed = activity ? decorate(activity) : null
-  const locked = Boolean(activity && !canSeeActivities(getUser(activity.creatorId)))
+  const creator = activity ? getUser(activity.creatorId) : null
+  const locked = Boolean(activity && creator && !canSeeActivities(creator))
 
   return (
     <ScreenBlurTarget style={styles.screen}>

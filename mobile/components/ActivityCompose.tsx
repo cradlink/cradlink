@@ -645,6 +645,7 @@ const styles = StyleSheet.create({
   },
   dangerBlock: {
     marginTop: 32,
+    marginLeft: 12,
     gap: 6,
   },
   dangerLabel: {

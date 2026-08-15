@@ -30,7 +30,8 @@ export default function FeedScreen() {
   const [locationType, setLocationType] = useState<LocationType | "all">("all")
   const activities = useMemo(() => {
     return all.filter((activity) => {
-      if (!canSeeActivities(getUser(activity.creatorId))) return false
+      const creator = getUser(activity.creatorId)
+      if (creator && !canSeeActivities(creator)) return false
       if (type !== "all" && activity.type !== type) return false
       if (locationType !== "all" && activity.location.type !== locationType) return false
       return true

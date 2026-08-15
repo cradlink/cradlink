@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useMemberships } from "@/hooks/use-memberships"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useReplies } from "@/hooks/use-replies"
 
 const MIN_MS = 540
 
@@ -14,6 +15,7 @@ export function useReloadAll() {
   const { reload: reloadConnections } = useConnections()
   const { reload: reloadUser } = useAuth()
   const { reload: reloadNotifications } = useNotifications()
+  const { reload: reloadReplies } = useReplies()
 
   return useCallback(async () => {
     await Promise.all([
@@ -22,8 +24,9 @@ export function useReloadAll() {
       reloadConnections(),
       reloadUser(),
       reloadNotifications(),
+      reloadReplies(),
     ])
-  }, [reloadActivities, reloadConnections, reloadMemberships, reloadNotifications, reloadUser])
+  }, [reloadActivities, reloadConnections, reloadMemberships, reloadNotifications, reloadReplies, reloadUser])
 }
 
 export function usePullRefresh(load: () => Promise<void>) {
