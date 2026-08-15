@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getBackendName } from "@/lib/config";
 import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/lib/data/seed";
 import { errorMessage } from "@/lib/errors";
-import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
+import { assertDisplayNameAvailable } from "@/lib/display-name";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const { t } = useTranslation();
@@ -38,10 +38,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setError(null);
     try {
       if (mode === "signup") {
-        await ensureNameFilter();
-        const nameIssue = nameFilterReason(displayName);
-        if (nameIssue === "tooShort") throw new Error(t("errors.addName"));
-        if (nameIssue === "unavailable") throw new Error(t("errors.nameUnavailable"));
+        await assertDisplayNameAvailable(displayName);
       }
       const signedIn =
         mode === "signup"

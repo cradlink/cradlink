@@ -44,6 +44,7 @@ export type User = {
   profileVisibility?: ProfileVisibility;
   locale?: string | null;
   deactivatedAt?: string | null;
+  username?: string | null;
 };
 
 export function isPrivateProfile(user: Pick<User, "profileVisibility">) {

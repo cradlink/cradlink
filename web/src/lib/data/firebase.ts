@@ -13,6 +13,8 @@ import {
 } from "firebase/firestore";
 import { PAGE_SIZE } from "@/lib/config";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
+import { assertDisplayNameAvailable, claimDisplayName } from "@/lib/display-name";
+import { displayNameKey } from "@/lib/format";
 import { appError } from "@/lib/errors";
 import { getFirebaseDb } from "@/lib/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
@@ -53,6 +55,7 @@ function mapUser(id: string, data: DocumentData): User {
       data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
+    username: typeof data.username === "string" ? data.username : null,
   };
 }
 
@@ -127,8 +130,28 @@ export const firebaseUsers: UsersRepo = {
     const ref = doc(getFirebaseDb(), "users", id);
     const snap = await getDoc(ref);
     if (!snap.exists()) throw appError("errors.userNotFound");
+    if (patch.displayName !== undefined) {
+      const current = snap.data();
+      const currentKey =
+        typeof current.username === "string" && current.username
+          ? current.username
+          : displayNameKey(asString(current.displayName));
+      if (displayNameKey(patch.displayName) !== currentKey) {
+        await assertDisplayNameAvailable(patch.displayName, id);
+        await claimDisplayName(id, patch.displayName);
+      }
+    }
     const next = mapUser(id, { ...snap.data(), ...patch, updatedAt: nowIso() });
-    await updateDoc(ref, stripUndefined({ ...patch, updatedAt: nowIso() }));
+    await updateDoc(
+      ref,
+      stripUndefined({
+        ...patch,
+        ...(patch.displayName !== undefined
+          ? { username: displayNameKey(patch.displayName), displayNameKey: displayNameKey(patch.displayName) }
+          : {}),
+        updatedAt: nowIso(),
+      }),
+    );
 
     const created = await getDocs(
       query(collection(getFirebaseDb(), "activities"), where("creatorId", "==", id)),

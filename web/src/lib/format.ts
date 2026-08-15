@@ -39,9 +39,66 @@ export function isoToDatetimeLocal(iso: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const CYRILLIC_TO_LATIN: Record<string, string> = {
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  ђ: "dj",
+  е: "e",
+  ж: "z",
+  з: "z",
+  и: "i",
+  ј: "j",
+  к: "k",
+  л: "l",
+  љ: "lj",
+  м: "m",
+  н: "n",
+  њ: "nj",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  ћ: "c",
+  у: "u",
+  ф: "f",
+  х: "h",
+  ц: "c",
+  ч: "c",
+  џ: "dz",
+  ш: "s",
+  ё: "e",
+  й: "i",
+  ъ: "",
+  ы: "y",
+  ь: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+  ґ: "g",
+  ї: "i",
+  є: "e",
+  і: "i",
+};
+
+/** Stable X-style handle derived from a display name. Used for uniqueness. */
+export function displayNameKey(name: string) {
+  let mapped = "";
+  for (const ch of name.trim().toLowerCase()) {
+    mapped += CYRILLIC_TO_LATIN[ch] ?? ch;
+  }
+  return mapped
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_]+/g, "")
+    .slice(0, 30);
+}
+
 export function handleFromName(name: string) {
-  const slug = name.trim().replace(/\s+/g, "").toLowerCase();
-  return slug || "member";
+  return displayNameKey(name) || "member";
 }
 
 export function formatCompactTime(iso: string) {

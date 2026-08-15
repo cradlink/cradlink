@@ -2,6 +2,8 @@ import { PAGE_SIZE } from "@/lib/config";
 import { ensureSeed } from "@/lib/data/seed";
 import { loadDb, publicUser, saveDb } from "@/lib/data/store";
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types";
+import { assertDisplayNameAvailable } from "@/lib/display-name";
+import { displayNameKey } from "@/lib/format";
 import { appError } from "@/lib/errors";
 import type {
   Activity,
@@ -55,6 +57,12 @@ export const localUsers: UsersRepo = {
     const db = loadDb();
     const existing = db.users[id];
     if (!existing) throw appError("errors.userNotFound");
+    if (
+      patch.displayName !== undefined &&
+      displayNameKey(patch.displayName) !== displayNameKey(existing.displayName)
+    ) {
+      await assertDisplayNameAvailable(patch.displayName, id);
+    }
     const next = {
       ...existing,
       ...patch,

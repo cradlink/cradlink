@@ -9,13 +9,19 @@ import {
   updateProfile,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import type { AuthRepo } from "@/lib/auth/types";
-import { appError } from "@/lib/errors";
+import {
+  assertDisplayNameAvailable,
+  claimDisplayName,
+  releaseDisplayName,
+  uniqueDisplayName,
+} from "@/lib/display-name";
+import { AppError, appError } from "@/lib/errors";
 import { appEnv } from "@/lib/env";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
-import { ensureNameFilter, nameFilterReason, sanitizeDisplayName } from "@/lib/name-filter";
+import { ensureNameFilter, sanitizeDisplayName } from "@/lib/name-filter";
 import type { User } from "@/lib/types";
 import { nowIso } from "@/lib/utils";
 
@@ -60,6 +66,7 @@ function toUser(fbUser: FirebaseUser, data?: Partial<User>): User {
     profileVisibility: data?.profileVisibility === "private" ? "private" : "public",
     locale: data?.locale ?? null,
     deactivatedAt: data?.deactivatedAt ?? null,
+    username: data?.username ?? null,
   };
 }
 
@@ -92,18 +99,35 @@ async function sendVerification(fbUser: FirebaseUser) {
   localStorage.setItem(VERIFY_COOLDOWN_KEY, String(Date.now()));
 }
 
-async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promise<User> {
+async function abandonSignup(fbUser: FirebaseUser, displayName: string) {
+  const db = getFirebaseDb();
+  await releaseDisplayName(fbUser.uid, displayName);
+  await deleteDoc(doc(db, "users", fbUser.uid)).catch(() => undefined);
+  await fbUser.delete().catch(() => undefined);
+}
+
+async function upsertUserDoc(
+  fbUser: FirebaseUser,
+  displayName?: string,
+  options?: { requireExactName?: boolean },
+): Promise<User> {
   const db = getFirebaseDb();
   const ref = doc(db, "users", fbUser.uid);
   const snap = await getDoc(ref);
   await ensureNameFilter();
-  const name = sanitizeDisplayName(
+  const preferred = sanitizeDisplayName(
     displayName?.trim() || fbUser.displayName || "",
     fbUser.email?.split("@")[0] || "Member",
   );
   const email = fbUser.email ?? "";
 
   if (!snap.exists()) {
+    let name = preferred;
+    if (options?.requireExactName) {
+      await assertDisplayNameAvailable(preferred, fbUser.uid);
+    } else {
+      name = await uniqueDisplayName(preferred, fbUser.uid);
+    }
     const timestamp = nowIso();
     const user = toUser(fbUser, {
       displayName: name,
@@ -113,13 +137,21 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       profileVisibility: "public",
     });
     const { emailVerified: _verified, ...stored } = user;
-    await setDoc(ref, { ...stored, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-    return user;
+    const handle = await claimDisplayName(fbUser.uid, name, {
+      ...stored,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { ...user, username: handle };
   }
 
   const data = snap.data();
+  const currentName = (data.displayName as string) || preferred;
+  if (!data.username) {
+    await claimDisplayName(fbUser.uid, currentName).catch(() => undefined);
+  }
   return toUser(fbUser, {
-    displayName: (data.displayName as string) || name,
+    displayName: currentName,
     email: (data.email as string) || email,
     bio: (data.bio as string) || "",
     skills: (data.skills as string[]) || [],
@@ -131,6 +163,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
     profileVisibility: data.profileVisibility === "private" ? "private" : "public",
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
+    username: typeof data.username === "string" ? data.username : null,
   });
 }
 
@@ -151,20 +184,26 @@ export const firebaseAuth: AuthRepo = {
   },
 
   async signUp({ email, password, displayName }) {
-    await ensureNameFilter();
-    const nameIssue = nameFilterReason(displayName);
-    if (nameIssue === "unavailable") throw appError("errors.nameUnavailable");
-    if (nameIssue === "tooShort") throw appError("errors.addName");
+    const name = displayName.trim();
+    await assertDisplayNameAvailable(name);
     try {
       const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
-      await updateProfile(cred.user, { displayName: displayName.trim() });
+      await updateProfile(cred.user, { displayName: name });
       try {
-        await sendVerification(cred.user);
+        const user = await upsertUserDoc(cred.user, name, { requireExactName: true });
+        setSessionCookie(user.id);
+        try {
+          await sendVerification(cred.user);
+        } catch (err) {
+          console.error("sendEmailVerification failed", err);
+        }
+        return user;
       } catch (err) {
-        console.error("sendEmailVerification failed", err);
+        await abandonSignup(cred.user, name);
+        throw err;
       }
-      return (await fromFirebase(cred.user))!;
     } catch (err) {
+      if (err instanceof AppError) throw err;
       mapAuthError(err);
     }
   },

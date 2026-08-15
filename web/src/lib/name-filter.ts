@@ -1,6 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
 import { isFirebaseConfigured, getFirebaseDb } from "@/lib/firebase";
-import { handleFromName } from "@/lib/format";
+import { displayNameKey, handleFromName } from "@/lib/format";
 
 export type NameFilterReason = "tooShort" | "unavailable";
 
@@ -68,12 +68,17 @@ export async function ensureNameFilter() {
 
 export function nameFilterReason(name: string): NameFilterReason | null {
   const trimmed = name.trim();
-  if (trimmed.length < 2) return "tooShort";
-  const handle = fold(handleFromName(trimmed)).replace(/[^a-z]/g, "");
-  if (lists.reserved.has(handle) || tokens(trimmed).some((word) => lists.reserved.has(word))) {
+  const handle = displayNameKey(trimmed);
+  if (trimmed.length < 2 || handle.length < 3) return "tooShort";
+  const foldedHandle = fold(handleFromName(trimmed)).replace(/[^a-z]/g, "");
+  if (
+    lists.reserved.has(handle) ||
+    lists.reserved.has(foldedHandle) ||
+    tokens(trimmed).some((word) => lists.reserved.has(word))
+  ) {
     return "unavailable";
   }
-  if (looksBlocked(trimmed) || looksBlocked(handle)) return "unavailable";
+  if (looksBlocked(trimmed) || looksBlocked(handle) || looksBlocked(foldedHandle)) return "unavailable";
   return null;
 }
 

@@ -17,8 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile, useUploadAvatar, useUploadBanner } from "@/hooks/use-profile";
 import { getBackend } from "@/lib/backend";
-import { errorMessage } from "@/lib/errors";
-import { ensureNameFilter, nameFilterReason } from "@/lib/name-filter";
+import { AppError, errorMessage } from "@/lib/errors";
+import { assertDisplayNameAvailable } from "@/lib/display-name";
 import { isPrivateProfile, type User } from "@/lib/types";
 
 export function ProfileForm({ user }: { user: User }) {
@@ -76,14 +76,10 @@ export function ProfileForm({ user }: { user: User }) {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    await ensureNameFilter();
-    const nameIssue = nameFilterReason(displayName);
-    if (nameIssue === "tooShort") {
-      setError(t("profile.nameTooShort"));
-      return;
-    }
-    if (nameIssue === "unavailable") {
-      setError(t("errors.nameUnavailable"));
+    try {
+      await assertDisplayNameAvailable(displayName, user.id);
+    } catch (err) {
+      setError(err instanceof AppError && err.key === "errors.addName" ? t("profile.nameTooShort") : errorMessage(err));
       return;
     }
     setError(null);
