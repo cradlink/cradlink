@@ -6,6 +6,12 @@ import { getStorage, type FirebaseStorage } from "firebase/storage"
 
 import { appEnv, isFirebaseConfigured } from "@/lib/env"
 
+const warn = console.warn.bind(console)
+console.warn = (...args: unknown[]) => {
+  if (args.some((arg) => typeof arg === "string" && arg.includes("BloomFilter"))) return
+  warn(...args)
+}
+
 let auth: Auth | null = null
 let db: Firestore | null = null
 

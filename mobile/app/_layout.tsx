@@ -6,6 +6,7 @@ import { NavigationBar } from "expo-navigation-bar"
 import * as SplashScreen from "expo-splash-screen"
 import * as SystemUI from "expo-system-ui"
 import "react-native-reanimated"
+import "@/lib/firebase"
 
 void SplashScreen.preventAutoHideAsync()
 
