@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { ActivityCover } from "@/components/activity/activity-gallery";
+import { ActivityOwnerMenu } from "@/components/activity/activity-owner-menu";
 import { JoinButton } from "@/components/activity/join-button";
 import { TypeBadge } from "@/components/activity/type-badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -26,16 +27,19 @@ export function ActivityCard({
         </Link>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[15px] leading-5">
-            <Link to={`/u/${activity.creatorId}`} className="font-bold hover:underline">
-              {activity.creatorName}
-            </Link>
-            <span className="text-muted-foreground">·</span>
-            <TypeBadge type={activity.type} />
-            <span className="text-[13px] text-muted-foreground">
-              {locationLabel(activity.location.type)}
-              {activity.status === "full" ? ` · ${t("activity.statusFull")}` : ""}
-            </span>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 text-[15px] leading-5">
+              <Link to={`/u/${activity.creatorId}`} className="font-bold hover:underline">
+                {activity.creatorName}
+              </Link>
+              <span className="text-muted-foreground">·</span>
+              <TypeBadge type={activity.type} />
+              <span className="text-[13px] text-muted-foreground">
+                {locationLabel(activity.location.type)}
+                {activity.status === "full" ? ` · ${t("activity.statusFull")}` : ""}
+              </span>
+            </div>
+            <ActivityOwnerMenu activity={activity} />
           </div>
 
           <Link to={`/activities/${activity.id}`} className="mt-1 block">

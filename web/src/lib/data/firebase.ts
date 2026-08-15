@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -305,6 +306,19 @@ export const firebaseActivities: ActivitiesRepo = {
       joinedIds,
     );
     return next;
+  },
+
+  async remove(id, actorId) {
+    const existing = await firebaseActivities.getById(id);
+    if (!existing) throw appError("errors.activityNotFound");
+    if (existing.creatorId !== actorId) throw appError("errors.onlyOrganizerDelete");
+
+    const db = getFirebaseDb();
+    const members = await getDocs(
+      query(collection(db, "activityMembers"), where("activityId", "==", id)),
+    );
+    await Promise.all(members.docs.map((row) => deleteDoc(row.ref)));
+    await deleteDoc(doc(db, "activities", id));
   },
 
   async listCreatedBy(userId) {
