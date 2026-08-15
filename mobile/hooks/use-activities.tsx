@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 
 import { useAuth } from "@/hooks/use-auth"
-import { firebaseActivities } from "@/lib/data/firebase"
+import { firebaseActivities, watchMembers, watchPublicActivities } from "@/lib/data/firebase"
 import { isFirebaseConfigured } from "@/lib/env"
 import type { Activity, CreateActivityInput, UpdateActivityInput } from "@/lib/types"
 
@@ -9,6 +9,7 @@ type ActivitiesValue = {
   ready: boolean
   activities: Activity[]
   get: (id: string) => Activity | null
+  ensure: (id: string) => Promise<Activity | null>
   add: (input: CreateActivityInput) => Promise<Activity>
   update: (id: string, input: UpdateActivityInput) => Promise<Activity>
   remove: (id: string) => Promise<void>
@@ -37,23 +38,66 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
       return
     }
     try {
-      const [feed, created, joined] = await Promise.all([
+      const [feed, created, joined] = await Promise.allSettled([
         firebaseActivities.list({ limit: 80 }),
         firebaseActivities.listCreatedBy(user.id),
         firebaseActivities.listJoinedBy(user.id),
       ])
-      setActivities(mergeActivities(feed.items, created, joined))
-    } catch {
-      setActivities([])
+      setActivities(
+        mergeActivities(
+          feed.status === "fulfilled" ? feed.value.items : [],
+          created.status === "fulfilled" ? created.value : [],
+          joined.status === "fulfilled" ? joined.value : [],
+        ),
+      )
+    } catch (err) {
+      if (__DEV__) console.warn("[activities]", err)
     } finally {
       setReady(true)
     }
   }, [user])
 
   useEffect(() => {
-    setReady(false)
-    void reload()
-  }, [reload])
+    if (!user || !isFirebaseConfigured()) {
+      setActivities([])
+      setReady(true)
+      return
+    }
+
+    let publicItems: Activity[] = []
+    let extraItems: Activity[] = []
+
+    const publish = () => {
+      setActivities(mergeActivities(publicItems, extraItems))
+      setReady(true)
+    }
+
+    const refreshExtra = async () => {
+      const [created, joined] = await Promise.allSettled([
+        firebaseActivities.listCreatedBy(user.id),
+        firebaseActivities.listJoinedBy(user.id),
+      ])
+      extraItems = mergeActivities(
+        created.status === "fulfilled" ? created.value : [],
+        joined.status === "fulfilled" ? joined.value : [],
+      )
+      publish()
+    }
+
+    const unsubActs = watchPublicActivities((items) => {
+      publicItems = items
+      publish()
+      void refreshExtra()
+    })
+    const unsubMem = watchMembers((rows) => {
+      if (rows.some((row) => row.userId === user.id)) void refreshExtra()
+    })
+    void refreshExtra()
+    return () => {
+      unsubActs()
+      unsubMem()
+    }
+  }, [user])
 
   const value = useMemo<ActivitiesValue>(() => {
     const get = (id: string) => activities.find((activity) => activity.id === id) ?? null
@@ -61,6 +105,13 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
       ready,
       activities,
       get,
+      ensure: async (id) => {
+        const hit = get(id)
+        if (hit) return hit
+        const row = await firebaseActivities.getById(id)
+        if (row) setActivities((current) => mergeActivities([row], current))
+        return row
+      },
       reload,
       add: async (input) => {
         if (!user) throw new Error("signInToPost")

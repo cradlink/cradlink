@@ -24,7 +24,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
   const theme = useTheme()
   const router = useRouter()
   const { decorate, isOrganizer } = useMemberships()
-  const { threadFor, openCompose } = useReplies()
+  const { threadFor, openCompose, canReply } = useReplies()
   const { open } = useActivityPreview()
   const { messages } = useI18n()
   const viewed = decorate(activity)
@@ -91,6 +91,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
             {formatCardMeta(viewed)}
           </Text>
 
+          {canReply(activity) ? (
           <Pressable
             onPress={() => openCompose(activity)}
             hitSlop={8}
@@ -101,6 +102,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
               {messages.reply.action}
             </Text>
           </Pressable>
+          ) : null}
         </View>
       </Pressable>
 

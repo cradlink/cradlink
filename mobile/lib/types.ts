@@ -33,6 +33,7 @@ export type User = {
   id: string
   displayName: string
   email: string
+  username: string | null
   bio: string
   skills: string[]
   avatarUrl: string | null
@@ -158,6 +159,7 @@ export type NotificationType =
   | "follow"
   | "follow_request"
   | "follow_accepted"
+  | "reply"
 
 export type AppNotification = {
   id: string
@@ -175,11 +177,20 @@ export type AppNotification = {
 
 export type UpdateProfileInput = {
   displayName?: string
+  username?: string | null
   bio?: string
   skills?: string[]
   location?: string
   avatarUrl?: string | null
   visibility?: ProfileVisibility
+}
+
+export function needsUsername(user: Pick<User, "username"> | null | undefined) {
+  return Boolean(user && !user.username)
+}
+
+export function handleOf(user: Pick<User, "username" | "displayName">) {
+  return user.username ? `@${user.username}` : ""
 }
 
 export type ActivityFilters = {

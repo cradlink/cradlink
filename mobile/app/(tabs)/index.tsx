@@ -11,8 +11,6 @@ import { TopBar } from "@/components/TopBar"
 import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
 import { Text, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
-import { useAuth } from "@/hooks/use-auth"
-import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 import { replayBoot } from "@/lib/boot-preview"
 import type { ActivityType, LocationType } from "@/lib/types"
@@ -21,8 +19,6 @@ export default function FeedScreen() {
   const router = useRouter()
   const theme = useTheme()
   const { activities: all } = useActivities()
-  const { getUser } = useAuth()
-  const { canSeeActivities } = useConnections()
   const { messages } = useI18n()
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState("")
@@ -30,13 +26,11 @@ export default function FeedScreen() {
   const [locationType, setLocationType] = useState<LocationType | "all">("all")
   const activities = useMemo(() => {
     return all.filter((activity) => {
-      const creator = getUser(activity.creatorId)
-      if (creator && !canSeeActivities(creator)) return false
       if (type !== "all" && activity.type !== type) return false
       if (locationType !== "all" && activity.location.type !== locationType) return false
       return true
     })
-  }, [all, canSeeActivities, getUser, locationType, type])
+  }, [all, locationType, type])
 
   function closeSearch() {
     setQuery("")

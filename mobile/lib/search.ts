@@ -15,7 +15,10 @@ export function matchesQuery(hay: string[], query: string) {
 function peopleScore(person: User, query: string) {
   const q = normalize(query)
   const name = normalize(person.displayName ?? "")
-  if (!q || !name) return 0
+  const handle = normalize(person.username ?? "")
+  if (!q || (!name && !handle)) return 0
+  if (handle && (`@${handle}` === q || handle === q.replace(/^@/, ""))) return 420
+  if (handle && handle.startsWith(q.replace(/^@/, ""))) return 360
   if (name === q) return 400
   if (name.startsWith(q)) return 300
   if (name.split(/\s+/).some((part) => part.startsWith(q))) return 220

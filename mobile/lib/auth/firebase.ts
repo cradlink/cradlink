@@ -8,7 +8,17 @@ import {
   updateProfile,
   type User as FirebaseUser,
 } from "firebase/auth"
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore"
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  type Unsubscribe,
+} from "firebase/firestore"
 
 import type { AuthRepo } from "@/lib/auth/types"
 import { AppError } from "@/lib/errors"
@@ -35,11 +45,12 @@ function mapUser(id: string, data: Record<string, unknown>, fallback?: Partial<U
     id,
     displayName: asString(data.displayName, fallback?.displayName ?? "Member"),
     email: asString(data.email, fallback?.email ?? ""),
+    username: asString(data.username) || null,
     bio: asString(data.bio),
     skills: Array.isArray(data.skills) ? (data.skills as string[]) : [],
     avatarUrl: (data.avatarUrl as string | null | undefined) ?? fallback?.avatarUrl ?? null,
     location: asString(data.location),
-    visibility: data.visibility === "private" ? "private" : "public",
+    visibility: data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
   }
@@ -58,6 +69,7 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       id: fbUser.uid,
       displayName: name,
       email,
+      username: null,
       bio: "",
       skills: [],
       avatarUrl: fbUser.photoURL,
@@ -66,7 +78,12 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       createdAt: timestamp,
       updatedAt: timestamp,
     }
-    await setDoc(ref, { ...user, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+    await setDoc(ref, {
+      ...user,
+      profileVisibility: "public",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
     return user
   }
 
@@ -136,7 +153,14 @@ export const firebaseAuth: AuthRepo = {
     const snap = await getDoc(ref)
     if (!snap.exists()) throw new AppError("accountNotFound")
     const next = mapUser(current.uid, { ...snap.data(), ...input, updatedAt: nowIso() })
-    await updateDoc(ref, stripUndefined({ ...input, updatedAt: nowIso() }))
+    await updateDoc(
+      ref,
+      stripUndefined({
+        ...input,
+        profileVisibility: input.visibility ?? undefined,
+        updatedAt: nowIso(),
+      }),
+    )
     if (input.displayName) await updateProfile(current, { displayName: input.displayName })
     return next
   },
@@ -150,4 +174,12 @@ export const firebaseAuth: AuthRepo = {
       void fromFirebase(fbUser).then(cb)
     })
   },
+}
+
+export function watchUsers(onData: (users: User[]) => void): Unsubscribe {
+  return onSnapshot(
+    collection(getFirebaseDb(), "users"),
+    (snap) => onData(snap.docs.map((row) => mapUser(row.id, row.data() as Record<string, unknown>))),
+    () => onData([]),
+  )
 }

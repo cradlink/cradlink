@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   runTransaction,
@@ -14,6 +15,7 @@ import {
   where,
   type DocumentData,
   type QueryConstraint,
+  type Unsubscribe,
 } from "firebase/firestore"
 
 import type { ActivitiesRepo, MembersRepo, UsersRepo } from "@/lib/data/types"
@@ -44,11 +46,12 @@ function mapUser(id: string, data: DocumentData): User {
     id,
     displayName: asString(data.displayName, "Member"),
     email: asString(data.email),
+    username: asString(data.username) || null,
     bio: asString(data.bio),
     skills: Array.isArray(data.skills) ? data.skills : [],
     avatarUrl: (data.avatarUrl as string | null) ?? null,
     location: asString(data.location),
-    visibility: data.visibility === "private" ? "private" : "public",
+    visibility: data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
   }
@@ -118,30 +121,55 @@ export const firebaseUsers: UsersRepo = {
   },
 }
 
+async function queryActivities(constraints: QueryConstraint[]) {
+  return getDocs(query(collection(getFirebaseDb(), "activities"), ...constraints))
+}
+
+async function firstWorkingQuery(attempts: QueryConstraint[][]) {
+  let lastError: unknown
+  for (const constraints of attempts) {
+    try {
+      return await queryActivities(constraints)
+    } catch (err) {
+      lastError = err
+    }
+  }
+  throw lastError
+}
+
 export const firebaseActivities: ActivitiesRepo = {
   async list(filters = {}) {
     const pageSize = filters.limit ?? PAGE_SIZE
-    const constraints: QueryConstraint[] = [where("visibility", "==", "public")]
-    if (filters.type && filters.type !== "all") constraints.push(where("type", "==", filters.type))
-    constraints.push(orderBy("createdAt", "desc"))
+    const publicOnly: QueryConstraint[] = [where("visibility", "==", "public")]
+    if (filters.type && filters.type !== "all") publicOnly.push(where("type", "==", filters.type))
+
+    const ordered = [...publicOnly, orderBy("createdAt", "desc")]
     if (filters.cursor) {
       const cursorSnap = await getDoc(doc(getFirebaseDb(), "activities", filters.cursor))
-      if (cursorSnap.exists()) constraints.push(startAfter(cursorSnap))
+      if (cursorSnap.exists()) ordered.push(startAfter(cursorSnap))
     }
-    constraints.push(limit(pageSize + 4))
-    const snap = await getDocs(query(collection(getFirebaseDb(), "activities"), ...constraints))
+
+    const snap = await firstWorkingQuery([
+      [...ordered, limit(pageSize + 4)],
+      [...publicOnly, limit(pageSize + 4)],
+    ])
     let items = snap.docs.map((row) => mapActivity(row.id, row.data())).filter((a) => a.status !== "cancelled")
     if (filters.locationType && filters.locationType !== "all") {
       items = items.filter((a) => a.location.type === filters.locationType)
     }
+    items.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     const page = items.slice(0, pageSize)
     const nextCursor = items.length > pageSize ? page[page.length - 1]?.id ?? null : null
     return { items: page, nextCursor }
   },
 
   async getById(id) {
-    const snap = await getDoc(doc(getFirebaseDb(), "activities", id))
-    return snap.exists() ? mapActivity(snap.id, snap.data()) : null
+    try {
+      const snap = await getDoc(doc(getFirebaseDb(), "activities", id))
+      return snap.exists() ? mapActivity(snap.id, snap.data()) : null
+    } catch {
+      return null
+    }
   },
 
   async create(creator, input: CreateActivityInput) {
@@ -227,30 +255,40 @@ export const firebaseActivities: ActivitiesRepo = {
   },
 
   async listCreatedBy(userId) {
-    const snap = await getDocs(
-      query(
-        collection(getFirebaseDb(), "activities"),
-        where("creatorId", "==", userId),
-        orderBy("createdAt", "desc"),
-      ),
-    )
-    return snap.docs.map((row) => mapActivity(row.id, row.data())).filter((a) => a.status !== "cancelled")
+    try {
+      const snap = await firstWorkingQuery([
+        [where("creatorId", "==", userId), orderBy("createdAt", "desc")],
+        [where("creatorId", "==", userId)],
+        [where("visibility", "==", "public"), where("creatorId", "==", userId)],
+        [where("visibility", "==", "public")],
+      ])
+      return snap.docs
+        .map((row) => mapActivity(row.id, row.data()))
+        .filter((a) => a.status !== "cancelled" && a.creatorId === userId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    } catch {
+      return []
+    }
   },
 
   async listJoinedBy(userId) {
-    const memberships = await getDocs(
-      query(
-        collection(getFirebaseDb(), "activityMembers"),
-        where("userId", "==", userId),
-        where("status", "==", "joined"),
-      ),
-    )
-    const ids = memberships.docs.map((row) => asString(row.data().activityId))
-    const activities = await Promise.all(ids.map((id) => firebaseActivities.getById(id)))
-    return activities
-      .filter((a): a is Activity => Boolean(a))
-      .filter((a) => a.status !== "cancelled")
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    try {
+      const memberships = await getDocs(
+        query(
+          collection(getFirebaseDb(), "activityMembers"),
+          where("userId", "==", userId),
+          where("status", "==", "joined"),
+        ),
+      )
+      const ids = memberships.docs.map((row) => asString(row.data().activityId))
+      const activities = await Promise.all(ids.map((id) => firebaseActivities.getById(id)))
+      return activities
+        .filter((a): a is Activity => Boolean(a))
+        .filter((a) => a.status !== "cancelled")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    } catch {
+      return []
+    }
   },
 }
 
@@ -389,4 +427,33 @@ export const firebaseMembers: MembersRepo = {
       return { ...activity, updatedAt: timestamp }
     })
   },
+}
+
+export function watchPublicActivities(onData: (items: Activity[]) => void): Unsubscribe {
+  const apply = (docs: { id: string; data: () => DocumentData }[]) => {
+    onData(
+      docs
+        .map((row) => mapActivity(row.id, row.data()))
+        .filter((activity) => activity.status !== "cancelled")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    )
+  }
+  return onSnapshot(
+    query(collection(getFirebaseDb(), "activities"), where("visibility", "==", "public")),
+    (snap) => apply(snap.docs),
+    () => {
+      void firebaseActivities
+        .list({ limit: 80 })
+        .then((page) => onData(page.items))
+        .catch(() => onData([]))
+    },
+  )
+}
+
+export function watchMembers(onData: (rows: ActivityMember[]) => void): Unsubscribe {
+  return onSnapshot(
+    collection(getFirebaseDb(), "activityMembers"),
+    (snap) => onData(snap.docs.map((row) => mapMember(row.id, row.data()))),
+    () => onData([]),
+  )
 }

@@ -23,7 +23,7 @@ export default function ActivityRepliesScreen() {
   const { user } = useAuth()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { get } = useActivities()
-  const { threadFor, openCompose } = useReplies()
+  const { threadFor, openCompose, canReply } = useReplies()
   const { messages, tx } = useI18n()
   const activity = id ? get(id) : null
   const thread = activity ? threadFor(activity.id) : []
@@ -71,7 +71,7 @@ export default function ActivityRepliesScreen() {
           )}
         </Stagger>
       </Refreshable>
-      {activity ? (
+      {activity && canReply(activity) ? (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12), borderTopColor: theme.border }]}>
           <Avatar name={user?.displayName ?? messages.common.you} src={user?.avatarUrl} size={36} />
           <Pressable
@@ -89,7 +89,7 @@ export default function ActivityRepliesScreen() {
 }
 
 function ParentPost({ activity, count }: { activity: Activity; count: number }) {
-  const { openCompose } = useReplies()
+  const { openCompose, canReply } = useReplies()
   const { messages, tx } = useI18n()
 
   return (
@@ -109,6 +109,7 @@ function ParentPost({ activity, count }: { activity: Activity; count: number }) 
         <Text style={styles.count} lightColor="#536471" darkColor="#71767b">
           {count === 1 ? messages.reply.one : tx(messages.reply.many, { count })}
         </Text>
+        {canReply(activity) ? (
         <Pressable
           onPress={() => openCompose(activity)}
           hitSlop={8}
@@ -118,6 +119,7 @@ function ParentPost({ activity, count }: { activity: Activity; count: number }) 
             {messages.reply.action}
           </Text>
         </Pressable>
+        ) : null}
       </View>
     </View>
   )

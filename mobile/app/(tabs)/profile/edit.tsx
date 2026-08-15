@@ -28,6 +28,7 @@ export default function EditProfileScreen() {
   const { messages } = useI18n()
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? "")
+  const [username, setUsername] = useState(user?.username ?? "")
   const [bio, setBio] = useState(user?.bio ?? "")
   const [location, setLocation] = useState(user?.location ?? "")
   const [skills, setSkills] = useState(user?.skills ?? [])
@@ -38,6 +39,7 @@ export default function EditProfileScreen() {
   const dirty = Boolean(
     user &&
       (displayName !== user.displayName ||
+        username !== (user.username ?? "") ||
         bio !== user.bio ||
         location !== user.location ||
         avatarUrl !== user.avatarUrl ||
@@ -98,6 +100,7 @@ export default function EditProfileScreen() {
     try {
       await updateProfile({
         displayName: displayName.trim(),
+        username: username.trim() || undefined,
         bio: bio.trim(),
         location: location.trim(),
         skills,
@@ -135,6 +138,23 @@ export default function EditProfileScreen() {
             <Avatar name={displayName || user.displayName} src={avatarUrl} size={80} />
             <Text style={[styles.change, { color: theme.primary }]}>{messages.profile.changePhoto}</Text>
           </Pressable>
+
+          <Field label={messages.username.label}>
+            <View style={styles.handleRow}>
+              <Text style={styles.at}>@</Text>
+              <TextInput
+                value={username}
+                onChangeText={(text) => setUsername(text.replace(/^@+/, "").toLowerCase())}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder={messages.username.placeholder}
+                placeholderTextColor={theme.mutedForeground}
+                keyboardAppearance="dark"
+                selectionColor={theme.primary}
+                style={[styles.input, styles.handleInput, { color: theme.foreground, borderBottomColor: theme.border }]}
+              />
+            </View>
+          </Field>
 
           <Field label={messages.auth.name}>
             <TextInput
@@ -242,6 +262,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  handleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  at: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  handleInput: {
+    flex: 1,
   },
   input: {
     fontSize: 17,

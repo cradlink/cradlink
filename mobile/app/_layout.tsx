@@ -68,9 +68,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!ready) return
     const inAuth = pathname === "/login" || pathname === "/signup"
-    if (!user && !inAuth) {
+    const picking = pathname === "/username"
+    if (!user && (picking || !inAuth)) {
       router.replace("/login")
-    } else if (user && inAuth) {
+    } else if (user && !user.username && !picking) {
+      router.replace("/username")
+    } else if (user && user.username && (inAuth || picking)) {
       router.replace("/")
     }
   }, [user, ready, pathname, router])
@@ -130,6 +133,8 @@ function RootNav() {
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="search" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="username" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="settings-deactivate" options={{ headerShown: false }} />
           <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
           <Stack.Screen name="activities/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="activities/replies/[id]" options={{ headerShown: false }} />
@@ -154,17 +159,17 @@ export default function RootLayout() {
         <ActivitiesProvider>
           <ConnectionsProvider>
           <MembershipProvider>
+            <ToastProvider>
             <RepliesProvider>
             <NotificationsProvider>
               <ActivityPreviewProvider>
                 <ConfirmProvider>
-                  <ToastProvider>
                     <RootNav />
-                  </ToastProvider>
                 </ConfirmProvider>
               </ActivityPreviewProvider>
             </NotificationsProvider>
             </RepliesProvider>
+            </ToastProvider>
           </MembershipProvider>
           </ConnectionsProvider>
         </ActivitiesProvider>

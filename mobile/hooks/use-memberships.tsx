@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { firebaseMembers } from "@/lib/data/firebase"
+import { firebaseMembers, watchMembers } from "@/lib/data/firebase"
 import { isFirebaseConfigured } from "@/lib/env"
 import { hardCap } from "@/lib/headcount"
 import type { Activity, JoinRequest } from "@/lib/types"
@@ -29,7 +29,7 @@ type MembershipsValue = {
 const MembershipsContext = createContext<MembershipsValue | null>(null)
 
 export function MembershipProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
   const { activities, ready: activitiesReady, reload: reloadActivities } = useActivities()
   const [mine, setMine] = useState<Record<string, MembershipStatus>>({})
   const [inboxItems, setInboxItems] = useState<JoinRequest[]>([])
@@ -87,9 +87,46 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!activitiesReady) return
-    setReady(false)
-    void reload()
-  }, [activitiesReady, reload])
+    if (!user || !isFirebaseConfigured()) {
+      setMine({})
+      setInboxItems([])
+      setPendingMap({})
+      setReady(true)
+      return
+    }
+    return watchMembers((rows) => {
+      const nextMine: Record<string, MembershipStatus> = {}
+      for (const row of rows) {
+        if (row.userId === user.id && (row.status === "joined" || row.status === "pending")) {
+          nextMine[row.activityId] = row.status
+        }
+      }
+      setMine(nextMine)
+
+      const hosted = new Set(activities.filter((activity) => activity.creatorId === user.id).map((activity) => activity.id))
+      const nextPending: Record<string, JoinRequest[]> = {}
+      const nextInbox: JoinRequest[] = []
+      for (const row of rows) {
+        if (row.status !== "pending" || !hosted.has(row.activityId)) continue
+        const person = getUser(row.userId)
+        const request: JoinRequest = {
+          id: row.id,
+          activityId: row.activityId,
+          hostId: user.id,
+          userId: row.userId,
+          userName: person?.displayName ?? "Member",
+          userAvatar: person?.avatarUrl ?? null,
+          status: "pending",
+          createdAt: row.joinedAt,
+        }
+        nextPending[row.activityId] = [...(nextPending[row.activityId] ?? []), request]
+        nextInbox.push(request)
+      }
+      setPendingMap(nextPending)
+      setInboxItems(nextInbox)
+      setReady(true)
+    })
+  }, [activities, activitiesReady, getUser, user])
 
   const value = useMemo<MembershipsValue>(() => {
     const statusOf = (activityId: string) => mine[activityId] ?? null

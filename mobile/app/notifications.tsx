@@ -23,7 +23,7 @@ export default function NotificationsScreen() {
   const theme = useTheme()
   const router = useRouter()
   const { items, markRead } = useNotifications()
-  const { get } = useActivities()
+  const { get, ensure } = useActivities()
   const { open } = useActivityPreview()
   const { user, people } = useAuth()
   const { messages } = useI18n()
@@ -46,8 +46,13 @@ export default function NotificationsScreen() {
     void markRead(item.id)
     if (!item.activityId) return
     const activity = get(item.activityId)
-    if (!activity) return
-    open(activity, origin)
+    if (activity) {
+      open(activity, origin)
+      return
+    }
+    void ensure(item.activityId).then((next) => {
+      if (next) open(next, origin)
+    })
   }
 
   return (
@@ -70,8 +75,16 @@ export default function NotificationsScreen() {
                 copy={notificationCopy(item, messages, item.activityId ? get(item.activityId) : null)}
                 onPerson={() => openProfile(item)}
                 onOpen={(origin) => {
-                  if (item.type === "reminder") openActivity(item, origin)
-                  else openProfile(item)
+                  if (
+                    item.activityId &&
+                    item.type !== "follow" &&
+                    item.type !== "follow_request" &&
+                    item.type !== "follow_accepted"
+                  ) {
+                    openActivity(item, origin)
+                  } else {
+                    openProfile(item)
+                  }
                 }}
                 unreadColor={theme.primary}
                 border={theme.border}
@@ -104,6 +117,8 @@ function notificationCopy(item: AppNotification, m: Messages, activity: Activity
       return { title: tx(m.notifications.followRequestTitle, { name }), body: m.notifications.followRequestBody }
     case "follow_accepted":
       return { title: tx(m.notifications.followAcceptedTitle, { name }), body: m.notifications.followAcceptedBody }
+    case "reply":
+      return { title: tx(m.notifications.replyTitle, { name, title }), body: m.notifications.replyBody }
     case "reminder":
       return {
         title,

@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
-import { firebaseAuth } from "@/lib/auth/firebase"
+import { firebaseAuth, watchUsers } from "@/lib/auth/firebase"
 import type { SignInInput, SignUpInput } from "@/lib/auth/types"
+import { claimUsername, deleteAccount } from "@/lib/data/account"
 import { AppError } from "@/lib/errors"
 import { isFirebaseConfigured } from "@/lib/env"
 import type { UpdateProfileInput, User } from "@/lib/types"
@@ -15,6 +16,8 @@ type AuthContextValue = {
   signUp: (input: SignUpInput) => Promise<User>
   signInWithGoogle: (idToken?: string | null, accessToken?: string | null) => Promise<User>
   updateProfile: (input: UpdateProfileInput) => Promise<User>
+  setUsername: (username: string) => Promise<User>
+  deleteAccount: () => Promise<void>
   signOut: () => Promise<void>
   reload: () => Promise<void>
 }
@@ -39,15 +42,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setReady(true)
       return
     }
-    return firebaseAuth.onAuthChange((next) => {
+    let unsubUsers: (() => void) | undefined
+    const unsubAuth = firebaseAuth.onAuthChange((next) => {
       setUser(next)
-      if (next) {
-        void loadPeople().finally(() => setReady(true))
-      } else {
+      unsubUsers?.()
+      unsubUsers = undefined
+      if (!next) {
         setDirectory([])
         setReady(true)
+        return
       }
+      unsubUsers = watchUsers((people) => {
+        setDirectory(people)
+        setReady(true)
+      })
     })
+    return () => {
+      unsubAuth()
+      unsubUsers?.()
+    }
   }, [])
 
   const value = useMemo<AuthContextValue>(() => {
@@ -73,10 +86,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return firebaseAuth.signInWithGoogle(idToken, accessToken)
       },
       updateProfile: async (input) => {
+        if (input.username) {
+          const handle = await claimUsername(me!.id, input.username)
+          input = { ...input, username: handle }
+        }
         const next = await firebaseAuth.updateProfile(input)
         setUser(next)
         await loadPeople()
         return next
+      },
+      setUsername: async (username) => {
+        if (!me) throw new AppError("signInFirst")
+        const handle = await claimUsername(me.id, username)
+        const next = { ...me, username: handle }
+        setUser(next)
+        return next
+      },
+      deleteAccount: async () => {
+        if (!me) throw new AppError("signInFirst")
+        await deleteAccount(me)
+        setUser(null)
+        setDirectory([])
       },
       signOut: () => firebaseAuth.signOut(),
       reload: async () => {

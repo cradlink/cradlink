@@ -6,6 +6,10 @@ export function memberId(activityId: string, userId: string) {
   return `${activityId}_${userId}`
 }
 
+export function followId(followerId: string, followeeId: string) {
+  return `${followerId}_${followeeId}`
+}
+
 export function stripUndefined<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }

@@ -28,7 +28,7 @@ export function ReplyRow({
 }) {
   const theme = useTheme()
   const { user } = useAuth()
-  const { hide, openCompose } = useReplies()
+  const { hide, openCompose, canReply } = useReplies()
   const { ask } = useConfirm()
   const { show } = useToast()
   const { messages, tx } = useI18n()
@@ -101,6 +101,7 @@ export function ReplyRow({
                   />
                 </Pressable>
               ) : null}
+              {canReply(activity) ? (
               <Pressable
                 onPress={() => openCompose(activity, reply)}
                 hitSlop={8}
@@ -109,6 +110,7 @@ export function ReplyRow({
               >
                 <Text style={[styles.actionLabel, { color: theme.mutedForeground }]}>{messages.reply.action}</Text>
               </Pressable>
+              ) : null}
             </View>
           </>
         )}

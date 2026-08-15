@@ -30,7 +30,16 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if isSelf(userId);
-      allow delete: if false;
+      allow delete: if isSelf(userId);
+    }
+
+    match /usernames/{handle} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && handle.matches('^[a-z0-9_]{3,20}$');
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /config/{docId} {

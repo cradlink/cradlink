@@ -1,21 +1,19 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
 import { useAuth } from "@/hooks/use-auth"
+import { useMemberships } from "@/hooks/use-memberships"
+import { useToast } from "@/hooks/use-toast"
+import { useI18n } from "@/hooks/use-i18n"
+import { hideReply, notifyDiscussion, watchDiscussions, writeReply } from "@/lib/data/social"
+import { isFirebaseConfigured } from "@/lib/env"
 import type { Activity, ActivityReply, ReplyComposeTarget, ReplyThreadItem } from "@/lib/types"
 
-const KEY = "cl.activity-replies"
 const MAX_BODY = 280
-const SEED_VERSION = 4
-
-type Store = {
-  seeded: number | boolean
-  items: ActivityReply[]
-}
 
 type RepliesValue = {
   ready: boolean
   composing: ReplyComposeTarget | null
+  canReply: (activity: Activity) => boolean
   openCompose: (activity: Activity, parent?: ActivityReply | null) => void
   closeCompose: () => void
   forActivity: (activityId: string) => ActivityReply[]
@@ -27,10 +25,6 @@ type RepliesValue = {
 }
 
 const RepliesContext = createContext<RepliesValue | null>(null)
-
-function createId() {
-  return `rep_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
-}
 
 function parentIdOf(row: Pick<ActivityReply, "parentId">) {
   return row.parentId ?? null
@@ -51,56 +45,27 @@ export function threadItems(replies: ActivityReply[], parentId: string | null = 
 
 export function RepliesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
-  const [store, setStore] = useState<Store>({ seeded: false, items: [] })
+  const { statusOf, isOrganizer } = useMemberships()
+  const { show } = useToast()
+  const { messages } = useI18n()
+  const [items, setItems] = useState<ActivityReply[]>([])
   const [composing, setComposing] = useState<ReplyComposeTarget | null>(null)
   const [ready, setReady] = useState(false)
 
-  const persist = useCallback(async (next: Store) => {
-    setStore(next)
-    await AsyncStorage.setItem(KEY, JSON.stringify(next))
-  }, [])
-
   useEffect(() => {
-    void AsyncStorage.getItem(KEY).then((raw) => {
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as Store
-          if (parsed.seeded === SEED_VERSION) {
-            setStore({ seeded: SEED_VERSION, items: parsed.items ?? [] })
-            setReady(true)
-            return
-          }
-        } catch {
-          /* reset below */
-        }
-      }
-      const next = { seeded: SEED_VERSION, items: [] as ActivityReply[] }
-      setStore(next)
-      void AsyncStorage.setItem(KEY, JSON.stringify(next))
+    if (!user || !isFirebaseConfigured()) {
+      setItems([])
       setReady(true)
-    })
-  }, [])
-
-  const reload = useCallback(async () => {
-    const raw = await AsyncStorage.getItem(KEY)
-    if (!raw) {
-      setStore({ seeded: SEED_VERSION, items: [] })
       return
     }
-    try {
-      const parsed = JSON.parse(raw) as Store
-      setStore(
-        parsed.seeded === SEED_VERSION
-          ? { seeded: SEED_VERSION, items: parsed.items ?? [] }
-          : { seeded: SEED_VERSION, items: [] },
-      )
-    } catch {
-      setStore({ seeded: SEED_VERSION, items: [] })
-    }
-  }, [])
+    return watchDiscussions((next) => {
+      setItems(next)
+      setReady(true)
+    })
+  }, [user])
 
   const value = useMemo<RepliesValue>(() => {
-    const items = store.items.map((row) => {
+    const live = items.map((row) => {
       const next = {
         ...row,
         parentId: parentIdOf(row),
@@ -111,71 +76,64 @@ export function RepliesProvider({ children }: { children: React.ReactNode }) {
         ? { ...next, userName: user.displayName, userAvatar: user.avatarUrl }
         : next
     })
+    const canReply = (activity: Activity) =>
+      Boolean(user && (isOrganizer(activity) || statusOf(activity.id) === "joined"))
     return {
       ready,
       composing,
-      openCompose: (activity, parent = null) => setComposing({ activity, parent }),
+      canReply,
+      openCompose: (activity, parent = null) => {
+        if (!canReply(activity)) {
+          show({ title: messages.reply.joinFirst })
+          return
+        }
+        setComposing({ activity, parent })
+      },
       closeCompose: () => setComposing(null),
       forActivity: (activityId) =>
-        items
-          .filter((row) => row.activityId === activityId)
-          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-      threadFor: (activityId) =>
-        threadItems(items.filter((row) => row.activityId === activityId)),
+        live.filter((row) => row.activityId === activityId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      threadFor: (activityId) => threadItems(live.filter((row) => row.activityId === activityId)),
       add: async (activityId, body, parentId = null) => {
         if (!user) throw new Error("signInFirst")
         const text = body.trim()
         if (!text) throw new Error("replyEmpty")
         if (text.length > MAX_BODY) throw new Error("replyTooLong")
-        const parent = parentId ? items.find((row) => row.id === parentId) : null
+        const parent = parentId ? live.find((row) => row.id === parentId) : null
         if (parentId && (!parent || parent.activityId !== activityId || parent.deleted)) {
           throw new Error("activityNotFound")
         }
-        const next: ActivityReply = {
-          id: createId(),
-          activityId,
+        const activity = composing?.activity
+        if (!activity || activity.id !== activityId) throw new Error("activityNotFound")
+        if (!canReply(activity)) throw new Error("joinToReply")
+        const next = await writeReply({
+          activity,
           parentId: parent ? parent.id : null,
           userId: user.id,
           userName: user.displayName,
           userAvatar: user.avatarUrl,
           body: text,
-          createdAt: new Date().toISOString(),
-        }
-        await persist({ ...store, items: [...store.items, next] })
+        })
+        void notifyDiscussion({ activity, comment: next, parent: parent ?? null })
         return next
       },
       remove: async (id) => {
         if (!user) throw new Error("signInFirst")
-        const row = store.items.find((item) => item.id === id)
-        if (!row) return
-        if (row.userId !== user.id) throw new Error("onlyAuthor")
-        const fallback = parentIdOf(row)
-        await persist({
-          ...store,
-          items: store.items
-            .filter((item) => item.id !== id)
-            .map((item) => (item.parentId === id ? { ...item, parentId: fallback } : item)),
-        })
+        const row = live.find((item) => item.id === id)
+        if (!row || row.userId !== user.id) throw new Error("onlyAuthor")
+        await hideReply(row.activityId, id, user.id)
       },
       hide: async (id, activity) => {
         if (!user) throw new Error("signInFirst")
-        const row = store.items.find((item) => item.id === id)
+        const row = live.find((item) => item.id === id)
         if (!row || row.activityId !== activity.id || row.deleted) return
         const author = row.userId === user.id
         const host = activity.creatorId === user.id
         if (!author && !host) throw new Error("onlyAuthor")
-        await persist({
-          ...store,
-          items: store.items.map((item) =>
-            item.id === id
-              ? { ...item, deleted: true, deletedBy: author ? "author" : "host" }
-              : item,
-          ),
-        })
+        await hideReply(activity.id, id, user.id)
       },
-      reload,
+      reload: async () => undefined,
     }
-  }, [composing, persist, ready, reload, store, user])
+  }, [composing, isOrganizer, items, messages.reply.joinFirst, ready, show, statusOf, user])
 
   return <RepliesContext.Provider value={value}>{children}</RepliesContext.Provider>
 }

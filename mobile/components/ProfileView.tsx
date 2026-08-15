@@ -9,7 +9,7 @@ import { LookingForChips } from "@/components/LookingForChips"
 import { Text, View } from "@/components/Themed"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
-import type { User } from "@/lib/types"
+import { handleOf, type User } from "@/lib/types"
 
 export function ProfileView({
   user,
@@ -34,6 +34,11 @@ export function ProfileView({
           <Text style={styles.name} numberOfLines={2}>
             {user.displayName}
           </Text>
+          {user.username ? (
+            <Text style={styles.meta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
+              {handleOf(user)}
+            </Text>
+          ) : null}
           {user.location ? (
             <Text style={styles.meta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
               {user.location}

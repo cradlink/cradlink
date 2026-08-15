@@ -9,25 +9,17 @@ import { Refreshable, Stagger } from "@/components/Refreshable"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
-import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 import { searchActivities, searchPeople } from "@/lib/search"
 import type { User } from "@/lib/types"
 
 export function SearchResults({ query }: { query: string }) {
-  const { user, people, getUser } = useAuth()
+  const { user, people } = useAuth()
   const { activities } = useActivities()
-  const { canSeeActivities } = useConnections()
   const { messages } = useI18n()
   const q = query.trim()
   const foundPeople = useMemo(() => (q ? searchPeople(people, q) : []), [people, q])
-  const foundActivities = useMemo(() => {
-    if (!q) return []
-    return searchActivities(activities, q).filter((activity) => {
-      const creator = getUser(activity.creatorId)
-      return !creator || canSeeActivities(creator)
-    })
-  }, [activities, canSeeActivities, getUser, q])
+  const foundActivities = useMemo(() => (q ? searchActivities(activities, q) : []), [activities, q])
   const empty = q.length > 0 && foundPeople.length === 0 && foundActivities.length === 0
 
   return (
@@ -86,7 +78,9 @@ function PersonRow({ person, isSelf }: { person: User; isSelf?: boolean }) {
           {person.displayName}
         </Text>
         <Text style={styles.personMeta} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
-          {person.location || (isSelf ? messages.common.you : messages.common.somewhere)}
+          {person.username
+            ? `@${person.username}`
+            : person.location || (isSelf ? messages.common.you : messages.common.somewhere)}
         </Text>
       </View>
     </Pressable>
