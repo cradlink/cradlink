@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar, Lock, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Lock, MapPin, Users } from "lucide-react";
 import { ActivityDiscussion } from "@/components/activity/activity-discussion";
 import { ActivityGallery } from "@/components/activity/activity-gallery";
 import { ActivityOwnerMenu } from "@/components/activity/activity-owner-menu";
@@ -107,7 +107,15 @@ export function ActivityDetailPage() {
 
   return (
     <article>
-      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/65 px-4 py-2 backdrop-blur-md">
+      <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/65 px-2 py-1 backdrop-blur-md">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full hover:bg-hover"
+          aria-label={t("common.back")}
+        >
+          <ArrowLeft className="size-5" />
+        </button>
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold">{activity.title}</h1>
         <ActivityOwnerMenu activity={activity} onDeleted={() => navigate("/")} />
       </div>
@@ -115,7 +123,9 @@ export function ActivityDetailPage() {
         <ActivityGallery activity={activity} />
         <div className="space-y-3">
           <TypeBadge type={activity.type} />
-          <h1 className="max-w-3xl font-display text-4xl font-semibold tracking-tight">{activity.title}</h1>
+          <h1 className="max-w-3xl font-display text-[26px] font-semibold leading-8 tracking-tight sm:text-4xl sm:leading-tight">
+            {activity.title}
+          </h1>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="size-4" />
@@ -133,12 +143,12 @@ export function ActivityDetailPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4">
-          <Link to={`/u/${activity.creatorId}`} className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <Link to={`/u/${activity.creatorId}`} className="flex min-w-0 items-center gap-3">
             <Avatar name={activity.creatorName} src={activity.creatorAvatar} />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("activity.organizer")}</p>
-              <p className="font-medium">{activity.creatorName}</p>
+              <p className="truncate font-medium">{activity.creatorName}</p>
             </div>
           </Link>
           <div className="flex flex-wrap gap-2">

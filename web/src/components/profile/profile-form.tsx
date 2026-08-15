@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { TagInput } from "@/components/activity/tag-input";
 import {
   PhotoAction,
   ProfileAvatarFrame,
@@ -35,7 +34,6 @@ export function ProfileForm({ user }: { user: User }) {
   const [username, setUsername] = useState(userHandle(user));
   const [bio, setBio] = useState(user.bio);
   const [location, setLocation] = useState(user.location);
-  const [skills, setSkills] = useState(user.skills);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [bannerUrl, setBannerUrl] = useState(user.bannerUrl ?? null);
   const [isPrivate, setIsPrivate] = useState(isPrivateProfile(user));
@@ -105,7 +103,6 @@ export function ProfileForm({ user }: { user: User }) {
         username: normalizeUsername(username),
         bio: bio.trim(),
         location: location.trim(),
-        skills,
         avatarUrl,
         bannerUrl,
         profileVisibility: isPrivate ? "private" : "public",
@@ -186,7 +183,7 @@ export function ProfileForm({ user }: { user: User }) {
         </div>
       </div>
 
-      <div className="mt-[68px] space-y-5 px-4 pb-6">
+      <div className="mt-[68px] space-y-5 px-4 pb-10">
         <div className="space-y-1.5">
           <Label htmlFor="displayName">{t("profile.name")}</Label>
           <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
@@ -214,10 +211,6 @@ export function ProfileForm({ user }: { user: User }) {
         <div className="space-y-1.5">
           <Label htmlFor="bio">{t("profile.bio")}</Label>
           <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>{t("profile.skills")}</Label>
-          <TagInput value={skills} onChange={setSkills} placeholder={t("profile.skillsPlaceholder")} />
         </div>
         <div className="rounded-2xl border border-border px-4 py-3">
           <label className="flex items-start justify-between gap-4">

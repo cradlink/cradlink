@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ActivityCard } from "@/components/activity/activity-card";
 import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
 import { FeedFilters } from "@/components/activity/feed-filters";
+import { Logo } from "@/components/layout/logo";
+import { Avatar } from "@/components/ui/avatar";
 import { useActivityFeed } from "@/hooks/use-activities";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecommendations } from "@/hooks/use-recommendations";
@@ -39,13 +42,26 @@ export function FeedPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
-        <h1 className="text-xl font-bold">{t("feed.title")}</h1>
-        <p className="text-[13px] text-muted-foreground">
-          {ready && user
-            ? t("feed.greeting", { name: user.displayName.split(" ")[0] })
-            : t("feed.assembling")}
-        </p>
+      <div className="sticky top-0 z-20 border-b border-border bg-background/65 backdrop-blur-md">
+        <div className="grid h-[53px] grid-cols-[1fr_auto_1fr] items-center px-4 lg:hidden">
+          {user ? (
+            <Link to="/profile" className="justify-self-start" aria-label={t("nav.profile")}>
+              <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
+            </Link>
+          ) : (
+            <span />
+          )}
+          <Logo wordmarkClassName="hidden" className="justify-self-center" />
+          <span />
+        </div>
+        <div className="hidden px-4 py-3 lg:block">
+          <h1 className="text-xl font-bold">{t("feed.title")}</h1>
+          <p className="text-[13px] text-muted-foreground">
+            {ready && user
+              ? t("feed.greeting", { name: user.displayName.split(" ")[0] })
+              : t("feed.assembling")}
+          </p>
+        </div>
       </div>
 
       <div className="border-b border-border px-4 py-3">

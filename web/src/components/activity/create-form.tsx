@@ -185,7 +185,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
 
   return (
     <div>
-      <form onSubmit={onSubmit} className="space-y-5 px-4 py-4">
+      <form onSubmit={onSubmit} className="min-w-0 space-y-5 px-4 py-4">
         <Field label={t("activity.form.title")}>
           <Input
             value={form.title}
@@ -243,7 +243,7 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         </div>
 
         {form.locationType !== "online" ? (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             <Field label={t("activity.form.city")}>
               <Input
                 value={form.city}
@@ -280,12 +280,22 @@ function ActivityForm({ activity }: { activity?: Activity }) {
         </label>
 
         {!form.isFlexible ? (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             <Field label={t("activity.form.starts")}>
-              <Input type="datetime-local" value={form.startAt} onChange={(e) => set("startAt", e.target.value)} />
+              <Input
+                type="datetime-local"
+                className="min-w-0"
+                value={form.startAt}
+                onChange={(e) => set("startAt", e.target.value)}
+              />
             </Field>
             <Field label={t("activity.form.ends")}>
-              <Input type="datetime-local" value={form.endAt} onChange={(e) => set("endAt", e.target.value)} />
+              <Input
+                type="datetime-local"
+                className="min-w-0"
+                value={form.endAt}
+                onChange={(e) => set("endAt", e.target.value)}
+              />
             </Field>
           </div>
         ) : null}

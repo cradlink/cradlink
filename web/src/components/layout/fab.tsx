@@ -10,10 +10,11 @@ export function Fab() {
   return (
     <Link
       to="/activities/new"
-      className="fixed bottom-6 right-5 z-40 inline-flex h-14 items-center gap-2 rounded-full bg-primary px-5 text-base font-bold text-primary-foreground hover:bg-[#1a8cd8]"
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_8px_rgba(29,155,240,0.35)] hover:bg-[#1a8cd8] lg:bottom-6 lg:right-5 lg:h-14 lg:w-auto lg:px-5"
+      aria-label={t("nav.create")}
     >
-      <Plus className="size-5" />
-      {t("nav.create")}
+      <Plus className="size-6 lg:size-5" />
+      <span className="hidden lg:inline">{t("nav.create")}</span>
     </Link>
   );
 }

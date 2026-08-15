@@ -14,6 +14,11 @@ export function SettingsPage() {
           description={t("settings.accountHint")}
         />
         <SettingsRow
+          to="/me"
+          title={t("mine.title")}
+          description={t("settings.activitiesHint")}
+        />
+        <SettingsRow
           to="/settings/display"
           title={t("settings.display")}
           description={t("settings.displayHint")}
