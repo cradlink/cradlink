@@ -389,6 +389,7 @@
     "startThread": "Start the thread — you can post more than once.",
     "lockPending": "You’ll be able to reply once the organizer accepts you.",
     "lockJoin": "Join this activity to reply.",
+    "lockSignIn": "Sign in to reply.",
     "loadError": "Couldn’t load replies. Try refreshing.",
     "replyCount_one": "{{count}} reply",
     "replyCount_other": "{{count}} replies",

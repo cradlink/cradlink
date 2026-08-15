@@ -16,15 +16,8 @@ service cloud.firestore {
           == request.auth.uid;
     }
 
-    function isJoinedMember(activityId) {
-      return signedIn()
-        && exists(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid))
-        && get(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid)).data.status
-          == "joined";
-    }
-
     function canDiscuss(activityId) {
-      return isActivityOrganizer(activityId) || isJoinedMember(activityId);
+      return signedIn();
     }
 
     match /users/{userId} {

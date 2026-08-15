@@ -1,6 +1,6 @@
 import { doc, getDoc, runTransaction, type DocumentData } from "firebase/firestore";
 import type { CommentsRepo } from "@/lib/data/types";
-import { firebaseActivities, firebaseMembers, firebaseUsers } from "@/lib/data/firebase";
+import { firebaseActivities, firebaseUsers } from "@/lib/data/firebase";
 import { firebaseNotifications } from "@/lib/data/notifications-firebase";
 import { notifyDiscussion } from "@/lib/data/notify";
 import { AppError, appError, isPermissionDenied } from "@/lib/errors";
@@ -40,14 +40,9 @@ function readDiscussion(activityId: string, data: DocumentData | undefined): Act
     .filter((row): row is ActivityComment => Boolean(row));
 }
 
-async function assertCanDiscuss(activityId: string, userId: string) {
+async function assertCanDiscuss(activityId: string) {
   const activity = await firebaseActivities.getById(activityId);
   if (!activity) throw appError("errors.activityNotFound");
-  if (activity.creatorId === userId) return activity;
-  const membership = await firebaseMembers.getMembership(activityId, userId);
-  if (membership?.status !== "joined") {
-    throw appError("errors.joinToDiscuss");
-  }
   return activity;
 }
 
@@ -71,7 +66,7 @@ export const firebaseComments: CommentsRepo = {
       throw appError("errors.commentTooLong", { max: COMMENT_MAX_LENGTH });
     }
 
-    const activity = await assertCanDiscuss(input.activityId, input.authorId);
+    const activity = await assertCanDiscuss(input.activityId);
     const author = await firebaseUsers.getById(input.authorId);
     if (!author) throw appError("errors.userNotFound");
 

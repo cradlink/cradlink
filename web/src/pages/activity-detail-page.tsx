@@ -39,7 +39,7 @@ export function ActivityDetailPage() {
   const membershipStatus = membershipQuery.data?.status === "joined" || membershipQuery.data?.status === "pending"
     ? membershipQuery.data.status
     : null;
-  const canDiscuss = Boolean(user && activity && (isOrganizer || membershipStatus === "joined"));
+  const canDiscuss = Boolean(user && activity);
   const creatorQuery = useUser(activity?.creatorId);
   const followQuery = useFollow(user?.id, activity?.creatorId);
   const canSeePrivate = Boolean(
@@ -243,7 +243,6 @@ export function ActivityDetailPage() {
         user={user}
         canDiscuss={canDiscuss}
         isOrganizer={isOrganizer}
-        membershipStatus={membershipStatus}
       />
 
       <Dialog open={Boolean(kickUserId)} onOpenChange={(open) => !open && setKickUserId(null)}>

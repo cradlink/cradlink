@@ -460,13 +460,11 @@ export function ActivityDiscussion({
   user,
   canDiscuss,
   isOrganizer,
-  membershipStatus,
 }: {
   activity: Activity;
   user: User | null;
   canDiscuss: boolean;
   isOrganizer: boolean;
-  membershipStatus?: "joined" | "pending" | null;
 }) {
   const { t } = useTranslation();
   const commentsQuery = useActivityComments(activity.id);
@@ -519,8 +517,7 @@ export function ActivityDiscussion({
 
   const busy = createComment.isPending || removeComment.isPending;
 
-  const lockCopy =
-    membershipStatus === "pending" ? t("discussion.lockPending") : t("discussion.lockJoin");
+  const lockCopy = t("discussion.lockSignIn");
 
   return (
     <section id="discussion" className="border-t border-border">

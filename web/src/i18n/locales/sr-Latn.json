@@ -392,6 +392,7 @@
     "startThread": "Započni nit — možeš da objaviš više puta.",
     "lockPending": "Moći ćeš da odgovoriš kad organizator prihvati zahtev.",
     "lockJoin": "Pridruži se aktivnosti da bi odgovorio/la.",
+    "lockSignIn": "Prijavi se da bi odgovorio/la.",
     "loadError": "Nismo uspeli da učitamo odgovore. Osveži stranicu.",
     "replyCount_one": "{{count}} odgovor",
     "replyCount_few": "{{count}} odgovora",
