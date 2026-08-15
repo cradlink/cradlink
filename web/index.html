@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" class="dark h-full antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/images/cradlink.svg" />
+    <link rel="apple-touch-icon" href="/images/cradlink.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cradlink</title>
+    <meta name="description" content="Find humans. Do human things." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Cradlink" />
+    <meta property="og:description" content="Find humans. Do human things." />
+    <meta property="og:url" content="https://cradlink.com" />
+    <meta property="og:image" content="https://cradlink.com/images/cradlink_banner_moto.png" />
+    <meta property="og:image:secure_url" content="https://cradlink.com/images/cradlink_banner_moto.png" />
+    <meta property="og:image:alt" content="Cradlink banner" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cradlink" />
+    <meta name="twitter:description" content="Find humans. Do human things." />
+    <meta name="twitter:image" content="https://cradlink.com/images/cradlink_banner_moto.png" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("cl_theme_v2");
+          var d = t !== "light";
+          if (d) {
+            document.documentElement.classList.add("dark");
+            document.documentElement.style.colorScheme = "dark";
+          } else {
+            document.documentElement.classList.remove("dark");
+            document.documentElement.style.colorScheme = "light";
+          }
+          var locale = localStorage.getItem("cl_locale");
+          if (locale) document.documentElement.lang = locale;
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-full bg-background font-sans text-foreground">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

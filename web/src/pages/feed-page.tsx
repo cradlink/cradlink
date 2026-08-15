@@ -1,0 +1,127 @@
+import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ActivityCard } from "@/components/activity/activity-card";
+import { ActivityCardSkeleton } from "@/components/activity/activity-card-skeleton";
+import { FeedFilters } from "@/components/activity/feed-filters";
+import { useActivityFeed } from "@/hooks/use-activities";
+import { useAuth } from "@/hooks/use-auth";
+import { useRecommendations } from "@/hooks/use-recommendations";
+import { useVisibleActivities } from "@/hooks/use-visible-activities";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { FEED_GRID } from "@/lib/activity-meta";
+import type { ActivityType, LocationType } from "@/lib/types";
+
+export function FeedPage() {
+  const { t } = useTranslation();
+  const { user, ready } = useAuth();
+  const [type, setType] = useState<ActivityType | "all">("all");
+  const [locationType, setLocationType] = useState<LocationType | "all">("all");
+  const filters = useMemo(() => ({ type, locationType }), [type, locationType]);
+  const feed = useActivityFeed(filters);
+  const loadMore = useCallback(() => {
+    if (feed.hasNextPage && !feed.isFetchingNextPage) {
+      void feed.fetchNextPage();
+    }
+  }, [feed]);
+  const sentinel = useInfiniteScroll(loadMore, Boolean(feed.hasNextPage));
+
+  const rawActivities = feed.data?.pages.flatMap((page) => page.items) ?? [];
+  const activities = useVisibleActivities(user?.id, rawActivities);
+  const recommended = useRecommendations(user, activities);
+  const recommendedIds = useMemo(
+    () => new Set(recommended.picks.map((row) => row.activity.id)),
+    [recommended.picks],
+  );
+  const latest = useMemo(
+    () => activities.filter((activity) => !recommendedIds.has(activity.id)),
+    [activities, recommendedIds],
+  );
+
+  return (
+    <div>
+      <div className="sticky top-0 z-20 border-b border-border bg-background/65 px-4 py-3 backdrop-blur-md">
+        <h1 className="text-xl font-bold">{t("feed.title")}</h1>
+        <p className="text-[13px] text-muted-foreground">
+          {ready && user
+            ? t("feed.greeting", { name: user.displayName.split(" ")[0] })
+            : t("feed.assembling")}
+        </p>
+      </div>
+
+      <div className="border-b border-border px-4 py-3">
+        <FeedFilters
+          type={type}
+          locationType={locationType}
+          onType={setType}
+          onLocation={setLocationType}
+        />
+      </div>
+
+      {feed.isLoading ? (
+        <div className={FEED_GRID}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ActivityCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : null}
+
+      {feed.isError ? (
+        <Empty title={t("feed.loadErrorTitle")} body={t("common.refreshTryAgain")} />
+      ) : null}
+
+      {!feed.isLoading && recommended.picks.length > 0 ? (
+        <section className="border-b border-border">
+          <div className="px-4 pb-1 pt-3">
+            <h2 className="text-xl font-bold">{t("feed.forYou")}</h2>
+            <p className="text-[13px] text-muted-foreground">{t("feed.forYouHint")}</p>
+          </div>
+          <div className={FEED_GRID}>
+            {recommended.picks.map((row) => (
+              <div key={row.activity.id}>
+                {row.reasons[0] ? (
+                  <p className="px-4 pt-3 text-[13px] text-primary">
+                    {t(row.reasons[0].key, { city: row.reasons[0].city })}
+                  </p>
+                ) : null}
+                <ActivityCard activity={row.activity} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {!feed.isLoading && (latest.length > 0 || activities.length > 0) && recommended.picks.length > 0 ? (
+        <div className="px-4 pb-1 pt-3">
+          <h2 className="text-xl font-bold">{t("feed.latest")}</h2>
+        </div>
+      ) : null}
+
+      {!feed.isLoading && activities.length === 0 ? (
+        <Empty
+          title={t("feed.emptyTitle")}
+          body={t("feed.emptyBody")}
+        />
+      ) : null}
+
+      <div className={FEED_GRID}>
+        {latest.map((activity) => (
+          <ActivityCard key={activity.id} activity={activity} />
+        ))}
+      </div>
+
+      <div ref={sentinel} />
+      {feed.isFetchingNextPage ? (
+        <p className="py-4 text-center text-[13px] text-muted-foreground">{t("common.loadingMore")}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function Empty({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="px-8 py-16 text-center">
+      <h2 className="text-3xl font-bold">{title}</h2>
+      <p className="mt-2 text-[15px] text-muted-foreground">{body}</p>
+    </div>
+  );
+}

@@ -9,20 +9,77 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function isActivityOrganizer(activityId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/activities/$(activityId))
+        && get(/databases/$(database)/documents/activities/$(activityId)).data.creatorId
+          == request.auth.uid;
+    }
+
+    function isJoinedMember(activityId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid))
+        && get(/databases/$(database)/documents/activityMembers/$(activityId + '_' + request.auth.uid)).data.status
+          == "joined";
+    }
+
+    function canDiscuss(activityId) {
+      return isActivityOrganizer(activityId) || isJoinedMember(activityId);
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow create, update: if isSelf(userId);
       allow delete: if false;
     }
 
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    function discussionSize(data) {
+      return data.keys().hasAny(["discussion"]) && data.discussion is list
+        ? data.discussion.size()
+        : 0;
+    }
+
+    function isDiscussionAppend(activityId) {
+      return signedIn()
+        && canDiscuss(activityId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["discussion", "updatedAt"])
+        && request.resource.data.discussion is list
+        && request.resource.data.discussion.size() == discussionSize(resource.data) + 1
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].authorId
+          == request.auth.uid
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body is string
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body.size() > 0
+        && request.resource.data.discussion[request.resource.data.discussion.size() - 1].body.size() <= 840;
+    }
+
+    function isDiscussionSoftDelete(activityId) {
+      return signedIn()
+        && canDiscuss(activityId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["discussion", "updatedAt"])
+        && request.resource.data.discussion is list
+        && request.resource.data.discussion.size() == discussionSize(resource.data);
+    }
+
     match /activities/{activityId} {
-      allow read: if signedIn() && resource.data.visibility == "public";
+      allow read: if signedIn() && (
+        resource.data.visibility == "public"
+        || resource.data.creatorId == request.auth.uid
+      );
       allow create: if signedIn()
         && request.resource.data.creatorId == request.auth.uid;
       allow update: if signedIn() && (
         resource.data.creatorId == request.auth.uid
         || request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(["memberCount", "status", "updatedAt"])
+        || isDiscussionAppend(activityId)
+        || isDiscussionSoftDelete(activityId)
       );
       allow delete: if signedIn() && resource.data.creatorId == request.auth.uid;
     }
@@ -30,7 +87,82 @@ service cloud.firestore {
     match /activityMembers/{memberId} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        || isActivityOrganizer(resource.data.activityId)
+      );
+    }
+
+    match /activityComments/{commentId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.id == commentId
+        && request.resource.data.activityId is string
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && request.resource.data.body.size() <= 280
+        && canDiscuss(request.resource.data.activityId)
+        && (
+          request.resource.data.parentId == null
+          || (
+            request.resource.data.parentId is string
+            && exists(/databases/$(database)/documents/activityComments/$(request.resource.data.parentId))
+            && get(/databases/$(database)/documents/activityComments/$(request.resource.data.parentId)).data.activityId
+              == request.resource.data.activityId
+          )
+        );
+      allow update: if false;
+      allow delete: if signedIn() && (
+        resource.data.authorId == request.auth.uid
+        || isActivityOrganizer(resource.data.activityId)
+      );
+    }
+
+    match /notifications/{id} {
+      allow get: if signedIn() && (
+        resource == null || resource.data.recipientId == request.auth.uid
+      );
+      allow list: if signedIn() && resource.data.recipientId == request.auth.uid;
+      allow create: if signedIn() && (
+        request.resource.data.recipientId == request.auth.uid
+        || request.resource.data.actorId == request.auth.uid
+      );
+      allow update: if signedIn()
+        && resource.data.recipientId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["read"]);
+      allow delete: if signedIn() && (
+        resource.data.recipientId == request.auth.uid
+        || resource.data.actorId == request.auth.uid
+      );
+    }
+
+    match /follows/{followId} {
+      allow get: if signedIn() && (
+        resource == null
+        || resource.data.status == "accepted"
+        || resource.data.followerId == request.auth.uid
+        || resource.data.followeeId == request.auth.uid
+      );
+      allow list: if signedIn() && (
+        resource.data.status == "accepted"
+        || resource.data.followerId == request.auth.uid
+        || resource.data.followeeId == request.auth.uid
+      );
+      allow create: if signedIn()
+        && request.resource.data.followerId == request.auth.uid
+        && request.resource.data.followeeId is string
+        && request.resource.data.followeeId != request.auth.uid
+        && followId == request.auth.uid + '_' + request.resource.data.followeeId
+        && request.resource.data.status in ['pending', 'accepted'];
+      allow update: if signedIn()
+        && resource.data.followeeId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'accepted';
+      allow delete: if signedIn() && (
+        resource.data.followerId == request.auth.uid
+        || resource.data.followeeId == request.auth.uid
+      );
     }
   }
 }
