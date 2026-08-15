@@ -13,6 +13,22 @@ export function activityStart(activity: Pick<Activity, "isFlexible" | "startAt">
   return Number.isNaN(start.getTime()) ? null : start
 }
 
+export function isActivityPast(activity: Pick<Activity, "status" | "isFlexible" | "startAt" | "endAt">) {
+  if (activity.status === "completed" || activity.status === "cancelled") return true
+  const when = activity.endAt || activity.startAt
+  if (activity.isFlexible || !when) return false
+  const time = new Date(when).getTime()
+  return !Number.isNaN(time) && time < Date.now()
+}
+
+export function sortProfileActive(a: Activity, b: Activity) {
+  return (a.startAt || a.createdAt).localeCompare(b.startAt || b.createdAt)
+}
+
+export function sortProfilePast(a: Activity, b: Activity) {
+  return (b.endAt || b.startAt || b.createdAt).localeCompare(a.endAt || a.startAt || a.createdAt)
+}
+
 export function canRemoveActivity(
   activity: Pick<Activity, "isFlexible" | "startAt" | "status">,
   now = Date.now(),

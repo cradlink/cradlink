@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast"
 import { useI18n } from "@/hooks/use-i18n"
 import { hideReply, notifyDiscussion, watchDiscussions, writeReply } from "@/lib/data/social"
 import { isFirebaseConfigured } from "@/lib/env"
+import { LOCAL_REPLIES, isLocalSceneId, mergeById } from "@/lib/local-scene"
+import { createId, nowIso } from "@/lib/utils"
 import type { Activity, ActivityReply, ReplyComposeTarget, ReplyThreadItem } from "@/lib/types"
 
 const MAX_BODY = 280
@@ -54,12 +56,17 @@ export function RepliesProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user?.username || !isFirebaseConfigured()) {
-      setItems([])
+      setItems(user ? LOCAL_REPLIES : [])
       setReady(true)
       return
     }
     return watchDiscussions((next) => {
-      setItems(next)
+      setItems((current) => {
+        const extra = current.filter(
+          (row) => row.activityId.startsWith("local_") && !LOCAL_REPLIES.some((seed) => seed.id === row.id),
+        )
+        return mergeById(next, mergeById(LOCAL_REPLIES, extra))
+      })
       setReady(true)
     })
   }, [user])
@@ -106,6 +113,20 @@ export function RepliesProvider({ children }: { children: React.ReactNode }) {
         const activity = composing?.activity
         if (!activity || activity.id !== activityId) throw new Error("activityNotFound")
         if (!canReply(activity)) throw new Error("joinToReply")
+        if (isLocalSceneId(activityId)) {
+          const local: ActivityReply = {
+            id: createId("rep"),
+            activityId,
+            parentId: parent ? parent.id : null,
+            userId: user.id,
+            userName: user.displayName,
+            userAvatar: user.avatarUrl,
+            body: text,
+            createdAt: nowIso(),
+          }
+          setItems((current) => mergeById(current, [local]))
+          return local
+        }
         const next = await writeReply({
           activity,
           parentId: parent ? parent.id : null,

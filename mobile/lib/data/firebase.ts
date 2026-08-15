@@ -37,7 +37,7 @@ import type {
   User,
   Visibility,
 } from "@/lib/types"
-import { asString, asTime, createId, firstImage, memberId, nowIso, stripUndefined } from "@/lib/utils"
+import { asString, asTime, cleanImages, createId, memberId, nowIso, stripUndefined } from "@/lib/utils"
 
 const PAGE_SIZE = 80
 
@@ -90,7 +90,7 @@ function mapActivity(id: string, data: DocumentData): Activity {
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
     visibility: (data.visibility as Visibility) ?? "public",
-    images: firstImage(images),
+    images: cleanImages(images),
   }
 }
 
@@ -199,7 +199,7 @@ export const firebaseActivities: ActivitiesRepo = {
       createdAt: timestamp,
       updatedAt: timestamp,
       visibility: input.visibility ?? "public",
-      images: firstImage(input.images),
+      images: cleanImages(input.images),
     }
     const db = getFirebaseDb()
     await setDoc(doc(db, "activities", id), stripUndefined(activity))
@@ -237,7 +237,7 @@ export const firebaseActivities: ActivitiesRepo = {
       joinPolicy: input.joinPolicy ?? existing.joinPolicy,
       headcount: input.headcount ?? existing.headcount,
       visibility: input.visibility ?? existing.visibility,
-      images: firstImage(input.images ?? existing.images),
+      images: cleanImages(input.images ?? existing.images),
       updatedAt: nowIso(),
     }
     await updateDoc(doc(getFirebaseDb(), "activities", id), stripUndefined(next))
@@ -266,7 +266,7 @@ export const firebaseActivities: ActivitiesRepo = {
       ])
       return snap.docs
         .map((row) => mapActivity(row.id, row.data()))
-        .filter((a) => a.status !== "cancelled" && a.creatorId === userId)
+        .filter((a) => a.creatorId === userId)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     } catch {
       return []

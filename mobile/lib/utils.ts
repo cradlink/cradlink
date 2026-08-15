@@ -41,3 +41,7 @@ export function firstImage(images: string[] | undefined) {
   const first = images?.find((item) => Boolean(item))
   return first ? [first] : []
 }
+
+export function cleanImages(images: string[] | undefined) {
+  return (images ?? []).filter((item) => Boolean(item)).slice(0, 6)
+}

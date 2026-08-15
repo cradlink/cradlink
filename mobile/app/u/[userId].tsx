@@ -2,13 +2,12 @@ import { useEffect, useState } from "react"
 import { StyleSheet } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
 
-import { ActivityCard } from "@/components/ActivityCard"
 import { EmptyState } from "@/components/EmptyState"
+import { ProfileActivities } from "@/components/ProfileActivities"
 import { ProfileView } from "@/components/ProfileView"
 import { Refreshable, Stagger } from "@/components/Refreshable"
 import { TopBar } from "@/components/TopBar"
 import { ScreenBlurTarget } from "@/components/ScreenBlurTarget"
-import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
@@ -25,12 +24,10 @@ export default function PublicProfileScreen() {
   const userId = routeId(rawId)
   const { user, getUser } = useAuth()
   const { messages } = useI18n()
-  const { activities } = useActivities()
   const { canSeeActivities } = useConnections()
   const [fetched, setFetched] = useState<User | null>(null)
   const person = (userId ? getUser(userId) : null) ?? fetched
   const visible = person ? canSeeActivities(person) : false
-  const hosted = person && visible ? activities.filter((activity) => activity.creatorId === person.id) : []
   const isSelf = Boolean(person && user?.id === person.id)
 
   useEffect(() => {
@@ -69,7 +66,7 @@ export default function PublicProfileScreen() {
           [
             <ProfileView key="hero" user={person} />,
             ...(visible
-              ? hosted.map((activity) => <ActivityCard key={activity.id} activity={activity} />)
+              ? [<ProfileActivities key="acts" user={person} />]
               : [
                   <EmptyState
                     key="private"

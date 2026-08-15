@@ -8,6 +8,7 @@ import { useMemberships } from "@/hooks/use-memberships"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
+import { isActivityPast } from "@/lib/schedule"
 import type { Activity } from "@/lib/types"
 
 export function JoinButton({ activity, wide = false }: { activity: Activity; wide?: boolean }) {
@@ -22,6 +23,10 @@ export function JoinButton({ activity, wide = false }: { activity: Activity; wid
   const status = statusOf(activity.id)
   const full = isFull(activity)
   const manual = activity.joinPolicy === "manual"
+
+  if (isActivityPast(activity) && !organizer && status !== "joined" && status !== "pending") {
+    return null
+  }
 
   if (organizer) {
     return (

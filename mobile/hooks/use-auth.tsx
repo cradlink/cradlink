@@ -6,6 +6,7 @@ import { claimUsername, deleteAccount } from "@/lib/data/account"
 import { syncCreatorLook } from "@/lib/data/firebase"
 import { AppError } from "@/lib/errors"
 import { isFirebaseConfigured } from "@/lib/env"
+import { LOCAL_BOTS, localBot, mergeById } from "@/lib/local-scene"
 import type { UpdateProfileInput, User } from "@/lib/types"
 
 type AuthContextValue = {
@@ -21,6 +22,8 @@ type AuthContextValue = {
   deleteAccount: () => Promise<void>
   signOut: () => Promise<void>
   reload: () => Promise<void>
+  sendVerificationEmail: () => Promise<void>
+  reloadUser: () => Promise<User | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -41,14 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getUser = useCallback(
     (id: string) => {
       if (user?.id === id) return user
-      return directory.find((entry) => entry.id === id) ?? null
+      return directory.find((entry) => entry.id === id) ?? localBot(id)
     },
     [directory, user],
   )
 
   const reload = useCallback(async () => {
     try {
-      const next = await firebaseAuth.getCurrentUser()
+      const next = await firebaseAuth.reloadUser()
       setUser(next)
       if (next) await loadPeople()
       else setDirectory([])
@@ -88,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {
       user: me,
       ready,
-      people: directory,
+      people: mergeById(directory, LOCAL_BOTS),
       getUser,
       signIn: (input) => {
         if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
@@ -131,6 +134,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       signOut: () => firebaseAuth.signOut(),
       reload,
+      sendVerificationEmail: () => firebaseAuth.sendVerificationEmail(),
+      reloadUser: async () => {
+        const next = await firebaseAuth.reloadUser()
+        setUser(next)
+        return next
+      },
     }
   }, [directory, getUser, loadPeople, ready, reload, user])
 
