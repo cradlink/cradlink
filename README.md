@@ -1,6 +1,6 @@
 # Cradlink
 
-Find people. Do the thing.
+Find humans. Do human things.
 
 Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is the React (Vite) app in [`web/`](./web). Phase 2 is the Expo app in [`mobile/`](./mobile). Same Firebase project later.
 
