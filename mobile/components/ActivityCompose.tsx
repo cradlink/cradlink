@@ -25,6 +25,7 @@ import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
 import { ACTIVITY_META } from "@/lib/activity-meta"
 import { getDateLocale, tx } from "@/lib/i18n"
+import { canRemoveActivity } from "@/lib/schedule"
 import { presetsForType, resolveBannerKey } from "@/lib/banners"
 import {
   ACTIVITY_TYPES,
@@ -77,7 +78,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { user } = useAuth()
-  const { add, update } = useActivities()
+  const { add, update, remove } = useActivities()
   const { ask } = useConfirm()
   const { show } = useToast()
   const { messages } = useI18n()
@@ -208,6 +209,42 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  const removable = Boolean(activity && canRemoveActivity(activity))
+
+  async function doRemove() {
+    if (!activity) return
+    setBusy(true)
+    try {
+      await remove(activity.id)
+      show({ title: messages.compose.deleted })
+      router.replace("/me")
+    } catch (err) {
+      const key = err instanceof Error ? err.message : ""
+      show({
+        title:
+          key === "tooLateToRemove" ? messages.compose.deleteLocked : messages.compose.couldntRemove,
+        tone: "error",
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function askRemove() {
+    if (!activity) return
+    if (!canRemoveActivity(activity)) {
+      show({ title: messages.compose.deleteLocked, tone: "error" })
+      return
+    }
+    ask({
+      title: messages.compose.deleteTitle,
+      body: messages.compose.deleteBody,
+      confirmLabel: messages.common.delete,
+      destructive: true,
+      onConfirm: () => void doRemove(),
+    })
   }
 
   return (
@@ -419,6 +456,26 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
               )
             })}
           </View>
+
+          {editing ? (
+            <View style={styles.dangerBlock}>
+              <Pressable
+                onPress={askRemove}
+                disabled={busy}
+                hitSlop={8}
+                style={({ pressed }) => [{ opacity: busy ? 0.45 : pressed ? 0.7 : 1 }]}
+              >
+                <Text style={[styles.dangerLabel, !removable && { color: theme.mutedForeground }]}>
+                  {messages.compose.delete}
+                </Text>
+              </Pressable>
+              {!removable ? (
+                <Text style={styles.dangerHint} lightColor="#536471" darkColor="#71767b">
+                  {messages.compose.deleteLocked}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -585,6 +642,19 @@ const styles = StyleSheet.create({
   whenText: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  dangerBlock: {
+    marginTop: 32,
+    gap: 6,
+  },
+  dangerLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#f4212e",
+  },
+  dangerHint: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   bannerSlot: {
     alignSelf: "stretch",

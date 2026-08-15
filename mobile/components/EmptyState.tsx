@@ -47,7 +47,7 @@ export function EmptyState({
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 32,
-    paddingVertical: 72,
+    paddingVertical: 48,
     alignItems: "center",
   },
   icon: {
@@ -67,7 +67,8 @@ const styles = StyleSheet.create({
   },
   action: {
     marginTop: 24,
-    alignSelf: "stretch",
+    alignSelf: "center",
+    width: "100%",
     maxWidth: 280,
   },
 })

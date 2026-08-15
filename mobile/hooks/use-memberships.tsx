@@ -156,7 +156,12 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
       requests.items.filter((row) => row.activityId === activityId && row.status === "pending")
     const pendingCount = (activityId: string) => pendingFor(activityId).length
     const inbox = () =>
-      requests.items.filter((row) => row.hostId === user?.id && row.status === "pending")
+      requests.items.filter(
+        (row) =>
+          row.hostId === user?.id &&
+          row.status === "pending" &&
+          activities.some((activity) => activity.id === row.activityId),
+      )
     const decorate = (activity: Activity) => {
       const raw = activities.find((item) => item.id === activity.id) ?? activity
       const accepted = requests.items.filter(

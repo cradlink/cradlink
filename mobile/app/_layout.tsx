@@ -3,8 +3,11 @@ import { Appearance } from "react-native"
 import { DarkTheme, Stack, ThemeProvider, usePathname, useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { NavigationBar } from "expo-navigation-bar"
+import * as SplashScreen from "expo-splash-screen"
 import * as SystemUI from "expo-system-ui"
 import "react-native-reanimated"
+
+void SplashScreen.preventAutoHideAsync()
 
 import { ActivityPreview } from "@/components/ActivityPreview"
 import { BootScreen } from "@/components/BootScreen"

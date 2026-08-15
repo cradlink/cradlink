@@ -32,6 +32,7 @@ export const srLatn: Messages = {
     decline: "Odbij",
     review: "Pregled",
     hide: "Sakrij",
+    delete: "Obriši",
     now: "Sada",
     people: "Ljudi",
     activities: "Aktivnosti",
@@ -236,6 +237,12 @@ export const srLatn: Messages = {
     keepEditing: "Nastavi da menjaš",
     couldntPost: "Nije uspelo da se objavi",
     couldntSave: "Nije uspelo da se sačuva",
+    delete: "Obriši aktivnost",
+    deleteTitle: "Obrisati ovu aktivnost?",
+    deleteBody: "Nestaje za sve. Možeš ovo do sat vremena pred početak.",
+    deleteLocked: "Kasno je za brisanje. Rok je bio sat vremena pred početak.",
+    deleted: "Obrisano",
+    couldntRemove: "Nije uspelo da se obriše",
   },
   join: {
     edit: "Izmeni",
@@ -307,6 +314,7 @@ export const srLatn: Messages = {
     signInToEdit: "Prijavi se da menjaš.",
     activityNotFound: "Aktivnost nije pronađena.",
     onlyOrganizer: "Samo organizator može da menja.",
+    tooLateToRemove: "Kasno je za brisanje.",
   },
   notFound: {
     title: "Nije pronađeno",

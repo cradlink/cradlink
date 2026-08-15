@@ -3,10 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 
 import { useAuth } from "@/hooks/use-auth"
 import { MOCK_ACTIVITIES } from "@/lib/mock"
+import { canRemoveActivity } from "@/lib/schedule"
 import type { Activity, CreateActivityInput, UpdateActivityInput } from "@/lib/types"
 
 const CREATED_KEY = "cl.created-activities"
 const EDITS_KEY = "cl.edited-activities"
+const DELETED_KEY = "cl.deleted-activities"
 
 type ActivitiesValue = {
   ready: boolean
@@ -14,6 +16,7 @@ type ActivitiesValue = {
   get: (id: string) => Activity | null
   add: (input: CreateActivityInput) => Promise<Activity>
   update: (id: string, input: UpdateActivityInput) => Promise<Activity>
+  remove: (id: string) => Promise<void>
   reload: () => Promise<void>
 }
 
@@ -23,34 +26,45 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   const { user } = useAuth()
   const [created, setCreated] = useState<Activity[]>([])
   const [edits, setEdits] = useState<Record<string, Activity>>({})
+  const [deleted, setDeleted] = useState<string[]>([])
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    void Promise.all([AsyncStorage.getItem(CREATED_KEY), AsyncStorage.getItem(EDITS_KEY)]).then(
-      ([createdRaw, editsRaw]) => {
-        if (createdRaw) {
-          try {
-            setCreated(JSON.parse(createdRaw) as Activity[])
-          } catch {
-            setCreated([])
-          }
+    void Promise.all([
+      AsyncStorage.getItem(CREATED_KEY),
+      AsyncStorage.getItem(EDITS_KEY),
+      AsyncStorage.getItem(DELETED_KEY),
+    ]).then(([createdRaw, editsRaw, deletedRaw]) => {
+      if (createdRaw) {
+        try {
+          setCreated(JSON.parse(createdRaw) as Activity[])
+        } catch {
+          setCreated([])
         }
-        if (editsRaw) {
-          try {
-            setEdits(JSON.parse(editsRaw) as Record<string, Activity>)
-          } catch {
-            setEdits({})
-          }
+      }
+      if (editsRaw) {
+        try {
+          setEdits(JSON.parse(editsRaw) as Record<string, Activity>)
+        } catch {
+          setEdits({})
         }
-        setReady(true)
-      },
-    )
+      }
+      if (deletedRaw) {
+        try {
+          setDeleted(JSON.parse(deletedRaw) as string[])
+        } catch {
+          setDeleted([])
+        }
+      }
+      setReady(true)
+    })
   }, [])
 
   const reload = useCallback(async () => {
-    const [createdRaw, editsRaw] = await Promise.all([
+    const [createdRaw, editsRaw, deletedRaw] = await Promise.all([
       AsyncStorage.getItem(CREATED_KEY),
       AsyncStorage.getItem(EDITS_KEY),
+      AsyncStorage.getItem(DELETED_KEY),
     ])
     if (createdRaw) {
       try {
@@ -70,6 +84,15 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     } else {
       setEdits({})
     }
+    if (deletedRaw) {
+      try {
+        setDeleted(JSON.parse(deletedRaw) as string[])
+      } catch {
+        setDeleted([])
+      }
+    } else {
+      setDeleted([])
+    }
   }, [])
 
   const persist = useCallback(async (next: Activity[]) => {
@@ -82,18 +105,27 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     await AsyncStorage.setItem(EDITS_KEY, JSON.stringify(next))
   }, [])
 
+  const persistDeleted = useCallback(async (next: string[]) => {
+    const unique = [...new Set(next)]
+    setDeleted(unique)
+    await AsyncStorage.setItem(DELETED_KEY, JSON.stringify(unique))
+  }, [])
+
   const activities = useMemo(() => {
+    const gone = new Set(deleted)
     const list = [
       ...created,
       ...MOCK_ACTIVITIES.filter((activity) => !created.some((row) => row.id === activity.id)),
-    ].map((activity) => edits[activity.id] ?? activity)
+    ]
+      .map((activity) => edits[activity.id] ?? activity)
+      .filter((activity) => !gone.has(activity.id) && activity.status !== "cancelled")
     if (!user) return list
     return list.map((activity) =>
       activity.creatorId === user.id
         ? { ...activity, creatorName: user.displayName, creatorAvatar: user.avatarUrl }
         : activity,
     )
-  }, [created, edits, user])
+  }, [created, deleted, edits, user])
 
   const value = useMemo<ActivitiesValue>(() => {
     const get = (id: string) => activities.find((activity) => activity.id === id) ?? null
@@ -163,8 +195,24 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
         }
         return next
       },
+      remove: async (id) => {
+        if (!user) throw new Error("signInToEdit")
+        const existing = activities.find((activity) => activity.id === id)
+        if (!existing) throw new Error("activityNotFound")
+        if (existing.creatorId !== user.id) throw new Error("onlyOrganizer")
+        if (!canRemoveActivity(existing)) throw new Error("tooLateToRemove")
+        if (created.some((activity) => activity.id === id)) {
+          await persist(created.filter((activity) => activity.id !== id))
+        }
+        if (edits[id]) {
+          const nextEdits = { ...edits }
+          delete nextEdits[id]
+          await persistEdits(nextEdits)
+        }
+        await persistDeleted([...deleted, id])
+      },
     }
-  }, [activities, created, edits, persist, persistEdits, ready, reload, user])
+  }, [activities, created, deleted, edits, persist, persistDeleted, persistEdits, ready, reload, user])
 
   return <ActivitiesContext.Provider value={value}>{children}</ActivitiesContext.Provider>
 }

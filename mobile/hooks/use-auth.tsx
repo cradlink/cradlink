@@ -35,12 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
+    () => {
+      const me = user ? { ...user, avatarUrl: user.avatarUrl || "local:self" } : null
+      return {
+      user: me,
       ready,
       people: directory,
       getUser: (id) => {
-        if (user?.id === id) return user
+        if (me?.id === id) return me
         return directory.find((entry) => entry.id === id) ?? null
       },
       signIn: (input) => localAuth.signIn(input),
@@ -58,7 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(next)
         setDirectory(await localAuth.listUsers())
       },
-    }),
+    }
+    },
     [directory, user, ready],
   )
 

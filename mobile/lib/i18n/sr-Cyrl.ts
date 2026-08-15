@@ -32,6 +32,7 @@ export const srCyrl: Messages = {
     decline: "Одбиј",
     review: "Преглед",
     hide: "Сакриј",
+    delete: "Обриши",
     now: "Сада",
     people: "Људи",
     activities: "Активности",
@@ -236,6 +237,12 @@ export const srCyrl: Messages = {
     keepEditing: "Настави да мењаш",
     couldntPost: "Није успело да се објави",
     couldntSave: "Није успело да се сачува",
+    delete: "Обриши активност",
+    deleteTitle: "Обрисати ову активност?",
+    deleteBody: "Нестаје за све. Можеш ово до сат времена пред почетак.",
+    deleteLocked: "Касно је за брисање. Рок је био сат времена пред почетак.",
+    deleted: "Обрисано",
+    couldntRemove: "Није успело да се обрише",
   },
   join: {
     edit: "Измени",
@@ -307,6 +314,7 @@ export const srCyrl: Messages = {
     signInToEdit: "Пријави се да мењаш.",
     activityNotFound: "Активност није пронађена.",
     onlyOrganizer: "Само организатор може да мења.",
+    tooLateToRemove: "Касно је за брисање.",
   },
   notFound: {
     title: "Није пронађено",

@@ -30,6 +30,7 @@ export const en = {
     decline: "Decline",
     review: "Review",
     hide: "Hide",
+    delete: "Delete",
     now: "Now",
     people: "People",
     activities: "Activities",
@@ -233,6 +234,12 @@ export const en = {
     keepEditing: "Keep editing",
     couldntPost: "Couldn’t post",
     couldntSave: "Couldn’t save",
+    delete: "Delete activity",
+    deleteTitle: "Delete this activity?",
+    deleteBody: "It disappears for everyone. You can do this until an hour before it starts.",
+    deleteLocked: "Too late to remove. You had until an hour before it starts.",
+    deleted: "Deleted",
+    couldntRemove: "Couldn’t delete",
   },
   join: {
     edit: "Edit",
@@ -304,6 +311,7 @@ export const en = {
     signInToEdit: "Sign in to edit.",
     activityNotFound: "Activity not found.",
     onlyOrganizer: "Only the organizer can edit.",
+    tooLateToRemove: "Too late to remove.",
   },
   notFound: {
     title: "Not found",

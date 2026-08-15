@@ -5,10 +5,22 @@ export type ScheduleBucket = "today" | "tomorrow" | "thisWeek" | "later" | "anyt
 
 const ORDER: ScheduleBucket[] = ["today", "tomorrow", "thisWeek", "later", "anytime", "past"]
 
+export const REMOVE_CUTOFF_MS = 60 * 60 * 1000
+
 export function activityStart(activity: Pick<Activity, "isFlexible" | "startAt">) {
   if (activity.isFlexible || !activity.startAt) return null
   const start = new Date(activity.startAt)
   return Number.isNaN(start.getTime()) ? null : start
+}
+
+export function canRemoveActivity(
+  activity: Pick<Activity, "isFlexible" | "startAt" | "status">,
+  now = Date.now(),
+) {
+  if (activity.status === "cancelled" || activity.status === "completed") return false
+  const start = activityStart(activity)
+  if (!start) return true
+  return start.getTime() - now >= REMOVE_CUTOFF_MS
 }
 
 function startOfDay(value = new Date()) {

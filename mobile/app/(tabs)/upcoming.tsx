@@ -42,7 +42,7 @@ export default function UpcomingScreen() {
   return (
     <ScreenBlurTarget style={styles.screen}>
       <TopBar title={messages.upcoming.title} />
-      <Refreshable contentContainerStyle={styles.list}>
+      <Refreshable contentContainerStyle={[styles.list, empty && styles.emptyList]}>
         {!ready || !memReady ? null : (
           <Stagger>
             {empty ? (
@@ -86,5 +86,9 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 40,
     flexGrow: 1,
+  },
+  emptyList: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
 })
