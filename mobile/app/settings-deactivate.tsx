@@ -11,32 +11,35 @@ import { useAuth } from "@/hooks/use-auth"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useI18n } from "@/hooks/use-i18n"
 import { useToast } from "@/hooks/use-toast"
+import { DEACTIVATION_DAYS } from "@/lib/account"
 import { errorMessage } from "@/lib/i18n"
+import { nowIso } from "@/lib/utils"
 
 export default function DeactivateScreen() {
   const router = useRouter()
-  const { user, deleteAccount } = useAuth()
+  const { user, updateProfile, signOut } = useAuth()
   const { ask } = useConfirm()
   const { show } = useToast()
-  const { messages } = useI18n()
+  const { messages, tx } = useI18n()
   const [busy, setBusy] = useState(false)
 
   function confirm() {
     ask({
-      title: messages.settings.deleteTitle,
-      body: messages.settings.deleteBody,
-      confirmLabel: messages.settings.deleteConfirm,
+      title: messages.settings.deactivateTitle,
+      body: tx(messages.settings.deactivateBody, { days: String(DEACTIVATION_DAYS) }),
+      confirmLabel: messages.settings.deactivateConfirm,
       cancelLabel: messages.common.cancel,
       destructive: true,
-      onConfirm: () => void wipe(),
+      onConfirm: () => void pause(),
     })
   }
 
-  async function wipe() {
+  async function pause() {
     if (!user || busy) return
     setBusy(true)
     try {
-      await deleteAccount()
+      await updateProfile({ deactivatedAt: nowIso() })
+      await signOut()
       router.replace("/login")
     } catch (err) {
       show({ title: errorMessage(err), tone: "error" })
@@ -46,15 +49,15 @@ export default function DeactivateScreen() {
 
   return (
     <ScreenBlurTarget style={styles.screen}>
-      <TopBar title={messages.settings.deleteAccount} back hideBell />
+      <TopBar title={messages.settings.deactivateTitle} back hideBell />
       <Refreshable contentContainerStyle={styles.body}>
-        <Text style={styles.lead}>{messages.settings.deleteLead}</Text>
+        <Text style={styles.lead}>{messages.settings.deactivateLead}</Text>
         <Text style={styles.copy} lightColor="#536471" darkColor="#71767b">
-          {messages.settings.deleteCopy}
+          {tx(messages.settings.deactivateBody, { days: String(DEACTIVATION_DAYS) })}
         </Text>
         <View style={styles.action} lightColor="transparent" darkColor="transparent">
           <Button
-            label={busy ? messages.settings.deleteWorking : messages.settings.deleteConfirm}
+            label={busy ? messages.settings.deactivateWorking : messages.settings.deactivateConfirm}
             variant="ink"
             disabled={busy}
             onPress={confirm}

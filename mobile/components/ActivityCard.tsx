@@ -12,17 +12,19 @@ import { ThreadRail, THREAD_AVATAR } from "@/components/ThreadRail"
 import { TypeBadge } from "@/components/TypeBadge"
 import { Text, View, useTheme } from "@/components/Themed"
 import { useActivityPreview } from "@/hooks/use-activity-preview"
+import { useAuth } from "@/hooks/use-auth"
 import { useI18n } from "@/hooks/use-i18n"
 import { useMemberships } from "@/hooks/use-memberships"
 import { useReplies } from "@/hooks/use-replies"
-import { formatCardMeta } from "@/lib/format"
-import type { Activity } from "@/lib/types"
+import { formatCardMeta, formatCompactAgo } from "@/lib/format"
+import { handleOf, type Activity } from "@/lib/types"
 
 const REPLY_CAP = 3
 
 export function ActivityCard({ activity }: { activity: Activity }) {
   const theme = useTheme()
   const router = useRouter()
+  const { getUser } = useAuth()
   const { decorate, isOrganizer } = useMemberships()
   const { threadFor, openCompose, canReply } = useReplies()
   const { open } = useActivityPreview()
@@ -55,19 +57,27 @@ export function ActivityCard({ activity }: { activity: Activity }) {
           </CreatorPress>
         </ThreadRail>
         <View style={styles.body}>
-          <View style={styles.meta}>
-            <CreatorPress userId={activity.creatorId}>
-              <Text style={styles.creator} numberOfLines={1}>
-                {activity.creatorName}
+          <View style={styles.who}>
+            <View style={styles.nameRow}>
+              <CreatorPress userId={activity.creatorId}>
+                <Text style={styles.creator} numberOfLines={1}>
+                  {activity.creatorName}
+                </Text>
+              </CreatorPress>
+              <TypeBadge type={activity.type} />
+              <Text style={styles.ago} lightColor="#536471" darkColor="#71767b">
+                {formatCompactAgo(activity.createdAt)}
               </Text>
-            </CreatorPress>
-            <TypeBadge type={activity.type} />
-            {mine ? (
-              <>
-                <View style={styles.grow} />
-                <EditPencil activityId={activity.id} />
-              </>
-            ) : null}
+              {mine ? (
+                <>
+                  <View style={styles.grow} />
+                  <EditPencil activityId={activity.id} />
+                </>
+              ) : null}
+            </View>
+            <Text style={styles.handle} numberOfLines={1} lightColor="#8b98a5" darkColor="#8b98a5">
+              {handleOf(getUser(activity.creatorId) ?? activity.creatorName)}
+            </Text>
           </View>
 
           <Text style={styles.title} numberOfLines={2}>
@@ -154,11 +164,14 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     overflow: "hidden",
   },
-  meta: {
+  who: {
+    backgroundColor: "transparent",
+    gap: 1,
+  },
+  nameRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    minHeight: THREAD_AVATAR,
     backgroundColor: "transparent",
   },
   grow: {
@@ -170,6 +183,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontSize: 15,
     fontWeight: "700",
+  },
+  handle: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 16,
+  },
+  ago: {
+    fontSize: 13,
+    flexShrink: 0,
   },
   title: {
     marginTop: 6,

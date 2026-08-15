@@ -27,12 +27,21 @@ function mergeActivities(...lists: Activity[][]) {
 }
 
 export function ActivitiesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
   const [activities, setActivities] = useState<Activity[]>([])
   const [ready, setReady] = useState(false)
 
+  const visible = useMemo(() => {
+    return activities.map((activity) => {
+      const person = getUser(activity.creatorId)
+      if (!person) return activity
+      if (person.displayName === activity.creatorName && person.avatarUrl === activity.creatorAvatar) return activity
+      return { ...activity, creatorName: person.displayName, creatorAvatar: person.avatarUrl }
+    })
+  }, [activities, getUser])
+
   const reload = useCallback(async () => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setActivities([])
       setReady(true)
       return
@@ -58,7 +67,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   }, [user])
 
   useEffect(() => {
-    if (!user || !isFirebaseConfigured()) {
+    if (!user?.username || !isFirebaseConfigured()) {
       setActivities([])
       setReady(true)
       return
@@ -100,17 +109,21 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   }, [user])
 
   const value = useMemo<ActivitiesValue>(() => {
-    const get = (id: string) => activities.find((activity) => activity.id === id) ?? null
+    const get = (id: string) => visible.find((activity) => activity.id === id) ?? null
     return {
       ready,
-      activities,
+      activities: visible,
       get,
       ensure: async (id) => {
         const hit = get(id)
         if (hit) return hit
         const row = await firebaseActivities.getById(id)
-        if (row) setActivities((current) => mergeActivities([row], current))
-        return row
+        if (!row) return null
+        setActivities((current) => mergeActivities([row], current))
+        const person = getUser(row.creatorId)
+        return person
+          ? { ...row, creatorName: person.displayName, creatorAvatar: person.avatarUrl }
+          : row
       },
       reload,
       add: async (input) => {
@@ -131,7 +144,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
         setActivities((current) => current.filter((activity) => activity.id !== id))
       },
     }
-  }, [activities, ready, reload, user])
+  }, [getUser, ready, reload, user, visible])
 
   return <ActivitiesContext.Provider value={value}>{children}</ActivitiesContext.Provider>
 }

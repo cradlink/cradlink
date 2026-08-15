@@ -50,8 +50,10 @@ function mapUser(id: string, data: DocumentData): User {
     bio: asString(data.bio),
     skills: Array.isArray(data.skills) ? data.skills : [],
     avatarUrl: (data.avatarUrl as string | null) ?? null,
+    bannerUrl: (data.bannerUrl as string | null) ?? null,
     location: asString(data.location),
     visibility: data.profileVisibility === "private" || data.visibility === "private" ? "private" : "public",
+    deactivatedAt: asString(data.deactivatedAt) || null,
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
   }
@@ -290,6 +292,23 @@ export const firebaseActivities: ActivitiesRepo = {
       return []
     }
   },
+}
+
+export async function syncCreatorLook(user: { id: string; displayName: string; avatarUrl: string | null }) {
+  try {
+    const snap = await getDocs(query(collection(getFirebaseDb(), "activities"), where("creatorId", "==", user.id)))
+    await Promise.all(
+      snap.docs.map((row) =>
+        updateDoc(row.ref, {
+          creatorName: user.displayName,
+          creatorAvatar: user.avatarUrl,
+          updatedAt: nowIso(),
+        }).catch(() => undefined),
+      ),
+    )
+  } catch {
+    /* live overlay still shows the new photo */
+  }
 }
 
 export const firebaseMembers: MembersRepo = {

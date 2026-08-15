@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 
 import { firebaseAuth, watchUsers } from "@/lib/auth/firebase"
 import type { SignInInput, SignUpInput } from "@/lib/auth/types"
 import { claimUsername, deleteAccount } from "@/lib/data/account"
+import { syncCreatorLook } from "@/lib/data/firebase"
 import { AppError } from "@/lib/errors"
 import { isFirebaseConfigured } from "@/lib/env"
 import type { UpdateProfileInput, User } from "@/lib/types"
@@ -29,13 +30,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [directory, setDirectory] = useState<User[]>([])
   const [ready, setReady] = useState(false)
 
-  async function loadPeople() {
+  const loadPeople = useCallback(async () => {
     try {
       setDirectory(await firebaseAuth.listUsers())
     } catch {
       setDirectory([])
     }
-  }
+  }, [])
+
+  const getUser = useCallback(
+    (id: string) => {
+      if (user?.id === id) return user
+      return directory.find((entry) => entry.id === id) ?? null
+    },
+    [directory, user],
+  )
+
+  const reload = useCallback(async () => {
+    try {
+      const next = await firebaseAuth.getCurrentUser()
+      setUser(next)
+      if (next) await loadPeople()
+      else setDirectory([])
+    } catch {
+      /* keep the last known user */
+    }
+  }, [loadPeople])
 
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -69,10 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: me,
       ready,
       people: directory,
-      getUser: (id) => {
-        if (me?.id === id) return me
-        return directory.find((entry) => entry.id === id) ?? null
-      },
+      getUser,
       signIn: (input) => {
         if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
         return firebaseAuth.signIn(input)
@@ -92,6 +109,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         const next = await firebaseAuth.updateProfile(input)
         setUser(next)
+        if (input.avatarUrl !== undefined || input.displayName) {
+          void syncCreatorLook(next)
+        }
         await loadPeople()
         return next
       },
@@ -100,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const handle = await claimUsername(me.id, username)
         const next = { ...me, username: handle }
         setUser(next)
+        await loadPeople()
         return next
       },
       deleteAccount: async () => {
@@ -109,14 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setDirectory([])
       },
       signOut: () => firebaseAuth.signOut(),
-      reload: async () => {
-        const next = await firebaseAuth.getCurrentUser()
-        setUser(next)
-        if (next) await loadPeople()
-        else setDirectory([])
-      },
+      reload,
     }
-  }, [directory, user, ready])
+  }, [directory, getUser, loadPeople, ready, reload, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -88,6 +88,6 @@ export function FollowButton({ person }: { person: User }) {
 
 const styles = StyleSheet.create({
   btn: {
-    alignSelf: "stretch",
+    alignSelf: "flex-start",
   },
 })

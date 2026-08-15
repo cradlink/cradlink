@@ -9,7 +9,8 @@ import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
 import { useNotifications } from "@/hooks/use-notifications"
 import { useToast } from "@/hooks/use-toast"
-import type { FollowRequest } from "@/lib/types"
+import { personLook } from "@/lib/person-look"
+import { handleOf, type FollowRequest } from "@/lib/types"
 
 const LIST_CAP = 3
 
@@ -50,7 +51,8 @@ export function FollowInbox() {
 
 export function FollowRow({ row }: { row: FollowRequest }) {
   const theme = useTheme()
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
+  const look = personLook(getUser, row.fromId, row.fromName, row.fromAvatar)
   const { show } = useToast()
   const { notifyUser } = useNotifications()
   const { accept, decline } = useConnections()
@@ -88,14 +90,17 @@ export function FollowRow({ row }: { row: FollowRequest }) {
   return (
     <View style={styles.row} lightColor="transparent" darkColor="transparent">
       <CreatorPress userId={row.fromId}>
-        <Avatar name={row.fromName} src={row.fromAvatar} size={40} />
+        <Avatar name={look.name} src={look.avatar} size={40} />
       </CreatorPress>
       <View style={styles.who} lightColor="transparent" darkColor="transparent">
         <CreatorPress userId={row.fromId}>
           <Text style={styles.name} numberOfLines={1}>
-            {row.fromName}
+            {look.name}
           </Text>
         </CreatorPress>
+        <Text style={styles.handle} numberOfLines={1} lightColor="#8b98a5" darkColor="#8b98a5">
+          {handleOf(getUser(row.fromId) ?? row.fromName)}
+        </Text>
         <Text style={styles.sub} numberOfLines={1} lightColor="#536471" darkColor="#71767b">
           {messages.follow.wantsFollow}
         </Text>
@@ -187,6 +192,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
+  },
+  handle: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 16,
   },
   sub: {
     fontSize: 13,

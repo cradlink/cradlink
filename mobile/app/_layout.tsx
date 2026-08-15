@@ -10,6 +10,7 @@ import "react-native-reanimated"
 void SplashScreen.preventAutoHideAsync()
 
 import { ActivityPreview } from "@/components/ActivityPreview"
+import { ArtRasterHost } from "@/components/ArtRasterHost"
 import { BootScreen } from "@/components/BootScreen"
 import { ParticleField } from "@/components/ParticleField"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
@@ -69,11 +70,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (!ready) return
     const inAuth = pathname === "/login" || pathname === "/signup"
     const picking = pathname === "/username"
-    if (!user && (picking || !inAuth)) {
+    const recovering = pathname === "/reactivate"
+    if (!user && (picking || recovering || !inAuth)) {
       router.replace("/login")
-    } else if (user && !user.username && !picking) {
+    } else if (user?.deactivatedAt && !recovering) {
+      router.replace("/reactivate")
+    } else if (user && !user.deactivatedAt && !user.username && !picking) {
       router.replace("/username")
-    } else if (user && user.username && (inAuth || picking)) {
+    } else if (user && !user.deactivatedAt && user.username && (inAuth || picking || recovering)) {
       router.replace("/")
     }
   }, [user, ready, pathname, router])
@@ -134,13 +138,16 @@ function RootNav() {
           <Stack.Screen name="search" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="username" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="reactivate" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="settings-deactivate" options={{ headerShown: false }} />
           <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
+          <Stack.Screen name="connections" options={{ headerShown: false }} />
           <Stack.Screen name="activities/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="activities/replies/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="u/[userId]" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
+      <ArtRasterHost />
       <ActivityPreview />
       <ConfirmModalHost active={!previewOpen} />
       <ReplyComposeHost />

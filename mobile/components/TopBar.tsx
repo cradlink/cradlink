@@ -80,13 +80,9 @@ export function TopBar({
                 onPress={() => (onBack ? onBack() : router.back())}
                 hitSlop={8}
                 accessibilityLabel={messages.common.close}
-                style={styles.bellBtn}
+                style={styles.backBtn}
               >
-                <SymbolView
-                  name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
-                  tintColor={theme.foreground}
-                  size={22}
-                />
+                <Text style={styles.backGlyph}>‹</Text>
               </Pressable>
             ) : null}
             <Text style={styles.title}>{title}</Text>
@@ -167,14 +163,29 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 12,
     minWidth: 0,
+  },
+  backBtn: {
+    width: 22,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backGlyph: {
+    fontSize: 28,
+    fontWeight: "800",
+    lineHeight: 28,
+    includeFontPadding: false,
   },
   title: {
     flexShrink: 1,
     fontSize: 20,
     fontWeight: "800",
     letterSpacing: -0.4,
+    lineHeight: 24,
+    includeFontPadding: false,
+    marginTop: 3,
   },
   right: {
     flexDirection: "row",

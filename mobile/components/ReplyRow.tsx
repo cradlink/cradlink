@@ -11,7 +11,7 @@ import { useI18n } from "@/hooks/use-i18n"
 import { useReplies } from "@/hooks/use-replies"
 import { useToast } from "@/hooks/use-toast"
 import { formatCompactAgo } from "@/lib/format"
-import type { Activity, ActivityReply } from "@/lib/types"
+import { handleOf, type Activity, type ActivityReply } from "@/lib/types"
 
 export function ReplyRow({
   activity,
@@ -27,7 +27,7 @@ export function ReplyRow({
   split?: boolean
 }) {
   const theme = useTheme()
-  const { user } = useAuth()
+  const { user, getUser } = useAuth()
   const { hide, openCompose, canReply } = useReplies()
   const { ask } = useConfirm()
   const { show } = useToast()
@@ -62,14 +62,19 @@ export function ReplyRow({
         </CreatorPress>
       </ThreadRail>
       <View style={styles.body}>
-        <View style={styles.meta}>
-          <CreatorPress userId={reply.userId}>
-            <Text style={styles.name} numberOfLines={1}>
-              {reply.userName}
+        <View style={styles.who}>
+          <View style={styles.nameRow}>
+            <CreatorPress userId={reply.userId}>
+              <Text style={styles.name} numberOfLines={1}>
+                {reply.userName}
+              </Text>
+            </CreatorPress>
+            <Text style={styles.ago} lightColor="#536471" darkColor="#71767b">
+              {formatCompactAgo(reply.createdAt)}
             </Text>
-          </CreatorPress>
-          <Text style={styles.ago} lightColor="#536471" darkColor="#71767b">
-            {formatCompactAgo(reply.createdAt)}
+          </View>
+          <Text style={styles.handle} numberOfLines={1} lightColor="#8b98a5" darkColor="#8b98a5">
+            {handleOf(getUser(reply.userId) ?? reply.userName)}
           </Text>
         </View>
         {gone ? (
@@ -136,11 +141,14 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     backgroundColor: "transparent",
   },
-  meta: {
+  who: {
+    backgroundColor: "transparent",
+    gap: 1,
+  },
+  nameRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    minHeight: THREAD_AVATAR,
     backgroundColor: "transparent",
   },
   name: {
@@ -149,8 +157,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
   },
+  handle: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 16,
+  },
   ago: {
     fontSize: 13,
+    flexShrink: 0,
   },
   actions: {
     flexDirection: "row",
