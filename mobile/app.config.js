@@ -35,8 +35,9 @@ module.exports = ({ config }) => ({
     },
     google: {
       webClientId,
-      androidClientId: env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || webClientId,
-      iosClientId: env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || webClientId,
+      androidClientId: env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || "",
+      iosClientId: env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || "",
+      expoProject: env.EXPO_PUBLIC_EXPO_PROJECT || "@ljubogdan/cradlink",
     },
   },
 })

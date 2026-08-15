@@ -13,7 +13,7 @@ type AuthContextValue = {
   getUser: (id: string) => User | null
   signIn: (input: SignInInput) => Promise<User>
   signUp: (input: SignUpInput) => Promise<User>
-  signInWithGoogle: (idToken: string) => Promise<User>
+  signInWithGoogle: (idToken?: string | null, accessToken?: string | null) => Promise<User>
   updateProfile: (input: UpdateProfileInput) => Promise<User>
   signOut: () => Promise<void>
   reload: () => Promise<void>
@@ -68,9 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
         return firebaseAuth.signUp(input)
       },
-      signInWithGoogle: (idToken) => {
+      signInWithGoogle: (idToken, accessToken) => {
         if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))
-        return firebaseAuth.signInWithGoogle(idToken)
+        return firebaseAuth.signInWithGoogle(idToken, accessToken)
       },
       updateProfile: async (input) => {
         const next = await firebaseAuth.updateProfile(input)

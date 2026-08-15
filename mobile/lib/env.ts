@@ -13,6 +13,7 @@ type Extra = {
     webClientId?: string
     androidClientId?: string
     iosClientId?: string
+    expoProject?: string
   }
 }
 
@@ -37,6 +38,7 @@ export const appEnv = {
     webClientId: extra.google?.webClientId || read("GOOGLE_WEB_CLIENT_ID"),
     androidClientId: extra.google?.androidClientId || read("GOOGLE_ANDROID_CLIENT_ID"),
     iosClientId: extra.google?.iosClientId || read("GOOGLE_IOS_CLIENT_ID"),
+    expoProject: extra.google?.expoProject || read("EXPO_PROJECT") || "@ljubogdan/cradlink",
   },
 }
 

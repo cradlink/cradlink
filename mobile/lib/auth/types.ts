@@ -17,7 +17,7 @@ export type AuthRepo = {
   listUsers(): Promise<User[]>
   signUp(input: SignUpInput): Promise<User>
   signIn(input: SignInInput): Promise<User>
-  signInWithGoogle(idToken: string): Promise<User>
+  signInWithGoogle(idToken?: string | null, accessToken?: string | null): Promise<User>
   updateProfile(input: UpdateProfileInput): Promise<User>
   signOut(): Promise<void>
   onAuthChange(cb: (user: User | null) => void): () => void

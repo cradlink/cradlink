@@ -119,9 +119,9 @@ export const firebaseAuth: AuthRepo = {
     }
   },
 
-  async signInWithGoogle(idToken) {
+  async signInWithGoogle(idToken, accessToken) {
     try {
-      const cred = GoogleAuthProvider.credential(idToken)
+      const cred = GoogleAuthProvider.credential(idToken || null, accessToken || undefined)
       const result = await signInWithCredential(getFirebaseAuth(), cred)
       return (await fromFirebase(result.user))!
     } catch (err) {

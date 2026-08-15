@@ -121,13 +121,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </View>
 
         <Pressable
-          disabled={pending}
+          disabled={pending || !google.ready}
           onPress={() => void onGoogle()}
           style={({ pressed }) => [
             styles.google,
             {
               borderColor: theme.border,
-              opacity: pending ? 0.55 : pressed ? 0.75 : 1,
+              opacity: pending || !google.ready ? 0.55 : pressed ? 0.75 : 1,
             },
           ]}
         >
