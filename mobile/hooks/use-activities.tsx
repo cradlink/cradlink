@@ -3,7 +3,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useAuth } from "@/hooks/use-auth"
 import { firebaseActivities, watchMembers, watchPublicActivities } from "@/lib/data/firebase"
 import { isFirebaseConfigured } from "@/lib/env"
-import { LOCAL_ACTIVITIES } from "@/lib/local-scene"
 import type { Activity, CreateActivityInput, UpdateActivityInput } from "@/lib/types"
 
 type ActivitiesValue = {
@@ -43,7 +42,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
 
   const reload = useCallback(async () => {
     if (!user?.username || !isFirebaseConfigured()) {
-      setActivities(user ? LOCAL_ACTIVITIES : [])
+      setActivities([])
       setReady(true)
       return
     }
@@ -55,7 +54,6 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
       ])
       setActivities(
         mergeActivities(
-          LOCAL_ACTIVITIES,
           feed.status === "fulfilled" ? feed.value.items : [],
           created.status === "fulfilled" ? created.value : [],
           joined.status === "fulfilled" ? joined.value : [],
@@ -70,7 +68,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!user?.username || !isFirebaseConfigured()) {
-      setActivities(user ? LOCAL_ACTIVITIES : [])
+      setActivities([])
       setReady(true)
       return
     }
@@ -79,7 +77,7 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     let extraItems: Activity[] = []
 
     const publish = () => {
-      setActivities(mergeActivities(LOCAL_ACTIVITIES, publicItems, extraItems))
+      setActivities(mergeActivities(publicItems, extraItems))
       setReady(true)
     }
 

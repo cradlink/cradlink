@@ -6,7 +6,6 @@ import { claimUsername, deleteAccount } from "@/lib/data/account"
 import { syncCreatorLook } from "@/lib/data/firebase"
 import { AppError } from "@/lib/errors"
 import { isFirebaseConfigured } from "@/lib/env"
-import { LOCAL_BOTS, localBot, mergeById } from "@/lib/local-scene"
 import type { UpdateProfileInput, User } from "@/lib/types"
 
 type AuthContextValue = {
@@ -44,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getUser = useCallback(
     (id: string) => {
       if (user?.id === id) return user
-      return directory.find((entry) => entry.id === id) ?? localBot(id)
+      return directory.find((entry) => entry.id === id) ?? null
     },
     [directory, user],
   )
@@ -91,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {
       user: me,
       ready,
-      people: mergeById(directory, LOCAL_BOTS),
+      people: directory,
       getUser,
       signIn: (input) => {
         if (!isFirebaseConfigured()) return Promise.reject(new AppError("firebaseMissing"))

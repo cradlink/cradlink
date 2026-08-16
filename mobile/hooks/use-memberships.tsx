@@ -4,7 +4,6 @@ import { useActivities } from "@/hooks/use-activities"
 import { useAuth } from "@/hooks/use-auth"
 import { firebaseMembers, watchMembers } from "@/lib/data/firebase"
 import { isFirebaseConfigured } from "@/lib/env"
-import { isLocalSceneId } from "@/lib/local-scene"
 import { hardCap } from "@/lib/headcount"
 import type { Activity, JoinRequest } from "@/lib/types"
 
@@ -51,10 +50,7 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
       for (const row of mineRows) {
         if (row.status === "joined" || row.status === "pending") nextMine[row.activityId] = row.status
       }
-      setMine((current) => {
-        const kept = Object.fromEntries(Object.entries(current).filter(([id]) => isLocalSceneId(id)))
-        return { ...kept, ...nextMine }
-      })
+      setMine(nextMine)
 
       const hosted = activities.filter((activity) => activity.creatorId === user.id)
       const nextPending: Record<string, JoinRequest[]> = {}
@@ -105,10 +101,7 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
           nextMine[row.activityId] = row.status
         }
       }
-      setMine((current) => {
-        const kept = Object.fromEntries(Object.entries(current).filter(([id]) => isLocalSceneId(id)))
-        return { ...kept, ...nextMine }
-      })
+      setMine(nextMine)
 
       const hosted = new Set(activities.filter((activity) => activity.creatorId === user.id).map((activity) => activity.id))
       const nextPending: Record<string, JoinRequest[]> = {}
@@ -139,13 +132,7 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
     const statusOf = (activityId: string) => mine[activityId] ?? null
     const isOrganizer = (activity: Activity) => Boolean(user && user.id === activity.creatorId)
     const pendingFor = (activityId: string) => pendingMap[activityId] ?? []
-    const decorate = (activity: Activity) => {
-      const live = activities.find((item) => item.id === activity.id) ?? activity
-      if (isLocalSceneId(live.id) && mine[live.id] === "joined") {
-        return { ...live, memberCount: live.memberCount + 1 }
-      }
-      return live
-    }
+    const decorate = (activity: Activity) => activities.find((item) => item.id === activity.id) ?? activity
     const isFull = (activity: Activity) => {
       const viewed = decorate(activity)
       const cap = hardCap(viewed)
@@ -165,27 +152,12 @@ export function MembershipProvider({ children }: { children: React.ReactNode }) 
         .map(([id]) => id),
       join: async (activity) => {
         if (!user || isOrganizer(activity) || isFull(activity)) return
-        if (isLocalSceneId(activity.id)) {
-          setMine((current) => ({
-            ...current,
-            [activity.id]: activity.joinPolicy === "manual" ? "pending" : "joined",
-          }))
-          return
-        }
         await firebaseMembers.join(activity.id, user.id)
         await reloadActivities()
         await reload()
       },
       leave: async (activityId) => {
         if (!user) return
-        if (isLocalSceneId(activityId)) {
-          setMine((current) => {
-            const next = { ...current }
-            delete next[activityId]
-            return next
-          })
-          return
-        }
         await firebaseMembers.leave(activityId, user.id)
         await reloadActivities()
         await reload()
