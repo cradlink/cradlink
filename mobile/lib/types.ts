@@ -45,6 +45,11 @@ export type User = {
   deactivatedAt: string | null
   createdAt: string
   updatedAt: string
+  emailVerified?: boolean
+}
+
+export function needsEmailVerification(user: User | null | undefined) {
+  return Boolean(user && user.emailVerified === false)
 }
 
 export type ActivityLocation = {

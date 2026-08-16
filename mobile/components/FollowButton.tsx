@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native"
 
 import { Button } from "@/components/Button"
+import { rainConfetti } from "@/components/ConfettiHost"
 import { useAuth } from "@/hooks/use-auth"
 import { useConnections } from "@/hooks/use-connections"
 import { useI18n } from "@/hooks/use-i18n"
@@ -66,6 +67,7 @@ export function FollowButton({ person }: { person: User }) {
       variant="ink"
       size="compact"
       onPress={() => {
+        rainConfetti()
         void (async () => {
           try {
             const next = await follow(person)

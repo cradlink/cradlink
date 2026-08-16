@@ -20,5 +20,7 @@ export type AuthRepo = {
   signInWithGoogle(idToken?: string | null, accessToken?: string | null): Promise<User>
   updateProfile(input: UpdateProfileInput): Promise<User>
   signOut(): Promise<void>
+  sendVerificationEmail(): Promise<void>
+  reloadUser(): Promise<User | null>
   onAuthChange(cb: (user: User | null) => void): () => void
 }

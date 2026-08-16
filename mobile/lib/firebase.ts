@@ -1,14 +1,24 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app"
 import { getAuth, initializeAuth, type Auth, type Persistence } from "firebase/auth"
-import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore"
+import { getFirestore, initializeFirestore, setLogLevel, type Firestore } from "firebase/firestore"
 import { getStorage, type FirebaseStorage } from "firebase/storage"
 
 import { appEnv, isFirebaseConfigured } from "@/lib/env"
 
+setLogLevel("error")
+
 const warn = console.warn.bind(console)
 console.warn = (...args: unknown[]) => {
-  if (args.some((arg) => typeof arg === "string" && arg.includes("BloomFilter"))) return
+  if (
+    args.some(
+      (arg) =>
+        typeof arg === "string" &&
+        (arg.includes("BloomFilter") || arg.includes("WebChannelConnection") || arg.includes("transport errored")),
+    )
+  ) {
+    return
+  }
   warn(...args)
 }
 
@@ -52,7 +62,10 @@ export function getFirebaseDb(): Firestore {
   if (db) return db
   const app = getFirebaseApp()
   try {
-    db = initializeFirestore(app, { experimentalForceLongPolling: true })
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: false,
+    })
   } catch {
     db = getFirestore(app)
   }
@@ -61,4 +74,12 @@ export function getFirebaseDb(): Firestore {
 
 export function getFirebaseStorage(): FirebaseStorage {
   return getStorage(getFirebaseApp())
+}
+
+if (isFirebaseConfigured()) {
+  try {
+    getFirebaseDb()
+  } catch {
+    /* opened on first real call */
+  }
 }
