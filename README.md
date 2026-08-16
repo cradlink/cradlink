@@ -1,117 +1,71 @@
-<p align="center">
-  <img src="mobile/readme/banner.svg" alt="Cradlink" width="100%" />
-</p>
+<div align="center">
+  <img src="web/public/images/cradlink_banner_moto.png" alt="Cradlink — Find people. Do the thing." width="100%" />
 
-<p align="center">
-  <img src="mobile/readme/type.svg" alt="Find people. Do the thing." width="100%" />
-</p>
+  <br />
 
-<p align="center">
-  <strong>Turn a post into a plan.</strong><br />
-  Discover people nearby, start an activity, join in, and actually meet.
-</p>
+  **A social activity platform for turning online discovery into real plans.**
 
-<p align="center">
-  <code>React</code>&nbsp;&nbsp;·&nbsp;&nbsp;
-  <code>React Native</code>&nbsp;&nbsp;·&nbsp;&nbsp;
-  <code>Expo</code>&nbsp;&nbsp;·&nbsp;&nbsp;
-  <code>Firebase</code>&nbsp;&nbsp;·&nbsp;&nbsp;
-  <code>TypeScript</code>
-</p>
+  <br />
 
-<p align="center">
-  <a href="#quick-start">Quick start</a>
-  &nbsp;·&nbsp;
-  <a href="#features">Features</a>
-  &nbsp;·&nbsp;
-  <a href="#firebase-setup">Firebase</a>
-  &nbsp;·&nbsp;
-  <a href="#deployment">Deployment</a>
-</p>
+  `Web` &nbsp; `iOS` &nbsp; `Android` &nbsp; `Firebase`
 
-<p align="center">
-  <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
+  <br />
 
-## One product, two apps
+  [Get started](#get-started) · [Explore the product](#the-product) · [Configure Firebase](#firebase) · [Deploy](#deployment)
+</div>
 
-Cradlink is a social activity platform built around a simple idea: finding people should lead to doing something together. The web and mobile apps share the same product model and Firebase backend while keeping platform-native navigation and UI.
+---
 
-| App | Location | Stack | Purpose |
-| --- | --- | --- | --- |
-| Web | [`web/`](./web) | Vite, React, React Router, Tailwind | Responsive browser experience |
-| Mobile | [`mobile/`](./mobile) | Expo, React Native, Expo Router | Native Android and iOS experience |
-| Backend | Repository root | Firebase Auth, Firestore, Storage | Shared users, activities and social data |
+## The product
 
-```text
-cradlink/
-├── web/                     # Vite + React application
-├── mobile/                  # Expo + React Native application
-├── firestore.rules          # Shared Firestore security rules
-├── firestore.indexes.json   # Shared Firestore indexes
-├── storage.rules            # Shared Storage security rules
-├── firebase.json            # Firebase deployment configuration
-└── vercel.json              # Web deployment configuration
-```
+Cradlink helps people find an activity, join the right group, and show up. Users can publish plans, discover people nearby, manage attendance, talk before the event, and keep their public activity history in one place.
 
-<p align="center">
-  <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
+The repository contains two clients for the same product:
 
-## Features
+| | Web | Mobile |
+| --- | --- | --- |
+| **Location** | [`web/`](./web) | [`mobile/`](./mobile) |
+| **Runtime** | Browser | Android and iOS |
+| **Framework** | Vite + React | Expo + React Native |
+| **Routing** | React Router | Expo Router |
+| **Styling** | Tailwind CSS | React Native styles |
+| **Data** | Local browser mode or Firebase | Firebase |
 
-### Activities
+Both apps use the same Firebase project and follow the same domain model.
 
-- Create, edit, cancel and delete activities
-- Add up to six photos with gallery navigation
-- Filter the feed by activity type and location
-- Support fixed times or flexible scheduling
-- Configure capacity, headcount and automatic or manual joining
-- Separate active and past activities on profiles
-- Receive reminders one day and one hour before an activity
+### What you can do
 
-### People and community
+| Discover | Organize | Connect |
+| --- | --- | --- |
+| Browse and filter activities | Publish and edit an activity | Follow public or private profiles |
+| Search for people | Add up to six photos | Handle follow and join requests |
+| View public profiles | Set time, place and capacity | Join threaded discussions |
+| See active and past plans | Choose automatic or manual joining | Receive activity notifications |
 
-- Email/password and Google authentication
-- Email verification and account reactivation
-- Public and private profiles
-- Follow requests, followers and following
-- User search and profile discovery
-- Join requests and member management
-- Activity discussions with threaded replies
-- In-app notifications
+Other product details include email verification, Google sign-in, account reactivation, multilingual UI, activity reminders, member management, and responsive navigation.
 
-### Experience
+<br />
 
-- Responsive web layout and native mobile navigation
-- English, Serbian Latin and Serbian Cyrillic
-- Light and dark presentation on the web
-- Local browser backend for web development
-- Shared Firebase production backend
-
-<p align="center">
+<div align="center">
   <img src="mobile/readme/card-join.svg" alt="Join an activity" width="31%" />
   &nbsp;
   <img src="mobile/readme/card-compose.svg" alt="Create an activity" width="31%" />
   &nbsp;
-  <img src="mobile/readme/card-maps.svg" alt="Choose a place" width="31%" />
-</p>
+  <img src="mobile/readme/card-maps.svg" alt="Choose the place" width="31%" />
+</div>
 
-<p align="center">
-  <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
+---
 
-## Quick start
+## Get started
 
-### Requirements
+### Prerequisites
 
-- Node.js 22 recommended (web requires Node.js 20.19 or newer)
+- Node.js 22
 - npm
-- Expo Go, an Android emulator, or an iOS simulator for mobile development
+- Expo Go or a native simulator for mobile development
+- A Firebase project when running the production backend
 
-Clone the repository, then run either app independently.
-
-### Web
+### Run the web app
 
 ```bash
 cd web
@@ -119,18 +73,15 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The web app uses its local browser backend by default, so Firebase credentials are not required for the first run.
-
-Useful commands:
+Visit [localhost:3000](http://localhost:3000). The default configuration uses a browser-local backend, so the web app can be explored without Firebase credentials.
 
 ```bash
-npm run dev       # start the Vite development server
-npm run lint      # run ESLint
-npm run build     # type-check and create a production build
-npm run preview   # preview the production build locally
+npm run lint      # lint the web project
+npm run build     # type-check and build for production
+npm run preview   # preview the production build
 ```
 
-### Mobile
+### Run the mobile app
 
 ```bash
 cd mobile
@@ -138,45 +89,41 @@ npm install
 npm start
 ```
 
-Scan the QR code with Expo Go or choose an emulator from the Expo terminal. Mobile uses Firebase and needs the environment configuration described below.
-
-Useful commands:
+Use the Expo terminal to open Android, iOS, or React Native Web.
 
 ```bash
-npm run android     # open on Android
-npm run ios         # open on iOS
-npm run web         # run through React Native Web
-npm run build:apk   # create an internal Android APK with EAS
-npx tsc --noEmit    # type-check the mobile app
+npm run android
+npm run ios
+npm run web
+npx tsc --noEmit
 ```
 
-<p align="center">
-  <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
+---
 
-## Firebase setup
+## Firebase
 
-Both apps are designed to use the same Firebase project.
+Cradlink uses Firebase Authentication, Cloud Firestore, and Firebase Storage. Rules and indexes are shared by both clients and live at the repository root.
 
-1. Create a Firebase project.
-2. Enable Email/Password and Google providers under **Authentication**.
-3. Create a Firestore database and enable Firebase Storage.
-4. Register a Firebase web application and copy its configuration values.
-5. Deploy the rules and indexes from the repository root:
+### 1. Create the services
+
+In Firebase Console:
+
+1. Enable Email/Password and Google authentication.
+2. Create a Cloud Firestore database.
+3. Enable Firebase Storage.
+4. Register a web app and copy its configuration.
+
+Deploy the repository rules and indexes with Firebase CLI:
 
 ```bash
 firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
-### Web environment
-
-Copy the example file:
+### 2. Configure web
 
 ```bash
 cp web/.env.example web/.env.local
 ```
-
-Set the backend and Firebase values:
 
 ```dotenv
 VITE_BACKEND=firebase
@@ -188,17 +135,13 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
-To return to browser-only development, set `VITE_BACKEND=local`.
+Use `VITE_BACKEND=local` when Firebase is not needed.
 
-### Mobile environment
-
-Copy the example file:
+### 3. Configure mobile
 
 ```bash
 cp mobile/.env.example mobile/.env
 ```
-
-Add the same Firebase project values using the `EXPO_PUBLIC_` prefix. Google sign-in additionally requires the appropriate OAuth client IDs:
 
 ```dotenv
 EXPO_PUBLIC_BACKEND=firebase
@@ -215,75 +158,87 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=
 EXPO_PUBLIC_EXPO_PROJECT=@ljubogdan/cradlink
 ```
 
-Environment files are local configuration. Do not commit real credentials.
+Never commit populated environment files.
 
-<p align="center">
-  <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
+---
+
+## Repository map
+
+```text
+cradlink/
+├── web/
+│   ├── public/              static assets
+│   └── src/
+│       ├── components/      feature and UI components
+│       ├── hooks/           client state and queries
+│       ├── layouts/         application shells
+│       ├── lib/             domain and backend code
+│       └── pages/           route-level screens
+│
+├── mobile/
+│   ├── app/                 Expo Router screens
+│   ├── assets/              native images and fonts
+│   ├── components/          React Native UI
+│   ├── hooks/               providers and client state
+│   └── lib/                 domain and backend code
+│
+├── firebase.json
+├── firestore.indexes.json
+├── firestore.rules
+├── storage.rules
+└── vercel.json
+```
+
+When the product model changes, keep [`web/src/lib/types.ts`](./web/src/lib/types.ts) and [`mobile/lib/types.ts`](./mobile/lib/types.ts) aligned.
+
+---
 
 ## Deployment
 
-### Web with Vercel
+### Web · Vercel
 
-The root [`vercel.json`](./vercel.json) installs and builds the application in `web/`, publishes `web/dist`, and rewrites browser routes to the SPA entry point.
+The root [`vercel.json`](./vercel.json) builds `web/`, publishes `web/dist`, and configures SPA routing. Leave the Vercel **Root Directory** empty.
 
-Recommended branch setup:
+| Branch | Suggested environment |
+| --- | --- |
+| `main` | Production |
+| `development` | Staging |
 
-| Environment | Branch | Purpose |
-| --- | --- | --- |
-| Production | `main` | Stable public release |
-| Development | `development` | Staging and integration |
+Set `VITE_BACKEND=firebase` and all `VITE_FIREBASE_*` variables in Vercel. Add each deployed hostname to Firebase Authentication authorized domains and to the Google OAuth authorized origins.
 
-For each Vercel project:
-
-1. Import this repository and leave **Root Directory** empty.
-2. Use Node.js 22.
-3. Select the appropriate production branch.
-4. Add all `VITE_FIREBASE_*` values and set `VITE_BACKEND=firebase`.
-5. Add the deployed hostname to Firebase Authentication's authorized domains.
-6. Add the hostname as an authorized JavaScript origin for Google OAuth.
-
-### Mobile with EAS
-
-The included [`mobile/eas.json`](./mobile/eas.json) contains two Android profiles:
+### Mobile · EAS
 
 ```bash
 cd mobile
-npx eas build --platform android --profile preview      # installable APK
-npx eas build --platform android --profile production   # Play Store bundle
+npx eas build --platform android --profile preview
+npx eas build --platform android --profile production
 ```
 
-Configure production environment values through EAS secrets or your build environment before creating a release.
+The `preview` profile creates an installable APK. The `production` profile creates an Android App Bundle for store distribution.
 
-<p align="center">
-  <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
+---
 
-## Development notes
+## Before merging
 
-- Web routes live in [`web/src/App.tsx`](./web/src/App.tsx).
-- Mobile routes live in [`mobile/app/`](./mobile/app/).
-- Web backend implementations live in [`web/src/lib/`](./web/src/lib/).
-- Mobile backend implementations live in [`mobile/lib/`](./mobile/lib/).
-- Changes to domain models must keep `web/src/lib/types.ts` and `mobile/lib/types.ts` aligned.
-- Firebase rules and indexes are shared and remain at the repository root.
-
-Before merging application changes, run:
+Run the checks for both applications:
 
 ```bash
-cd web && npm run lint && npm run build
-cd ../mobile && npx tsc --noEmit
+cd web
+npm run lint
+npm run build
+
+cd ../mobile
+npx tsc --noEmit
 ```
 
-## Product direction
+Also verify Firebase rules whenever a data model or query changes.
 
-Cradlink is deliberately not another endless social feed. An activity has a person, a place, a time and a clear next step. The interface stays out of the way so a post can become a real plan.
+---
 
-<p align="center">
+<div align="center">
   <img src="mobile/readme/wave.svg" alt="" width="100%" />
-</p>
 
-<p align="center">
-  <strong>Find people. Do the thing.</strong><br />
+  **Find people. Do the thing.**
+
   <sub>CRADLINK · WEB + MOBILE</sub>
-</p>
+</div>
