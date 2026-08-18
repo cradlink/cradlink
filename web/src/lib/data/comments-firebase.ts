@@ -50,7 +50,20 @@ export const firebaseComments: CommentsRepo = {
   async listByActivity(activityId) {
     const snap = await getDoc(doc(getFirebaseDb(), "activities", activityId));
     if (!snap.exists()) return [];
-    return readDiscussion(activityId, snap.data()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const rows = readDiscussion(activityId, snap.data()).sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    );
+    const authors = await firebaseUsers.getByIds(rows.map((row) => row.authorId));
+    const byId = new Map(authors.map((user) => [user.id, user]));
+    return rows.map((row) => {
+      const author = byId.get(row.authorId);
+      if (!author) return row;
+      return {
+        ...row,
+        authorName: author.displayName,
+        authorAvatar: author.avatarUrl,
+      };
+    });
   },
 
   async getById(id) {

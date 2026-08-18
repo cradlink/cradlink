@@ -68,6 +68,7 @@ function toUser(fbUser: FirebaseUser, data?: Partial<User>): User {
     locale: data?.locale ?? null,
     deactivatedAt: data?.deactivatedAt ?? null,
     username: data?.username ?? null,
+    emailReminders: data?.emailReminders === false ? false : true,
   };
 }
 
@@ -165,6 +166,7 @@ async function upsertUserDoc(
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
     username,
+    emailReminders: data.emailReminders === false ? false : true,
   });
 }
 

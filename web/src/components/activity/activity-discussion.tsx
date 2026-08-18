@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActivityComments, useCreateComment, useRemoveComment } from "@/hooks/use-comments";
+import { useUsers } from "@/hooks/use-profile";
 import { errorMessage } from "@/lib/errors";
 import { formatCompactTime, handleFromName } from "@/lib/format";
+import { userHandle } from "@/lib/username";
 import {
   COMMENT_MAX_LENGTH,
   isCommentDeleted,
@@ -19,11 +21,22 @@ import {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type CommentNode = ActivityComment & { replies: CommentNode[] };
+type LiveComment = ActivityComment & { authorHandle: string };
+type CommentNode = LiveComment & { replies: CommentNode[] };
 
 const PREVIEW_REPLIES = 3;
 
-function buildTree(comments: ActivityComment[]): CommentNode[] {
+function liveComment(comment: ActivityComment, authors: Map<string, User>): LiveComment {
+  const author = authors.get(comment.authorId);
+  return {
+    ...comment,
+    authorName: author?.displayName || comment.authorName,
+    authorAvatar: author ? author.avatarUrl : comment.authorAvatar,
+    authorHandle: author ? userHandle(author) : handleFromName(comment.authorName),
+  };
+}
+
+function buildTree(comments: LiveComment[]): CommentNode[] {
   const byId = new Map<string, CommentNode>(
     comments.map((comment) => [comment.id, { ...comment, replies: [] }]),
   );
@@ -52,9 +65,9 @@ function findNode(nodes: CommentNode[], id: string): CommentNode | null {
   return null;
 }
 
-function ancestorChain(comments: ActivityComment[], id: string): ActivityComment[] {
+function ancestorChain(comments: LiveComment[], id: string): LiveComment[] {
   const byId = new Map(comments.map((comment) => [comment.id, comment]));
-  const chain: ActivityComment[] = [];
+  const chain: LiveComment[] = [];
   let current = byId.get(id);
   const seen = new Set<string>();
   while (current?.parentId && !seen.has(current.id)) {
@@ -142,7 +155,7 @@ function Composer({
               <p className="mb-1 text-[13px] text-muted-foreground">
                 <Trans
                   i18nKey="discussion.replyingTo"
-                  values={{ handle: handleFromName(replyToName) }}
+                  values={{ handle: replyToName }}
                   components={{ handle: <span className="text-primary" /> }}
                 />
               </p>
@@ -283,7 +296,7 @@ function CommentItem({
                 >
                   {node.authorName}
                 </Link>
-                <span className="truncate text-muted-foreground">@{handleFromName(node.authorName)}</span>
+                <span className="truncate text-muted-foreground">@{node.authorHandle}</span>
                 <span className="text-muted-foreground">·</span>
                 <span className="text-muted-foreground">{formatCompactTime(node.createdAt)}</span>
               </div>
@@ -291,7 +304,7 @@ function CommentItem({
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
                   <Trans
                     i18nKey="discussion.replyingTo"
-                    values={{ handle: handleFromName(parentName) }}
+                    values={{ handle: parentName }}
                     components={{
                       handle: (
                         <Link
@@ -361,7 +374,7 @@ function CommentItem({
           <Composer
             user={user}
             placeholder={t("discussion.placeholder")}
-            replyToName={node.authorName}
+            replyToName={node.authorHandle}
             busy={busy}
             autoFocus
             onCancel={onCancelReply}
@@ -460,7 +473,7 @@ function ThreadBranch({
         <ThreadBranch
           key={child.id}
           node={child}
-          parentName={node.authorName}
+          parentName={node.authorHandle}
           activityId={activityId}
           depth={depth + 1}
           canReply={canReply}
@@ -509,8 +522,16 @@ export function ActivityDiscussion({
   const location = useLocation();
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const comments = commentsQuery.data;
-  const tree = useMemo(() => buildTree(comments ?? []), [comments]);
+  const authorIds = useMemo(
+    () => [...new Set((commentsQuery.data ?? []).map((row) => row.authorId).filter(Boolean))],
+    [commentsQuery.data],
+  );
+  const authorsQuery = useUsers(authorIds);
+  const comments = useMemo(() => {
+    const authors = new Map((authorsQuery.data ?? []).map((row) => [row.id, row]));
+    return (commentsQuery.data ?? []).map((row) => liveComment(row, authors));
+  }, [authorsQuery.data, commentsQuery.data]);
+  const tree = useMemo(() => buildTree(comments), [comments]);
   const focusId = location.hash.startsWith("#c-") ? decodeURIComponent(location.hash.slice(3)) : null;
   const focused = focusId ? findNode(tree, focusId) : null;
   const ancestors = focusId && comments ? ancestorChain(comments, focusId) : [];
@@ -593,7 +614,7 @@ export function ActivityDiscussion({
               <div key={item.id} className="border-b border-border/60">
                 <CommentItem
                   node={node}
-                  parentName={parent?.authorName}
+                  parentName={parent?.authorHandle}
                   activityId={activity.id}
                   lineBelow
                   canReply={canDiscuss}
@@ -614,7 +635,7 @@ export function ActivityDiscussion({
           <div className="border-b border-border">
             <CommentItem
               node={focused}
-              parentName={ancestors.at(-1)?.authorName}
+              parentName={ancestors.at(-1)?.authorHandle}
               activityId={activity.id}
               large
               lineAbove={ancestors.length > 0}
@@ -636,7 +657,7 @@ export function ActivityDiscussion({
               <Composer
                 user={user}
                 placeholder={t("discussion.placeholder")}
-                replyToName={focused.authorName}
+                replyToName={focused.authorHandle}
                 busy={createComment.isPending}
                 autoFocus
                 onSubmit={(body) => post(body, focused.id)}
@@ -650,7 +671,7 @@ export function ActivityDiscussion({
             <div key={child.id} className="border-b border-border">
               <ThreadBranch
                 node={child}
-                parentName={focused.authorName}
+                parentName={focused.authorHandle}
                 activityId={activity.id}
                 depth={0}
                 canReply={canDiscuss}

@@ -28,13 +28,24 @@ async function assertCanDiscuss(activityId: string) {
 
 export const localComments: CommentsRepo = {
   async listByActivity(activityId) {
-    return Object.values(load())
+    const rows = Object.values(load())
       .filter((row) => row.activityId === activityId)
       .map((row) => ({
         ...row,
         rootId: row.rootId || row.parentId || row.id,
       }))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const authors = await localUsers.getByIds(rows.map((row) => row.authorId));
+    const byId = new Map(authors.map((user) => [user.id, user]));
+    return rows.map((row) => {
+      const author = byId.get(row.authorId);
+      if (!author) return row;
+      return {
+        ...row,
+        authorName: author.displayName,
+        authorAvatar: author.avatarUrl,
+      };
+    });
   },
 
   async getById(id) {

@@ -23,12 +23,12 @@ export function AppLayout() {
   }, [unread]);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-background">
-      <div className="mx-auto flex min-h-dvh max-w-[1265px] justify-center">
+    <div className="min-h-dvh bg-background">
+      <div className="mx-auto flex max-w-[1265px] justify-center">
         <SideNav />
         <main
           className={cn(
-            "min-h-dvh w-full min-w-0 max-w-[600px] border-border lg:border-x",
+            "min-h-dvh w-full min-w-0 max-w-[600px] overflow-x-hidden border-border lg:border-x",
             compact ? "pb-0" : "pb-[calc(53px+env(safe-area-inset-bottom))] lg:pb-0",
           )}
         >

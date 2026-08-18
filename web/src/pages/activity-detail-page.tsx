@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Calendar, Lock, MapPin, Users } from "lucide-react";
@@ -20,9 +20,20 @@ import { useUser } from "@/hooks/use-profile";
 import { isDeactivated } from "@/lib/account";
 import { canSeeProfileActivities } from "@/lib/follow";
 import { errorMessage } from "@/lib/errors";
+import { resolveCoverSrc } from "@/lib/default-covers";
 import { formatHeadcount, formatJoinPolicy } from "@/lib/headcount";
 import { formatActivityWhen, formatLocation } from "@/lib/format";
 import { toast } from "sonner";
+
+function setMeta(name: string, content: string, attr: "name" | "property" = "name") {
+  let tag = document.querySelector(`meta[${attr}="${name}"]`);
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute(attr, name);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("content", content);
+}
 
 export function ActivityDetailPage() {
   const { t } = useTranslation();
@@ -42,6 +53,26 @@ export function ActivityDetailPage() {
     ? membershipQuery.data.status
     : null;
   const canDiscuss = Boolean(user && activity);
+
+  useEffect(() => {
+    if (!activity) return;
+    const previous = {
+      title: document.title,
+      description: document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "",
+    };
+    const description = activity.description.replace(/\s+/g, " ").trim().slice(0, 180);
+    const image = resolveCoverSrc(activity.images?.[0], activity.type);
+    document.title = activity.title;
+    setMeta("description", description);
+    setMeta("og:title", activity.title, "property");
+    setMeta("og:description", description, "property");
+    setMeta("og:image", image.startsWith("http") ? image : `${window.location.origin}${image}`, "property");
+    setMeta("og:url", window.location.href, "property");
+    return () => {
+      document.title = previous.title;
+      setMeta("description", previous.description);
+    };
+  }, [activity]);
   const creatorQuery = useUser(activity?.creatorId);
   const followQuery = useFollow(user?.id, activity?.creatorId);
   const canSeePrivate = Boolean(

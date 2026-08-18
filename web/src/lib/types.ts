@@ -45,6 +45,7 @@ export type User = {
   locale?: string | null;
   deactivatedAt?: string | null;
   username?: string | null;
+  emailReminders?: boolean;
 };
 
 export function isPrivateProfile(user: Pick<User, "profileVisibility">) {
@@ -137,6 +138,7 @@ export type UpdateProfileInput = {
   profileVisibility?: ProfileVisibility;
   locale?: string | null;
   deactivatedAt?: string | null;
+  emailReminders?: boolean;
 };
 
 export type ActivityFilters = {

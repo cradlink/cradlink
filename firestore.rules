@@ -71,7 +71,9 @@ service cloud.firestore {
     }
 
     match /activities/{activityId} {
-      allow read: if signedIn() && (
+      allow get: if resource.data.visibility == "public"
+        || (signedIn() && resource.data.creatorId == request.auth.uid);
+      allow list: if signedIn() && (
         resource.data.visibility == "public"
         || resource.data.creatorId == request.auth.uid
       );

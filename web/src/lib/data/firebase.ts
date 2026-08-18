@@ -56,6 +56,7 @@ function mapUser(id: string, data: DocumentData): User {
     locale: typeof data.locale === "string" ? data.locale : null,
     deactivatedAt: typeof data.deactivatedAt === "string" ? data.deactivatedAt : null,
     username: typeof data.username === "string" ? data.username : null,
+    emailReminders: data.emailReminders === false ? false : true,
   };
 }
 
