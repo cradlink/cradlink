@@ -14,6 +14,7 @@ import { useRouter } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
 import { SymbolView } from "expo-symbols"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 
 import { Avatar } from "@/components/Avatar"
 import { Text, useTheme } from "@/components/Themed"
@@ -91,29 +92,30 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
   const [place, setPlace] = useState<LocationType>(activity?.location.type ?? "in-person")
   const [city, setCity] = useState(activity?.location.venue || activity?.location.city || user?.location || "")
   const [joinPolicy, setJoinPolicy] = useState<JoinPolicy>(activity?.joinPolicy ?? "auto")
-  const [image, setImage] = useState<string | null>(activity?.images[0] ?? null)
+  const [images, setImages] = useState<string[]>(activity?.images ?? [])
   const [busy, setBusy] = useState(false)
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerShown, setPickerShown] = useState(false)
+  const pickerFade = useSharedValue(0)
   const [flexible, setFlexible] = useState(activity ? activity.isFlexible || !activity.startAt : true)
   const [startAt, setStartAt] = useState<Date | null>(
     activity?.startAt && !activity.isFlexible ? new Date(activity.startAt) : null,
   )
   const [whenOpen, setWhenOpen] = useState(false)
 
-  const originalImage = activity?.images[0] ?? null
+  const originalImages = (activity?.images ?? []).join("|")
   const dirty = editing
     ? title !== (activity?.title ?? "") ||
       description !== (activity?.description ?? "") ||
       type !== (activity?.type ?? "social") ||
       place !== (activity?.location.type ?? "in-person") ||
       joinPolicy !== (activity?.joinPolicy ?? "auto") ||
-      image !== originalImage ||
+      images.join("|") !== originalImages ||
       flexible !== (activity ? activity.isFlexible || !activity.startAt : true) ||
       (startAt?.toISOString() ?? null) !== (activity?.startAt && !activity.isFlexible ? activity.startAt : null)
-    : title.trim().length > 0 || description.trim().length > 0 || image != null || startAt != null
+    : title.trim().length > 0 || description.trim().length > 0 || images.length > 0 || startAt != null
   const canPost = title.trim().length >= 3 && description.trim().length >= 10 && !busy && (!editing || dirty)
   const presets = presetsForType(type)
-  const banner = resolveBannerKey(image ?? undefined)
+  const MAX_PHOTOS = 6
 
   function setFlexibleOn() {
     setFlexible(true)
@@ -141,10 +143,42 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
 
   function setTypeAndMaybeClear(next: ActivityType) {
     setType(next)
-    if (image && presetsForType(next).every((key) => key !== image) && !image.startsWith("file") && !image.startsWith("content")) {
-      setImage(null)
-    }
+    const allowed = new Set(presetsForType(next))
+    setImages((current) =>
+      current.filter(
+        (src) =>
+          allowed.has(src) ||
+          src.startsWith("file") ||
+          src.startsWith("content") ||
+          src.startsWith("http") ||
+          src.startsWith("data:"),
+      ),
+    )
   }
+
+  function addImages(next: string[]) {
+    setImages((current) => [...current, ...next.filter((src) => !current.includes(src))].slice(0, MAX_PHOTOS))
+  }
+
+  function hidePicker() {
+    setPickerShown(false)
+  }
+
+  function openPicker() {
+    setPickerShown(true)
+    pickerFade.value = 0
+    pickerFade.value = withTiming(1, { duration: 280 })
+  }
+
+  function closePicker() {
+    pickerFade.value = withTiming(0, { duration: 240 }, (finished) => {
+      if (finished) runOnJS(hidePicker)()
+    })
+  }
+
+  const pickerDimStyle = useAnimatedStyle(() => ({
+    opacity: pickerFade.value,
+  }))
 
   function close() {
     if (!dirty) {
@@ -167,10 +201,12 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.65,
+      allowsMultipleSelection: true,
+      selectionLimit: Math.max(1, MAX_PHOTOS - images.length),
     })
-    if (!result.canceled && result.assets[0]?.uri) {
-      setImage(result.assets[0].uri)
-      setPickerOpen(false)
+    if (!result.canceled && result.assets.length) {
+      addImages(result.assets.map((asset) => asset.uri).filter(Boolean))
+      closePicker()
     }
   }
 
@@ -178,9 +214,12 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
     if (!canPost) return
     setBusy(true)
     try {
-      const cover =
-        image && user && isLocalImage(image) ? await uploadActivityImage(user.id, image) : image
-      if (cover && cover !== image) setImage(cover)
+      const uploaded = user
+        ? await Promise.all(
+            images.map((src) => (isLocalImage(src) ? uploadActivityImage(user.id, src) : src)),
+          )
+        : images
+      setImages(uploaded)
       const input = {
         title: title.trim(),
         description: description.trim(),
@@ -198,7 +237,7 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
         joinPolicy,
         headcount: activity?.headcount,
         visibility: activity?.visibility,
-        images: cover ? [cover] : [],
+        images: uploaded,
       }
       if (editing && activity) {
         await update(activity.id, input)
@@ -329,33 +368,52 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
           </ScrollView>
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
-            {messages.compose.banner}
+            {messages.compose.photos}
           </Text>
-          <Pressable
-            onPress={() => setPickerOpen(true)}
-            style={[styles.bannerSlot, { borderColor: theme.border, backgroundColor: "#16181c" }]}
-          >
-            {banner ? (
-              <>
-                <Image source={banner} style={styles.bannerImage} />
-                <View style={styles.bannerHint}>
-                  <Text style={styles.bannerHintText}>{messages.compose.changeBanner}</Text>
-                </View>
-              </>
-            ) : (
+          {images.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+              {images.map((src) => {
+                const preview = resolveBannerKey(src)
+                return (
+                  <View key={src} style={[styles.photoTile, { borderColor: theme.border }]}>
+                    {preview ? <Image source={preview} style={styles.photoImage} /> : null}
+                    <Pressable
+                      onPress={() => setImages((current) => current.filter((item) => item !== src))}
+                      style={styles.photoRemove}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.photoRemoveText}>×</Text>
+                    </Pressable>
+                  </View>
+                )
+              })}
+              {images.length < MAX_PHOTOS ? (
+                <Pressable
+                  onPress={openPicker}
+                  style={[styles.photoAdd, { borderColor: theme.border, backgroundColor: "#16181c" }]}
+                >
+                  <Text style={styles.photoAddText}>+</Text>
+                </Pressable>
+              ) : null}
+            </ScrollView>
+          ) : (
+            <Pressable
+              onPress={openPicker}
+              style={[styles.bannerSlot, { borderColor: theme.border, backgroundColor: "#16181c" }]}
+            >
               <View style={styles.bannerEmpty}>
                 <SymbolView
                   name={{ ios: "photo", android: "image", web: "image" }}
                   tintColor={theme.mutedForeground}
                   size={28}
                 />
-                <Text style={styles.bannerTitle}>{messages.compose.addBanner}</Text>
+                <Text style={styles.bannerTitle}>{messages.compose.addPhotos}</Text>
                 <Text style={styles.bannerSub} lightColor="#536471" darkColor="#71767b">
                   {tx(messages.compose.addBannerSub, { type: messages.types[type] })}
                 </Text>
               </View>
-            )}
-          </Pressable>
+            </Pressable>
+          )}
 
           <Text style={styles.section} lightColor="#536471" darkColor="#71767b">
             {messages.compose.where}
@@ -518,9 +576,11 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
         }}
       />
 
-      <Modal visible={pickerOpen} transparent animationType="slide" onRequestClose={() => setPickerOpen(false)}>
+      <Modal visible={pickerShown} transparent animationType="none" onRequestClose={closePicker}>
         <View style={styles.sheetRoot}>
-          <Pressable style={styles.sheetDim} onPress={() => setPickerOpen(false)} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={closePicker}>
+            <Animated.View style={[styles.sheetDim, pickerDimStyle]} />
+          </Pressable>
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16), borderColor: theme.border }]}>
             <Text style={styles.sheetTitle}>{messages.compose.chooseBanner}</Text>
             <Text style={styles.sheetSub} lightColor="#536471" darkColor="#71767b">
@@ -538,13 +598,13 @@ export function ActivityCompose({ activity }: { activity?: Activity }) {
               {presets.map((key) => {
                 const src = resolveBannerKey(key)
                 if (!src) return null
-                const active = image === key
+                const active = images.includes(key)
                 return (
                   <Pressable
                     key={key}
                     onPress={() => {
-                      setImage(key)
-                      setPickerOpen(false)
+                      addImages([key])
+                      closePicker()
                     }}
                     style={[styles.preset, active && { borderColor: theme.foreground }]}
                   >
@@ -660,6 +720,50 @@ const styles = StyleSheet.create({
   dangerHint: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  photoRow: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  photoTile: {
+    width: 112,
+    height: 72,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  photoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  photoRemove: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoRemoveText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: -1,
+  },
+  photoAdd: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoAddText: {
+    fontSize: 28,
+    fontWeight: "400",
   },
   bannerSlot: {
     alignSelf: "stretch",

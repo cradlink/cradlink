@@ -21,6 +21,8 @@ type AuthContextValue = {
   deleteAccount: () => Promise<void>
   signOut: () => Promise<void>
   reload: () => Promise<void>
+  sendVerificationEmail: () => Promise<void>
+  reloadUser: () => Promise<User | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -48,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     try {
-      const next = await firebaseAuth.getCurrentUser()
+      const next = await firebaseAuth.reloadUser()
       setUser(next)
       if (next) await loadPeople()
       else setDirectory([])
@@ -131,6 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       signOut: () => firebaseAuth.signOut(),
       reload,
+      sendVerificationEmail: () => firebaseAuth.sendVerificationEmail(),
+      reloadUser: async () => {
+        const next = await firebaseAuth.reloadUser()
+        setUser(next)
+        return next
+      },
     }
   }, [directory, getUser, loadPeople, ready, reload, user])
 

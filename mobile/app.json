@@ -40,6 +40,13 @@
       "expo-router",
       "expo-navigation-bar",
       [
+        "expo-notifications",
+        {
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Allow Cradlink to attach a photo to your activity."

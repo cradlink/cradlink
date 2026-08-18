@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
@@ -21,6 +22,7 @@ import {
 } from "firebase/firestore"
 
 import type { AuthRepo } from "@/lib/auth/types"
+import { appEnv } from "@/lib/env"
 import { AppError } from "@/lib/errors"
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase"
 import type { UpdateProfileInput, User } from "@/lib/types"
@@ -55,7 +57,36 @@ function mapUser(id: string, data: Record<string, unknown>, fallback?: Partial<U
     deactivatedAt: asString(data.deactivatedAt) || null,
     createdAt: asTime(data.createdAt),
     updatedAt: asTime(data.updatedAt),
+    emailVerified: fallback?.emailVerified,
   }
+}
+
+const VERIFY_COOLDOWN_KEY = "cl_verify_email_sent_at"
+const VERIFY_COOLDOWN_MS = 60_000
+
+async function sendVerification(fbUser: FirebaseUser) {
+  if (fbUser.emailVerified) return
+  const last = Number((await AsyncStorage.getItem(VERIFY_COOLDOWN_KEY)) || 0)
+  if (last && Date.now() - last < VERIFY_COOLDOWN_MS) throw new AppError("waitBeforeResend")
+  const apiKey = appEnv.firebase.apiKey
+  const idToken = await fbUser.getIdToken()
+  if (!apiKey) throw new AppError("firebaseMissing")
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestType: "VERIFY_EMAIL", idToken }),
+  })
+  const data = (await res.json()) as { error?: { message?: string } }
+  if (!res.ok) {
+    const code = data.error?.message || ""
+    if (code.includes("TOO_MANY_ATTEMPTS")) throw new AppError("waitBeforeResend")
+    throw new AppError("verifySendFailed")
+  }
+  await AsyncStorage.setItem(VERIFY_COOLDOWN_KEY, String(Date.now()))
+}
+
+function withVerified(user: User, fbUser: FirebaseUser): User {
+  return { ...user, emailVerified: fbUser.emailVerified }
 }
 
 async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promise<User> {
@@ -88,13 +119,14 @@ async function upsertUserDoc(fbUser: FirebaseUser, displayName?: string): Promis
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
-    return user
+    return withVerified(user, fbUser)
   }
 
   return mapUser(fbUser.uid, snap.data() as Record<string, unknown>, {
     displayName: name,
     email,
     avatarUrl: fbUser.photoURL,
+    emailVerified: fbUser.emailVerified,
   })
 }
 
@@ -118,6 +150,7 @@ async function fromFirebase(fbUser: FirebaseUser | null): Promise<User | null> {
       deactivatedAt: null,
       createdAt: timestamp,
       updatedAt: timestamp,
+      emailVerified: fbUser.emailVerified,
     }
   }
 }
@@ -143,7 +176,9 @@ export const firebaseAuth: AuthRepo = {
     try {
       const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password)
       await updateProfile(cred.user, { displayName: name })
-      return (await upsertUserDoc(cred.user, name))!
+      const user = (await upsertUserDoc(cred.user, name))!
+      await sendVerification(cred.user).catch(() => undefined)
+      return user
     } catch (err) {
       if (err instanceof AppError) throw err
       mapAuthError(err)
@@ -185,7 +220,20 @@ export const firebaseAuth: AuthRepo = {
       }),
     )
     if (input.displayName) await updateProfile(current, { displayName: input.displayName })
-    return next
+    return withVerified(next, current)
+  },
+
+  async sendVerificationEmail() {
+    const current = getFirebaseAuth().currentUser
+    if (!current) throw new AppError("signInFirst")
+    await sendVerification(current)
+  },
+
+  async reloadUser() {
+    const current = getFirebaseAuth().currentUser
+    if (!current) return null
+    await current.reload()
+    return fromFirebase(getFirebaseAuth().currentUser)
   },
 
   async signOut() {

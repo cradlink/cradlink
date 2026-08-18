@@ -114,6 +114,22 @@ export function activityBannerSources(activity: Pick<Activity, "type" | "images"
   return [localActivityBanner(activity)]
 }
 
+export function resolveStoredImage(src: string | undefined, type: ActivityType): ImageSourcePropType {
+  if (!src) return DEFAULTS[type]
+  const named = keyFromStored(src)
+  if (named) return NAMED[named] ?? DEFAULTS[type]
+  if (src.startsWith("file:") || src.startsWith("content:") || src.startsWith("http") || src.startsWith("data:")) {
+    return { uri: src }
+  }
+  return DEFAULTS[type]
+}
+
+export function activityImages(activity: Pick<Activity, "type" | "images">): ImageSourcePropType[] {
+  const keys = activity.images?.filter(Boolean) ?? []
+  if (!keys.length) return [DEFAULTS[activity.type]]
+  return keys.map((src) => resolveStoredImage(src, activity.type))
+}
+
 export function resolveActivityBanner(activity: Pick<Activity, "type" | "images">): ImageSourcePropType {
-  return activityBannerSources(activity)[0]
+  return activityImages(activity)[0]
 }

@@ -3,6 +3,16 @@ import { getBackend } from "@/lib/backend";
 import { appError } from "@/lib/errors";
 import type { UpdateProfileInput } from "@/lib/types";
 
+export function useUsers(ids: string[]) {
+  const backend = getBackend();
+  const unique = [...new Set(ids.filter(Boolean))].sort();
+  return useQuery({
+    queryKey: ["users", unique],
+    queryFn: () => backend.users.getByIds(unique),
+    enabled: unique.length > 0,
+  });
+}
+
 export function useUser(userId: string | undefined) {
   const backend = getBackend();
   return useQuery({
@@ -25,6 +35,7 @@ export function useUpdateProfile(userId: string | undefined) {
       void queryClient.invalidateQueries({ queryKey: ["users"] });
       void queryClient.invalidateQueries({ queryKey: ["follows"] });
       void queryClient.invalidateQueries({ queryKey: ["activities"] });
+      void queryClient.invalidateQueries({ queryKey: ["comments"] });
     },
   });
 }

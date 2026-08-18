@@ -25,7 +25,7 @@ export function SideNav() {
   ];
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col justify-between px-2 py-2 xl:w-[275px] lg:flex">
+    <aside className="sticky top-0 hidden h-svh w-[88px] shrink-0 flex-col justify-between self-start overflow-y-auto px-2 py-2 xl:w-[275px] lg:flex">
       <div>
         <div className="px-3 py-3">
           <Logo wordmarkClassName="hidden xl:inline-block" />

@@ -16,6 +16,7 @@ import { BootScreen } from "@/components/BootScreen"
 import { ParticleField } from "@/components/ParticleField"
 import { ConfirmModalHost } from "@/components/ConfirmDialog"
 import { ReplyComposeHost } from "@/components/ReplyCompose"
+import { ConfettiHost } from "@/components/ConfettiHost"
 import { ToastHost } from "@/components/ToastHost"
 import { View } from "@/components/Themed"
 import { palette } from "@/constants/Colors"
@@ -25,8 +26,10 @@ import { ActivityPreviewProvider, usePreviewLocksUi } from "@/hooks/use-activity
 import { AuthProvider, useAuth } from "@/hooks/use-auth"
 import { ConfirmProvider } from "@/hooks/use-confirm"
 import { ConnectionsProvider } from "@/hooks/use-connections"
+import { useActivityReminders } from "@/hooks/use-activity-reminders"
 import { useFireflies } from "@/hooks/use-fireflies"
 import { I18nProvider, useI18n } from "@/hooks/use-i18n"
+import { needsEmailVerification } from "@/lib/types"
 import { MembershipProvider } from "@/hooks/use-memberships"
 import { NotificationsProvider } from "@/hooks/use-notifications"
 import { RepliesProvider } from "@/hooks/use-replies"
@@ -72,13 +75,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     const inAuth = pathname === "/login" || pathname === "/signup"
     const picking = pathname === "/username"
     const recovering = pathname === "/reactivate"
-    if (!user && (picking || recovering || !inAuth)) {
+    const verifying = pathname === "/verify-email"
+    if (!user && (picking || recovering || verifying || !inAuth)) {
       router.replace("/login")
     } else if (user?.deactivatedAt && !recovering) {
       router.replace("/reactivate")
-    } else if (user && !user.deactivatedAt && !user.username && !picking) {
+    } else if (user && !user.deactivatedAt && needsEmailVerification(user) && !verifying) {
+      router.replace("/verify-email")
+    } else if (user && !user.deactivatedAt && !needsEmailVerification(user) && !user.username && !picking && !verifying) {
       router.replace("/username")
-    } else if (user && !user.deactivatedAt && user.username && (inAuth || picking || recovering)) {
+    } else if (
+      user &&
+      !user.deactivatedAt &&
+      !needsEmailVerification(user) &&
+      user.username &&
+      (inAuth || picking || recovering || verifying)
+    ) {
       router.replace("/")
     }
   }, [user, ready, pathname, router])
@@ -97,6 +109,7 @@ function RootNav() {
   const { messages } = useI18n()
   const { on: fireflies } = useFireflies()
   const previewOpen = usePreviewLocksUi()
+  useActivityReminders()
   return (
     <ThemeProvider value={cradlinkDark}>
       <View style={{ flex: 1, backgroundColor: palette.dark.background }}>
@@ -139,6 +152,7 @@ function RootNav() {
           <Stack.Screen name="search" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="username" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="verify-email" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="reactivate" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="settings-deactivate" options={{ headerShown: false }} />
           <Stack.Screen name="follow-requests" options={{ headerShown: false }} />
@@ -152,6 +166,7 @@ function RootNav() {
       <ActivityPreview />
       <ConfirmModalHost active={!previewOpen} />
       <ReplyComposeHost />
+      <ConfettiHost />
       <ToastHost />
       <StatusBar style="light" />
       <NavigationBar style="dark" />

@@ -9,6 +9,12 @@ import type { Activity, User } from "@/lib/types";
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
+function startOfLocalDay(ms: number) {
+  const date = new Date(ms);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
 function showBrowserAlert(title: string, body: string) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   try {
@@ -18,9 +24,29 @@ function showBrowserAlert(title: string, body: string) {
   }
 }
 
+async function sendHourEmail(user: User, activity: Activity) {
+  if (user.emailReminders === false || !user.email) return;
+  try {
+    await fetch("/api/reminder-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: user.email,
+        title: activity.title,
+        startAt: activity.startAt,
+        activityUrl: `${window.location.origin}/activities/${activity.id}`,
+        unsubscribeUrl: `${window.location.origin}/settings/notifications?emailReminders=off`,
+      }),
+    });
+  } catch {
+    // Email is best-effort; in-app and browser alerts still go out.
+  }
+}
+
 async function ensureReminders(user: User, activities: Activity[]) {
   const backend = getBackend();
   const now = Date.now();
+  const today = startOfLocalDay(now);
   const seen = new Set<string>();
 
   for (const activity of activities) {
@@ -28,8 +54,10 @@ async function ensureReminders(user: User, activities: Activity[]) {
     seen.add(activity.id);
     const start = new Date(activity.startAt).getTime();
     if (Number.isNaN(start) || start <= now) continue;
+    const startDay = startOfLocalDay(start);
+    const isTomorrow = startDay === today + DAY;
 
-    if (now >= start - DAY) {
+    if (isTomorrow && now >= start - DAY) {
       const result = await notify(backend.notifications, {
         id: reminderId("reminder_day", activity.id, user.id),
         recipientId: user.id,
@@ -54,6 +82,7 @@ async function ensureReminders(user: User, activities: Activity[]) {
       });
       if (result.created) {
         showBrowserAlert(i18n.t("alerts.inAnHour"), activity.title);
+        await sendHourEmail(user, activity);
       }
     }
   }

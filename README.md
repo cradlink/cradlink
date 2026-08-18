@@ -1,19 +1,71 @@
-# Cradlink
+<div align="center">
+  <img src="web/public/images/cradlink_banner_moto.png" alt="Cradlink — Find humans. Do human things." width="100%" />
 
-Find humans. Do human things.
+  <br />
 
-Web app for posting activities and joining other people’s — hackathons, workshops, research groups, pickup sports, board-game nights. Phase 1 is the React (Vite) app in [`web/`](./web). Phase 2 is the Expo app in [`mobile/`](./mobile). Same Firebase project later.
+  **A social activity platform for turning online discovery into real plans.**
 
-```
-web/      React (Vite) app
-mobile/   Expo app (later)
-```
+  <br />
 
-Firebase rules at the repo root are shared.
+  `Web` &nbsp; `iOS` &nbsp; `Android` &nbsp; `Firebase`
 
-## Run the web app
+  <br />
 
-Needs **Node 20.19+**.
+  [Get started](#get-started) · [Explore the product](#the-product) · [Configure Firebase](#firebase) · [Deploy](#deployment)
+</div>
+
+---
+
+## The product
+
+Cradlink helps people find an activity, join the right group, and show up. Users can publish plans, discover people nearby, manage attendance, talk before the event, and keep their public activity history in one place.
+
+The repository contains two clients for the same product:
+
+| | Web | Mobile |
+| --- | --- | --- |
+| **Location** | [`web/`](./web) | [`mobile/`](./mobile) |
+| **Runtime** | Browser | Android and iOS |
+| **Framework** | Vite + React | Expo + React Native |
+| **Routing** | React Router | Expo Router |
+| **Styling** | Tailwind CSS | React Native styles |
+| **Data** | Local browser mode or Firebase | Firebase |
+
+Both apps use the same Firebase project and follow the same domain model.
+
+### What you can do
+
+| Discover | Organize | Connect |
+| --- | --- | --- |
+| Browse and filter activities | Publish and edit an activity | Follow public or private profiles |
+| Search for people | Add up to six photos | Handle follow and join requests |
+| View public profiles | Set time, place and capacity | Join threaded discussions |
+| See active and past plans | Choose automatic or manual joining | Receive activity notifications |
+
+Other product details include email verification, Google sign-in, account reactivation, multilingual UI, activity reminders, member management, and responsive navigation.
+
+<br />
+
+<div align="center">
+  <img src="mobile/readme/card-join.svg" alt="Join an activity" width="31%" />
+  &nbsp;
+  <img src="mobile/readme/card-compose.svg" alt="Create an activity" width="31%" />
+  &nbsp;
+  <img src="mobile/readme/card-maps.svg" alt="Choose the place" width="31%" />
+</div>
+
+---
+
+## Get started
+
+### Prerequisites
+
+- Node.js 22
+- npm
+- Expo Go or a native simulator for mobile development
+- A Firebase project when running the production backend
+
+### Run the web app
 
 ```bash
 cd web
@@ -21,86 +73,59 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Visit [localhost:3000](http://localhost:3000). The default configuration uses a browser-local backend, so the web app can be explored without Firebase credentials.
 
-The default backend is **local** (browser `localStorage` + seed data). No Firebase project required.
+```bash
+npm run lint      # lint the web project
+npm run build     # type-check and build for production
+npm run preview   # preview the production build
+```
 
-Demo account:
-
-- Email: `marko@cradlink.com`
-- Password: `demo1234`
-- **Continue as Marko Njegomir** (local mode) signs in as Marko.
-
-## Mobile
-
-Separate Expo / React Native project. From the repo root:
+### Run the mobile app
 
 ```bash
 cd mobile
 npm install
-npx expo start
+npm start
 ```
 
-See [`mobile/README.md`](./mobile/README.md).
+Use the Expo terminal to open Android, iOS, or React Native Web.
 
-## What works
-
-- Sign up / log in / mock Google
-- Create an activity (live card preview)
-- Feed of cards with type + place filters
-- Join / leave, capacity respected
-- Activity detail + members
-- My activities (Created / Joined)
-- Profile view + edit, avatar upload
-
-Data lives in this browser until you switch to Firebase.
-
-## Switch to Firebase
-
-1. Create a Firebase project. Enable **Authentication** (Email/Password + Google), **Firestore**, and **Storage**.
-2. Register a web app and copy the config.
-3. Copy `web/.env.example` to `web/.env.local` and fill in the keys:
-
-```
-VITE_BACKEND=firebase
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_STORAGE_BUCKET=...
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=...
+```bash
+npm run android
+npm run ios
+npm run web
+npx tsc --noEmit
 ```
 
-4. Paste `firestore.rules` and `storage.rules` in the Firebase console (or deploy with the Firebase CLI).
-5. Deploy `firestore.indexes.json` or accept the index links the console shows on first query.
-6. Restart `npm run dev` from `web/`.
+---
 
-The UI does not change. Auth, activities, members, and avatars go through the same repository interface.
+## Firebase
 
-## Deploy (web)
+Cradlink uses Firebase Authentication, Cloud Firestore, and Firebase Storage. Rules and indexes are shared by both clients and live at the repository root.
 
-Use **two Vercel projects** on the same GitHub repo. Each project has its own production URL.
+### 1. Create the services
 
-| Project name (example) | Production branch | What it is |
-| --- | --- | --- |
-| `cradlink` | `main` | Production |
-| `cradlink-dev` | `development` | Staging / preview of current work |
+In Firebase Console:
 
-`vercel.json` at the repo root builds `web/`. Leave **Root Directory** empty on both projects.
+1. Enable Email/Password and Google authentication.
+2. Create a Cloud Firestore database.
+3. Enable Firebase Storage.
+4. Register a web app and copy its configuration.
 
-### On Vercel (do this twice)
+Deploy the repository rules and indexes with Firebase CLI:
 
-1. [vercel.com/new](https://vercel.com/new) → import `cradlink/cradlink`.
-2. **Root Directory**: leave blank.
-3. Framework: Vite (detected).
-4. After the first import, open **Project Settings → Environments** (or **Git**) and set **Production Branch**:
-   - first project → `main`
-   - second project → `development`
-5. **Settings → General → Node.js Version** → `22.x`.
-6. **Settings → Git**: turn off automatic preview deploys if you only want the production branch of that project to publish (optional).
-7. **Settings → Environment Variables** — add these to **Production** (and Preview if you keep it):
-
+```bash
+firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
+
+### 2. Configure web
+
+```bash
+cp web/.env.example web/.env.local
+```
+
+```dotenv
 VITE_BACKEND=firebase
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
@@ -110,20 +135,110 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
-Use the same Firebase project on both unless you later split staging data.
+Use `VITE_BACKEND=local` when Firebase is not needed.
 
-8. Deploy. Copy each project’s `*.vercel.app` domain.
+### 3. Configure mobile
 
-### After both URLs exist
+```bash
+cp mobile/.env.example mobile/.env
+```
 
-1. Firebase Console → **Authentication → Settings → Authorized domains** → add both Vercel hostnames (no `https://`).
-2. If you use Google sign-in: Google Cloud Console → your OAuth client → **Authorized JavaScript origins** → add `https://<prod>.vercel.app` and `https://<dev>.vercel.app`.
-3. Paste the latest `firestore.rules` and `storage.rules` if you have not already.
+```dotenv
+EXPO_PUBLIC_BACKEND=firebase
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
 
-Pushes to `main` update production. Pushes to `development` update the dev site.
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=
+EXPO_PUBLIC_EXPO_PROJECT=@ljubogdan/cradlink
+```
 
-`main` is still the older root-level Vite app. The `development` project is the current `web/` app (search, follows, discussion). Merge `development` into `main` when you want production to match.
+Never commit populated environment files.
 
-## Stack
+---
 
-React · Vite · React Router · TypeScript · Tailwind · TanStack Query · Firebase JS SDK (optional)
+## Repository map
+
+```text
+cradlink/
+├── web/
+│   ├── public/              static assets
+│   └── src/
+│       ├── components/      feature and UI components
+│       ├── hooks/           client state and queries
+│       ├── layouts/         application shells
+│       ├── lib/             domain and backend code
+│       └── pages/           route-level screens
+│
+├── mobile/
+│   ├── app/                 Expo Router screens
+│   ├── assets/              native images and fonts
+│   ├── components/          React Native UI
+│   ├── hooks/               providers and client state
+│   └── lib/                 domain and backend code
+│
+├── firebase.json
+├── firestore.indexes.json
+├── firestore.rules
+├── storage.rules
+└── vercel.json
+```
+
+When the product model changes, keep [`web/src/lib/types.ts`](./web/src/lib/types.ts) and [`mobile/lib/types.ts`](./mobile/lib/types.ts) aligned.
+
+---
+
+## Deployment
+
+### Web · Vercel
+
+The root [`vercel.json`](./vercel.json) builds `web/`, publishes `web/dist`, and configures SPA routing. Leave the Vercel **Root Directory** empty.
+
+| Branch | Suggested environment |
+| --- | --- |
+| `main` | Production |
+| `development` | Staging |
+
+Set `VITE_BACKEND=firebase` and all `VITE_FIREBASE_*` variables in Vercel. Add each deployed hostname to Firebase Authentication authorized domains and to the Google OAuth authorized origins.
+
+### Mobile · EAS
+
+```bash
+cd mobile
+npx eas build --platform android --profile preview
+npx eas build --platform android --profile production
+```
+
+The `preview` profile creates an installable APK. The `production` profile creates an Android App Bundle for store distribution.
+
+---
+
+## Before merging
+
+Run the checks for both applications:
+
+```bash
+cd web
+npm run lint
+npm run build
+
+cd ../mobile
+npx tsc --noEmit
+```
+
+Also verify Firebase rules whenever a data model or query changes.
+
+---
+
+<div align="center">
+  <img src="mobile/readme/wave.svg" alt="" width="100%" />
+
+  **Find people. Do the thing.**
+
+  <sub>CRADLINK · WEB + MOBILE</sub>
+</div>

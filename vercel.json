@@ -3,8 +3,21 @@
   "installCommand": "npm install --prefix web",
   "buildCommand": "npm run build --prefix web",
   "outputDirectory": "web/dist",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- web firestore.rules storage.rules vercel.json",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- web firestore.rules storage.rules vercel.json api",
+  "rewrites": [
+    {
+      "source": "/activities/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(bot|crawl|slurp|spider|facebook|whatsapp|telegram|discord|slack|linkedin|twitter|pinterest|skype|viber|preview|embed|applebot|bingpreview).*"
+        }
+      ],
+      "destination": "/api/activity-meta?id=:id"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
